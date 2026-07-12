@@ -44,10 +44,8 @@ export class FromFieldBuilder<TColumn> extends FieldBuilder<
   as<TValue, TSchema extends FieldSchema>(
     field: FieldBuilder<TValue, TSchema>,
   ): FieldBuilder<TValue, TSchema> {
-    const { type: _type, name: _name, ...state } = field.toSchema("__from__");
-
     return new FieldBuilder<TValue, TSchema>({
-      ...state,
+      ...(field as FieldBuilder<TValue, TSchema> & { state: TSchema }).state,
       source: this.state.source,
     } as Omit<TSchema, "type" | "name">);
   }

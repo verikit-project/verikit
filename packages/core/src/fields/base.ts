@@ -165,6 +165,17 @@ export type FieldBuilderState<TSchema extends FieldSchema = FieldSchema> = Omit<
 >;
 
 /**
+ * Preserves the current concrete builder shape while replacing its inferred
+ * value type. This keeps subclass methods available after base modifiers like
+ * `.label()`, `.required()`, or `.nullable()`.
+ */
+export type FieldBuilderWithValue<
+  TBuilder,
+  TValue,
+  TSchema extends FieldSchema,
+> = Omit<TBuilder, "$value"> & FieldBuilder<TValue, TSchema>;
+
+/**
  * Fluent builder for constructing strongly-typed field schemas.
  *
  * The builder maintains type safety through its generic TValue parameter:
@@ -217,19 +228,37 @@ export class FieldBuilder<
 
   /**
    * Internal helper to create a new builder with updated state.
-   * Returns a fresh FieldBuilder instance (immutable pattern).
+   * Returns a fresh instance of the current concrete builder (immutable pattern).
    *
    * @template TNextValue - The new TValue for the returned builder
    * @param patch - Properties to merge into the current state
-   * @returns A new FieldBuilder with the updated state
+   * @returns A new builder with the updated state
    */
   protected withState<TNextValue = TValue>(
     patch: Partial<FieldSchema>,
-  ): FieldBuilder<TNextValue, TSchema> {
-    return new FieldBuilder<TNextValue, TSchema>({
+  ): FieldBuilderWithValue<this, TNextValue, TSchema> {
+    return new (this.constructor as any)({
       ...this.state,
       ...patch,
-    } as FieldBuilderState<TSchema>);
+    } as FieldBuilderState<TSchema>) as FieldBuilderWithValue<
+      this,
+      TNextValue,
+      TSchema
+    >;
+  }
+
+  /**
+   * Return the current builder state before a resource field name is assigned.
+   *
+   * This is intended for core internals that need to compose builders without
+   * finalizing them through `toSchema(name)`.
+   *
+   * @internal
+   */
+  getState(): FieldBuilderState<TSchema> {
+    return {
+      ...this.state,
+    };
   }
 
   /**
@@ -245,7 +274,7 @@ export class FieldBuilder<
    *   .label("First Name")
    * ```
    */
-  label(label: string): FieldBuilder<TValue, TSchema> {
+  label(label: string): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ label });
   }
 
@@ -262,7 +291,9 @@ export class FieldBuilder<
    *   .description("Enter your full name as it appears on your ID")
    * ```
    */
-  description(description: string): FieldBuilder<TValue, TSchema> {
+  description(
+    description: string,
+  ): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ description });
   }
 
@@ -279,7 +310,7 @@ export class FieldBuilder<
    *   .placeholder("you@example.com")
    * ```
    */
-  placeholder(placeholder: string): FieldBuilder<TValue, TSchema> {
+  placeholder(placeholder: string): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ placeholder });
   }
 
@@ -298,7 +329,7 @@ export class FieldBuilder<
    *   .required()  // Type is now string (not undefined)
    * ```
    */
-  required(): FieldBuilder<NonNullable<TValue>, TSchema> {
+  required(): FieldBuilderWithValue<this, NonNullable<TValue>, TSchema> {
     return this.withState<NonNullable<TValue>>({
       nullable: false,
       required: true,
@@ -321,7 +352,7 @@ export class FieldBuilder<
    *   .optional()  // Type is now string | undefined
    * ```
    */
-  optional(): FieldBuilder<TValue | undefined, TSchema> {
+  optional(): FieldBuilderWithValue<this, TValue | undefined, TSchema> {
     return this.withState<TValue | undefined>({
       required: false,
       nullable: false,
@@ -347,7 +378,7 @@ export class FieldBuilder<
    *   .nullable()  // Type is now string | null
    * ```
    */
-  nullable(): FieldBuilder<TValue | null, TSchema> {
+  nullable(): FieldBuilderWithValue<this, TValue | null, TSchema> {
     return this.withState<TValue | null>({ nullable: true, required: false });
   }
 
@@ -366,7 +397,9 @@ export class FieldBuilder<
    *   .default(false)  // Type is now boolean
    * ```
    */
-  default(value: TValue): FieldBuilder<Exclude<TValue, undefined>, TSchema> {
+  default(
+    value: TValue,
+  ): FieldBuilderWithValue<this, Exclude<TValue, undefined>, TSchema> {
     return this.withState<Exclude<TValue, undefined>>({ defaultValue: value });
   }
 
@@ -383,7 +416,7 @@ export class FieldBuilder<
    *   .searchable()  // Can search by email in tables
    * ```
    */
-  searchable(): FieldBuilder<TValue, TSchema> {
+  searchable(): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ searchable: true });
   }
 
@@ -400,7 +433,7 @@ export class FieldBuilder<
    *   .sortable()  // Table can sort by name
    * ```
    */
-  sortable(): FieldBuilder<TValue, TSchema> {
+  sortable(): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ sortable: true });
   }
 
@@ -417,7 +450,7 @@ export class FieldBuilder<
    *   .hidden()  // createdAt timestamp, internal use only
    * ```
    */
-  hidden(): FieldBuilder<TValue, TSchema> {
+  hidden(): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ hidden: true });
   }
 
@@ -435,7 +468,7 @@ export class FieldBuilder<
    *   .readOnly()  // Computed from other fields
    * ```
    */
-  readOnly(): FieldBuilder<TValue, TSchema> {
+  readOnly(): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ readOnly: true });
   }
 
@@ -461,7 +494,7 @@ export class FieldBuilder<
    */
   validation<TOutput = TValue>(
     validation: StandardSchemaLike<unknown, TOutput>,
-  ): FieldBuilder<TOutput, TSchema> {
+  ): FieldBuilderWithValue<this, TOutput, TSchema> {
     return this.withState<TOutput>({ validation });
   }
 
@@ -479,7 +512,7 @@ export class FieldBuilder<
    *   .meta({ maxLength: 50, pattern: "^[A-Z]" })
    * ```
    */
-  meta(meta: Record<string, unknown>): FieldBuilder<TValue, TSchema> {
+  meta(meta: Record<string, unknown>): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({
       meta: {
         ...this.state.meta,

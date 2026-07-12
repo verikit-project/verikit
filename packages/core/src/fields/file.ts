@@ -55,6 +55,6 @@ export class FileFieldBuilder<
 /**
  * Create a generic file upload field.
  */
-export function file(accept?: readonly string[]): FileFieldBuilder {
-  return accept ? new FileFieldBuilder().accept(accept) : new FileFieldBuilder();
+export function file(): FileFieldBuilder {
+  return new FileFieldBuilder();
 }
