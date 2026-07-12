@@ -41,9 +41,7 @@ export type FieldType =
   | "date"          // Date picker
   | "datetime"      // Date and time picker
   | "file"          // File upload
-  | "image"         // Image upload
-  | "belongsTo"     // Relation to another resource (foreign key)
-  | "from";         // Consume mode: infer field from column
+  | "image";        // Image upload
 
 /**
  * Allowed value types for select/option fields.
@@ -525,7 +523,7 @@ export class FieldBuilder<
  * Factory function to create a new FieldBuilder.
  * Entry point for the fluent builder API.
  * 
- * All field types (text, email, number, select, boolean, date, file, image, belongsTo)
+ * All field types (text, email, number, select, boolean, date, file, image)
  * call this function with their specific fieldType.
  * 
  * @template TValue - The inferred value type of the field

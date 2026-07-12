@@ -113,7 +113,6 @@ export function select<
 }
 
 export interface FromFieldSchema extends FieldSchema {
-  fieldType: "from";
   source: FieldSource;
 }
 
@@ -123,7 +122,7 @@ export class FromFieldBuilder<TColumn> extends FieldBuilder<
 > {
   constructor(column: TColumn) {
     super({
-      fieldType: "from",
+      fieldType: "text",
       source: {
         mode: "consume",
         column,
