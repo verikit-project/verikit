@@ -9,6 +9,12 @@ export interface FileConstraints extends FieldSchema {
   multiple?: boolean;
 }
 
+function assertNonEmptyAcceptType(type: string): void {
+  if (type.trim().length === 0) {
+    throw new Error("Accepted file types must be non-empty strings.");
+  }
+}
+
 /**
  * Returns a new field state with accepted MIME types or extensions.
  */
@@ -16,9 +22,11 @@ export function withAccept<TState extends { accept?: readonly string[] }>(
   state: TState,
   accept: readonly string[],
 ): TState {
+  accept.forEach(assertNonEmptyAcceptType);
+
   return {
     ...state,
-    accept,
+    accept: [...accept],
   };
 }
 
@@ -29,6 +37,10 @@ export function withMaxSize<TState extends { maxSize?: number }>(
   state: TState,
   maxSize: number,
 ): TState {
+  if (!Number.isFinite(maxSize) || maxSize < 0) {
+    throw new Error("maxSize must be a non-negative finite number.");
+  }
+
   return {
     ...state,
     maxSize,

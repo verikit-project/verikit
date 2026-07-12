@@ -18,6 +18,24 @@ export interface NumberFieldSchema extends FieldSchema {
   step?: number;
 }
 
+function assertFiniteNumber(name: string, value: number): void {
+  if (!Number.isFinite(value)) {
+    throw new Error(`${name} must be a finite number.`);
+  }
+}
+
+function assertValidNumberRange(
+  state: Pick<NumberFieldSchema, "min" | "max">,
+  patch: Pick<NumberFieldSchema, "min" | "max">,
+): void {
+  const min = patch.min ?? state.min;
+  const max = patch.max ?? state.max;
+
+  if (min !== undefined && max !== undefined && min > max) {
+    throw new Error("min cannot be greater than max.");
+  }
+}
+
 /**
  * Fluent builder for numeric fields.
  *
@@ -44,6 +62,9 @@ export class NumberFieldBuilder<
    * @returns A new number field builder with the minimum value set.
    */
   min(value: number): NumberFieldBuilder<TValue> {
+    assertFiniteNumber("min", value);
+    assertValidNumberRange(this.state, { min: value });
+
     return new NumberFieldBuilder({ ...this.state, min: value });
   }
 
@@ -54,6 +75,9 @@ export class NumberFieldBuilder<
    * @returns A new number field builder with the maximum value set.
    */
   max(value: number): NumberFieldBuilder<TValue> {
+    assertFiniteNumber("max", value);
+    assertValidNumberRange(this.state, { max: value });
+
     return new NumberFieldBuilder({ ...this.state, max: value });
   }
 
@@ -64,6 +88,10 @@ export class NumberFieldBuilder<
    * @returns A new number field builder with the step value set.
    */
   step(value: number): NumberFieldBuilder<TValue> {
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error("step must be a positive finite number.");
+    }
+
     return new NumberFieldBuilder({ ...this.state, step: value });
   }
 }

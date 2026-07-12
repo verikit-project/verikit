@@ -1,4 +1,9 @@
-import { FieldBuilder, FieldSchema, FieldSource, OptionValue } from "./base.js";
+import {
+  FieldBuilder,
+  FieldSchema,
+  FieldSource,
+  OptionValue,
+} from "./base.js";
 import { normalizeOptions, OptionFieldSchema } from "./shared/options.js";
 
 /**
@@ -18,24 +23,50 @@ export interface FromSelectFieldSchema<
   source: FieldSource;
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function cloneColumnValue<TValue>(value: TValue): TValue {
+  if (Array.isArray(value)) {
+    return value.map((item) => cloneColumnValue(item)) as TValue;
+  }
+
+  if (value instanceof Date) {
+    return new Date(value.getTime()) as TValue;
+  }
+
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        cloneColumnValue(entry),
+      ]),
+    ) as TValue;
+  }
+
+  return value;
+}
+
 /**
  * Fluent builder for consume-mode column enrichment.
  *
  * `from(column)` is not a field type. It attaches storage-column metadata to
  * a real field so adapters can connect resource semantics to existing schemas.
  */
-export class FromFieldBuilder<TColumn> extends FieldBuilder<
-  unknown,
-  FromFieldSchema
-> {
+export class FromFieldBuilder<TColumn> {
+  private readonly source: FieldSource<TColumn>;
+
   constructor(column: TColumn) {
-    super({
-      fieldType: "text",
-      source: {
-        mode: "consume",
-        column,
-      },
-    });
+    this.source = {
+      mode: "consume",
+      column: cloneColumnValue(column),
+    };
   }
 
   /**
@@ -45,8 +76,8 @@ export class FromFieldBuilder<TColumn> extends FieldBuilder<
     field: FieldBuilder<TValue, TSchema>,
   ): FieldBuilder<TValue, TSchema> {
     return new FieldBuilder<TValue, TSchema>({
-      ...(field as FieldBuilder<TValue, TSchema> & { state: TSchema }).state,
-      source: this.state.source,
+      ...field.getState(),
+      source: this.source,
     } as Omit<TSchema, "type" | "name">);
   }
 
@@ -61,7 +92,7 @@ export class FromFieldBuilder<TColumn> extends FieldBuilder<
   > {
     return new FieldBuilder({
       fieldType: "select",
-      source: this.state.source,
+      source: this.source,
       options: normalizeOptions(options),
     });
   }

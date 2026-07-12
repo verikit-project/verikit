@@ -175,6 +175,51 @@ export type FieldBuilderWithValue<
   TSchema extends FieldSchema,
 > = Omit<TBuilder, "$value"> & FieldBuilder<TValue, TSchema>;
 
+type BuilderConstructor<TBuilder, TSchema extends FieldSchema> = new (
+  state: FieldBuilderState<TSchema>,
+) => TBuilder;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function cloneSchemaValue<TValue>(value: TValue): TValue {
+  if (Array.isArray(value)) {
+    return value.map((item) => cloneSchemaValue(item)) as TValue;
+  }
+
+  if (value instanceof Date) {
+    return new Date(value.getTime()) as TValue;
+  }
+
+  if (isPlainObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        cloneSchemaValue(entry),
+      ]),
+    ) as TValue;
+  }
+
+  return value;
+}
+
+function cloneBuilderState<TSchema extends FieldSchema>(
+  state: FieldBuilderState<TSchema>,
+): FieldBuilderState<TSchema> {
+  return Object.fromEntries(
+    Object.entries(state).map(([key, value]) => [
+      key,
+      key === "validation" ? value : cloneSchemaValue(value),
+    ]),
+  ) as FieldBuilderState<TSchema>;
+}
+
 /**
  * Fluent builder for constructing strongly-typed field schemas.
  *
@@ -223,7 +268,7 @@ export class FieldBuilder<
    * @param state - Partial FieldSchema properties (fieldType, label, validation, etc.)
    */
   constructor(state: FieldBuilderState<TSchema>) {
-    this.state = state;
+    this.state = cloneBuilderState(state);
   }
 
   /**
@@ -237,10 +282,12 @@ export class FieldBuilder<
   protected withState<TNextValue = TValue>(
     patch: Partial<FieldSchema>,
   ): FieldBuilderWithValue<this, TNextValue, TSchema> {
-    return new (this.constructor as any)({
+    const Builder = this.constructor as BuilderConstructor<this, TSchema>;
+
+    return new Builder({
       ...this.state,
       ...patch,
-    } as FieldBuilderState<TSchema>) as FieldBuilderWithValue<
+    } as FieldBuilderState<TSchema>) as unknown as FieldBuilderWithValue<
       this,
       TNextValue,
       TSchema
@@ -256,9 +303,7 @@ export class FieldBuilder<
    * @internal
    */
   getState(): FieldBuilderState<TSchema> {
-    return {
-      ...this.state,
-    };
+    return cloneBuilderState(this.state);
   }
 
   /**
@@ -398,7 +443,7 @@ export class FieldBuilder<
    * ```
    */
   default(
-    value: TValue,
+    value: Exclude<TValue, undefined>,
   ): FieldBuilderWithValue<this, Exclude<TValue, undefined>, TSchema> {
     return this.withState<Exclude<TValue, undefined>>({ defaultValue: value });
   }
@@ -547,7 +592,7 @@ export class FieldBuilder<
     return {
       type: "field",
       name,
-      ...this.state,
+      ...cloneBuilderState(this.state),
     } as TSchema;
   }
 }
@@ -583,7 +628,7 @@ export function createField<TValue, TSchema extends FieldSchema = FieldSchema>(
   state: Partial<FieldBuilderState<TSchema>> = {},
 ): FieldBuilder<TValue, TSchema> {
   return new FieldBuilder<TValue, TSchema>({
-    fieldType,
     ...state,
+    fieldType,
   } as FieldBuilderState<TSchema>);
 }

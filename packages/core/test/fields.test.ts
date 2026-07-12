@@ -64,6 +64,25 @@ test("field names must be non-empty when finalized", () => {
   assert.throws(() => text().toSchema("   "), /non-empty/);
 });
 
+test("createField keeps the explicit fieldType authoritative", () => {
+  const schema = createField<string>("email", {
+    fieldType: "text",
+  }).toSchema("email");
+
+  assert.equal(schema.fieldType, "email");
+});
+
+test("default values cannot be undefined", () => {
+  // @ts-expect-error undefined defaults contradict the narrowed return type.
+  createField<string | undefined>("text").default(undefined);
+
+  const schema = createField<string | undefined>("text")
+    .default("ready")
+    .toSchema("status");
+
+  assert.equal(schema.defaultValue, "ready");
+});
+
 test("getState returns pre-finalized state without exposing mutable internals", () => {
   const builder = text().label("Name");
   const state = builder.getState();
@@ -73,6 +92,33 @@ test("getState returns pre-finalized state without exposing mutable internals", 
   assert.equal(builder.toSchema("name").label, "Name");
   assert.equal("name" in state, false);
   assert.equal("type" in state, false);
+});
+
+test("builder state snapshots caller-owned objects and arrays", () => {
+  const meta = { component: "compact" };
+  const options = [{ label: "One", value: 1 }];
+  const accept = ["application/pdf"];
+  const column = { table: "users", column: "email" };
+
+  const metaSchema = text().meta(meta).toSchema("name");
+  const selectSchema = select<number>().options(options).toSchema("rank");
+  const fileBuilder = file().accept(accept);
+  const sourcedBuilder = from(column).as(email());
+
+  meta.component = "wide";
+  options[0] = { label: "Two", value: 2 };
+  accept[0] = "text/plain";
+  column.column = "username";
+
+  assert.deepEqual(metaSchema.meta, { component: "compact" });
+  assert.deepEqual(selectSchema.options, [{ label: "One", value: 1 }]);
+  assert.deepEqual(fileBuilder.toSchema("attachment").accept, [
+    "application/pdf",
+  ]);
+  assert.deepEqual(sourcedBuilder.toSchema("email").source, {
+    mode: "consume",
+    column: { table: "users", column: "email" },
+  });
 });
 
 test("base modifiers preserve concrete string field methods", () => {
@@ -211,6 +257,17 @@ test("from attaches consume-mode column source without finalizing the field", ()
   });
 });
 
+test("from is not directly finalizable as a field", () => {
+  const sourced = from({ table: "users", column: "email" });
+
+  assert.equal("toSchema" in sourced, false);
+
+  if (false) {
+    // @ts-expect-error from(column) must be attached to a concrete field first.
+    sourced.toSchema("email");
+  }
+});
+
 test("from options shortcut creates a sourced select field", () => {
   const column = { table: "cats", column: "breed" };
   const schema = from(column).options(["siamese", "tabby"]).toSchema("breed");
@@ -297,6 +354,18 @@ test("shared helpers do not mutate source state", () => {
     accept: undefined,
   });
   assert.notEqual(updated, state);
+});
+
+test("field constraints reject invalid values and ranges", () => {
+  assert.throws(() => text().min(-1), /minLength/);
+  assert.throws(() => text().max(1.5), /maxLength/);
+  assert.throws(() => text().min(3).max(2), /minLength/);
+  assert.throws(() => email().max(2).min(3), /minLength/);
+  assert.throws(() => number().min(Number.NaN), /min/);
+  assert.throws(() => number().min(10).max(5), /min/);
+  assert.throws(() => number().step(0), /step/);
+  assert.throws(() => file().accept([""]), /non-empty/);
+  assert.throws(() => image().maxSize(-1), /maxSize/);
 });
 
 test("createField remains available for custom core field construction", () => {

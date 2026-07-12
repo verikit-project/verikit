@@ -17,7 +17,7 @@ export function normalizeOptions<TValue extends OptionValue>(
 ): FieldOption<TValue>[] {
   return options.map((option) =>
     typeof option === "object" && option !== null && "value" in option
-      ? option
+      ? { label: option.label, value: option.value }
       : { label: String(option), value: option as TValue },
   );
 }
