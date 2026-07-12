@@ -37,6 +37,7 @@ Thumbs.db
 
 # Test output
 .nyc_output/
+.test-dist/
 
 # npm
 *.tgz

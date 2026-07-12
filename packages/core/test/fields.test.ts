@@ -1,0 +1,311 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  boolean,
+  createField,
+  date,
+  datetime,
+  email,
+  file,
+  from,
+  image,
+  number,
+  select,
+  text,
+  textarea,
+  toggle,
+  type InferField,
+} from "../src/fields/index.js";
+import {
+  withAccept,
+  withMaxSize,
+  withMultiple,
+} from "../src/fields/shared/file-constraints.js";
+import { normalizeOptions } from "../src/fields/shared/options.js";
+import {
+  withMaxLength,
+  withMinLength,
+} from "../src/fields/shared/string-constraints.js";
+
+test("base field builder applies universal schema metadata", () => {
+  const schema = text()
+    .label("Name")
+    .description("Display name")
+    .placeholder("Ada Lovelace")
+    .required()
+    .default("Anonymous")
+    .searchable()
+    .sortable()
+    .hidden()
+    .readOnly()
+    .meta({ component: "compact" })
+    .toSchema("name");
+
+  assert.deepEqual(schema, {
+    type: "field",
+    name: "name",
+    fieldType: "text",
+    label: "Name",
+    description: "Display name",
+    placeholder: "Ada Lovelace",
+    required: true,
+    nullable: false,
+    defaultValue: "Anonymous",
+    searchable: true,
+    sortable: true,
+    hidden: true,
+    readOnly: true,
+    meta: { component: "compact" },
+  });
+});
+
+test("field names must be non-empty when finalized", () => {
+  assert.throws(() => text().toSchema(""), /non-empty/);
+  assert.throws(() => text().toSchema("   "), /non-empty/);
+});
+
+test("getState returns pre-finalized state without exposing mutable internals", () => {
+  const builder = text().label("Name");
+  const state = builder.getState();
+
+  state.label = "Changed";
+
+  assert.equal(builder.toSchema("name").label, "Name");
+  assert.equal("name" in state, false);
+  assert.equal("type" in state, false);
+});
+
+test("base modifiers preserve concrete string field methods", () => {
+  const textSchema = text().label("Title").required().min(2).max(120).toSchema("title");
+  const textareaSchema = textarea()
+    .description("Body")
+    .nullable()
+    .min(10)
+    .max(1000)
+    .toSchema("body");
+  const emailSchema = email()
+    .placeholder("person@example.com")
+    .required()
+    .max(255)
+    .toSchema("email");
+
+  assert.equal(textSchema.fieldType, "text");
+  assert.equal(textSchema.minLength, 2);
+  assert.equal(textSchema.maxLength, 120);
+  assert.equal(textSchema.required, true);
+
+  assert.equal(textareaSchema.fieldType, "textarea");
+  assert.equal(textareaSchema.nullable, true);
+  assert.equal(textareaSchema.minLength, 10);
+  assert.equal(textareaSchema.maxLength, 1000);
+
+  assert.equal(emailSchema.fieldType, "email");
+  assert.equal(emailSchema.format, "email");
+  assert.equal(emailSchema.maxLength, 255);
+});
+
+test("number field supports numeric constraints after base modifiers", () => {
+  const schema = number()
+    .label("Age")
+    .required()
+    .min(0)
+    .max(130)
+    .step(1)
+    .toSchema("age");
+
+  assert.deepEqual(schema, {
+    type: "field",
+    name: "age",
+    fieldType: "number",
+    label: "Age",
+    required: true,
+    nullable: false,
+    min: 0,
+    max: 130,
+    step: 1,
+  });
+});
+
+test("boolean and toggle fields produce boolean schemas", () => {
+  assert.deepEqual(boolean().default(false).toSchema("active"), {
+    type: "field",
+    name: "active",
+    fieldType: "boolean",
+    defaultValue: false,
+  });
+
+  assert.equal(toggle().toSchema("enabled").fieldType, "boolean");
+});
+
+test("date fields produce date and datetime schemas", () => {
+  assert.equal(date().label("Birthday").toSchema("birthday").fieldType, "date");
+  assert.equal(
+    datetime().readOnly().toSchema("publishedAt").fieldType,
+    "datetime",
+  );
+});
+
+test("file and image fields expose upload constraints through builder methods", () => {
+  const fileSchema = file()
+    .accept(["application/pdf"])
+    .maxSize(1024)
+    .multiple()
+    .toSchema("attachment");
+  const imageSchema = image()
+    .label("Avatar")
+    .maxSize(2048)
+    .multiple(false)
+    .toSchema("avatar");
+  const pngOnlyImageSchema = image().accept(["image/png"]).toSchema("photo");
+
+  assert.deepEqual(fileSchema, {
+    type: "field",
+    name: "attachment",
+    fieldType: "file",
+    accept: ["application/pdf"],
+    maxSize: 1024,
+    multiple: true,
+  });
+
+  assert.equal(imageSchema.fieldType, "image");
+  assert.deepEqual(imageSchema.accept, ["image/*"]);
+  assert.equal(imageSchema.maxSize, 2048);
+  assert.equal(imageSchema.multiple, false);
+  assert.deepEqual(pngOnlyImageSchema.accept, ["image/png"]);
+});
+
+test("select field normalizes primitive and labelled options", () => {
+  const primitiveSchema = select<string>()
+    .label("Breed")
+    .options(["siamese", "tabby"])
+    .toSchema("breed");
+  const labelledSchema = select<number>()
+    .options([
+      { label: "One", value: 1 },
+      { label: "Two", value: 2 },
+    ])
+    .toSchema("rank");
+
+  assert.deepEqual(primitiveSchema.options, [
+    { label: "siamese", value: "siamese" },
+    { label: "tabby", value: "tabby" },
+  ]);
+  assert.deepEqual(labelledSchema.options, [
+    { label: "One", value: 1 },
+    { label: "Two", value: 2 },
+  ]);
+});
+
+test("from attaches consume-mode column source without finalizing the field", () => {
+  const column = { table: "users", column: "email" };
+  const schema = from(column)
+    .as(email().label("Email").required())
+    .toSchema("email");
+
+  assert.equal(schema.fieldType, "email");
+  assert.equal(schema.label, "Email");
+  assert.equal(schema.required, true);
+  assert.deepEqual(schema.source, {
+    mode: "consume",
+    column,
+  });
+});
+
+test("from options shortcut creates a sourced select field", () => {
+  const column = { table: "cats", column: "breed" };
+  const schema = from(column).options(["siamese", "tabby"]).toSchema("breed");
+
+  assert.equal(schema.fieldType, "select");
+  assert.deepEqual(schema.options, [
+    { label: "siamese", value: "siamese" },
+    { label: "tabby", value: "tabby" },
+  ]);
+  assert.deepEqual(schema.source, {
+    mode: "consume",
+    column,
+  });
+});
+
+test("validation can transform the inferred field value and stores the validator", () => {
+  const validation = {
+    parse(value: unknown) {
+      return String(value).trim();
+    },
+  };
+  const builder = text().validation(validation);
+  const inferred: InferField<typeof builder> = "trimmed";
+  const schema = builder.toSchema("name");
+
+  assert.equal(inferred, "trimmed");
+  assert.equal(schema.validation, validation);
+});
+
+test("shared helpers return copied state with requested changes", () => {
+  const base = {
+    fieldType: "text" as const,
+    label: "Name",
+    minLength: undefined,
+    maxLength: undefined,
+  };
+
+  assert.deepEqual(withMinLength(base, 2), {
+    fieldType: "text",
+    label: "Name",
+    minLength: 2,
+    maxLength: undefined,
+  });
+  assert.deepEqual(withMaxLength(base, 10), {
+    fieldType: "text",
+    label: "Name",
+    minLength: undefined,
+    maxLength: 10,
+  });
+  assert.deepEqual(
+    withAccept({ fieldType: "file" as const, accept: undefined }, ["text/csv"]),
+    {
+      fieldType: "file",
+      accept: ["text/csv"],
+    },
+  );
+  assert.deepEqual(
+    withMaxSize({ fieldType: "file" as const, maxSize: undefined }, 512),
+    {
+      fieldType: "file",
+      maxSize: 512,
+    },
+  );
+  assert.deepEqual(
+    withMultiple({ fieldType: "file" as const, multiple: undefined }, true),
+    {
+      fieldType: "file",
+      multiple: true,
+    },
+  );
+  assert.deepEqual(normalizeOptions(["a", 2, true]), [
+    { label: "a", value: "a" },
+    { label: "2", value: 2 },
+    { label: "true", value: true },
+  ]);
+});
+
+test("shared helpers do not mutate source state", () => {
+  const state = { fieldType: "file" as const, accept: undefined };
+  const updated = withAccept(state, ["text/csv"]);
+
+  assert.deepEqual(state, {
+    fieldType: "file",
+    accept: undefined,
+  });
+  assert.notEqual(updated, state);
+});
+
+test("createField remains available for custom core field construction", () => {
+  const schema = createField<string>("text")
+    .label("Custom")
+    .nullable()
+    .toSchema("custom");
+
+  assert.equal(schema.fieldType, "text");
+  assert.equal(schema.label, "Custom");
+  assert.equal(schema.nullable, true);
+});
