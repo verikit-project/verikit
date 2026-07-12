@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "vsync": "node script/sync-version.js",
-    "test": "pnpm --filter @verikit/core test"
+    "test": "pnpm --filter @verikit/core test",
+    "typecheck": "tsc -b",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [],
   "author": "",
@@ -17,5 +21,14 @@
       "onFail": "download"
     }
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.5",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.63.0"
+  }
 }

@@ -11,12 +11,12 @@
     }
   },
   "scripts": {
-    "test": "tsc -p tsconfig.test.json && node --test .test-dist/test/fields.test.js"
+    "test": "tsc -p tsconfig.test.json && node --test \"./.test-dist/test/**/*.test.js\""
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   }
 }
