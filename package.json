@@ -4,6 +4,7 @@
   "description": "A TypeScript resource framework.",
   "main": "index.js",
   "scripts": {
+    "vsync": "node script/sync-version.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
