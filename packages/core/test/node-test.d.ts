@@ -19,6 +19,7 @@ declare module "node:assert/strict" {
     equal(actual: unknown, expected: unknown): void;
     notEqual(actual: unknown, expected: unknown): void;
     throws(fn: () => unknown, expected?: RegExp): void;
+    ok(value: unknown, message?: string): asserts value;
   }
 
   const assert: AssertStrict;
@@ -26,5 +27,6 @@ declare module "node:assert/strict" {
   export const equal: AssertStrict["equal"];
   export const notEqual: AssertStrict["notEqual"];
   export const throws: AssertStrict["throws"];
+  export const ok: AssertStrict["ok"];
   export default assert;
 }

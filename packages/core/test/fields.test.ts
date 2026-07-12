@@ -122,7 +122,12 @@ test("builder state snapshots caller-owned objects and arrays", () => {
 });
 
 test("base modifiers preserve concrete string field methods", () => {
-  const textSchema = text().label("Title").required().min(2).max(120).toSchema("title");
+  const textSchema = text()
+    .label("Title")
+    .required()
+    .min(2)
+    .max(120)
+    .toSchema("title");
   const textareaSchema = textarea()
     .description("Body")
     .nullable()
@@ -262,6 +267,7 @@ test("from is not directly finalizable as a field", () => {
 
   assert.equal("toSchema" in sourced, false);
 
+  // eslint-disable-next-line no-constant-condition -- type-only check, never executed
   if (false) {
     // @ts-expect-error from(column) must be attached to a concrete field first.
     sourced.toSchema("email");
