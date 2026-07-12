@@ -6,8 +6,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
 
-const readJson = (filePath) =>
-  JSON.parse(fs.readFileSync(filePath, "utf8"));
+const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, "utf8"));
 
 const rootPkg = readJson(path.join(rootDir, "package.json"));
 
@@ -35,7 +34,7 @@ for (const pattern of workspacePatterns) {
     }
 
     const pkg = readJson(pkgPath);
-  
+
     if (pkg.version !== version) {
       pkg.version = version;
       fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);

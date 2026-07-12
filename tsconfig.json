@@ -6,13 +6,8 @@
     "strict": true,
     "target": "ES2022"
   },
-  "include": [
-    "packages/*/src/**/*.ts"
-  ],
-  "exclude": [
-    "**/dist",
-    "**/node_modules"
-  ],
+  "include": ["packages/*/src/**/*.ts"],
+  "exclude": ["**/dist", "**/node_modules"],
   "references": [
     {
       "path": "./packages/core"

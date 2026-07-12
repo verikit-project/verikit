@@ -95,9 +95,12 @@ export class Resource<
   readonly fields: TFields;
   readonly meta?: Record<string, unknown>;
 
-  private formFactory?: (
-    builder: ResourceLayoutBuilder<TFields>,
-  ) => SchemaNode[];
+  // Stored with the builder parameter erased to `any` so TFields does not
+  // appear in a contravariant position here; otherwise it would make
+  // Resource invariant in TFields and break inference for callers (e.g.
+  // relationship builders) that accept `Resource` generically.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
+  private formFactory?: (builder: ResourceLayoutBuilder<any>) => SchemaNode[];
 
   constructor(name: TName, config: ResourceConfig<TFields, TTable>) {
     this.name = name;

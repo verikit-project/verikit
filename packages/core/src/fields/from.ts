@@ -1,10 +1,6 @@
-import {
-  FieldBuilder,
-  FieldSchema,
-  FieldSource,
-  OptionValue,
-} from "./base.js";
+import { FieldBuilder, FieldSchema, FieldSource, OptionValue } from "./base.js";
 import { normalizeOptions, OptionFieldSchema } from "./shared/options.js";
+import { cloneValue } from "../utils/clone.js";
 
 /**
  * Schema extension for fields derived from an existing storage column.
@@ -23,36 +19,6 @@ export interface FromSelectFieldSchema<
   source: FieldSource;
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
-function cloneColumnValue<TValue>(value: TValue): TValue {
-  if (Array.isArray(value)) {
-    return value.map((item) => cloneColumnValue(item)) as TValue;
-  }
-
-  if (value instanceof Date) {
-    return new Date(value.getTime()) as TValue;
-  }
-
-  if (isPlainObject(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [
-        key,
-        cloneColumnValue(entry),
-      ]),
-    ) as TValue;
-  }
-
-  return value;
-}
-
 /**
  * Fluent builder for consume-mode column enrichment.
  *
@@ -65,7 +31,7 @@ export class FromFieldBuilder<TColumn> {
   constructor(column: TColumn) {
     this.source = {
       mode: "consume",
-      column: cloneColumnValue(column),
+      column: cloneValue(column),
     };
   }
 

@@ -1,3 +1,5 @@
+import { cloneValue } from "../utils/clone.js";
+
 /**
  * Primitive type representing basic JavaScript/database types.
  * Used as the foundation for all field value types in the schema.
@@ -133,6 +135,7 @@ export interface FieldSchema {
  * Type alias for any FieldBuilder instance.
  * Useful for generic adapter functions that accept any field builder.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- intentional wildcard for "any concrete FieldBuilder"
 export type AnyFieldBuilder = FieldBuilder<any, any>;
 
 /**
@@ -179,43 +182,13 @@ type BuilderConstructor<TBuilder, TSchema extends FieldSchema> = new (
   state: FieldBuilderState<TSchema>,
 ) => TBuilder;
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== "object" || value === null) {
-    return false;
-  }
-
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
-function cloneSchemaValue<TValue>(value: TValue): TValue {
-  if (Array.isArray(value)) {
-    return value.map((item) => cloneSchemaValue(item)) as TValue;
-  }
-
-  if (value instanceof Date) {
-    return new Date(value.getTime()) as TValue;
-  }
-
-  if (isPlainObject(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [
-        key,
-        cloneSchemaValue(entry),
-      ]),
-    ) as TValue;
-  }
-
-  return value;
-}
-
 function cloneBuilderState<TSchema extends FieldSchema>(
   state: FieldBuilderState<TSchema>,
 ): FieldBuilderState<TSchema> {
   return Object.fromEntries(
     Object.entries(state).map(([key, value]) => [
       key,
-      key === "validation" ? value : cloneSchemaValue(value),
+      key === "validation" ? value : cloneValue(value),
     ]),
   ) as FieldBuilderState<TSchema>;
 }
@@ -355,7 +328,9 @@ export class FieldBuilder<
    *   .placeholder("you@example.com")
    * ```
    */
-  placeholder(placeholder: string): FieldBuilderWithValue<this, TValue, TSchema> {
+  placeholder(
+    placeholder: string,
+  ): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ placeholder });
   }
 
@@ -557,7 +532,9 @@ export class FieldBuilder<
    *   .meta({ maxLength: 50, pattern: "^[A-Z]" })
    * ```
    */
-  meta(meta: Record<string, unknown>): FieldBuilderWithValue<this, TValue, TSchema> {
+  meta(
+    meta: Record<string, unknown>,
+  ): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({
       meta: {
         ...this.state.meta,
