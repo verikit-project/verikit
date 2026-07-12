@@ -1,0 +1,9 @@
+{
+  "name": "verikit",
+  "version": "0.0.1",
+  "description": "A TypeScript resource framework.",
+  "license": "MIT",
+  "files": [
+    "README.md"
+  ]
+}
