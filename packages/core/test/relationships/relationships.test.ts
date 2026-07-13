@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { text } from "../src/fields/index.js";
+import { text } from "../../src/fields/index.js";
 import {
   belongsTo,
   belongsToMany,
   hasMany,
-} from "../src/relationships/index.js";
-import { defineResource } from "../src/resource/index.js";
+} from "../../src/relationships/index.js";
+import { defineResource } from "../../src/resource/index.js";
 
 const author = defineResource("author", {
   fields: { name: text() },
@@ -78,4 +78,11 @@ test("hasMany and belongsToMany re-evaluate the target thunk on each call", () =
   relationship.resourceName();
 
   assert.equal(calls, 2);
+});
+
+test("belongsTo preserves object foreign key references", () => {
+  const foreignKey = { table: "books", column: "author_id" };
+  const relationship = belongsTo(() => author).via(foreignKey);
+
+  assert.equal(relationship.toSchema().foreignKey, foreignKey);
 });

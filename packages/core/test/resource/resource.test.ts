@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { email, text } from "../src/fields/index.js";
-import { defineResource, Resource } from "../src/resource/index.js";
+import { email, text } from "../../src/fields/index.js";
+import { defineResource, Resource } from "../../src/resource/index.js";
 
 test("defineResource composes fields into a schema with default tree ordering", () => {
   const resource = defineResource("user", {
@@ -113,4 +113,12 @@ test("section and grid accept nested schema nodes alongside field names", () => 
       ],
     },
   ]);
+});
+
+test("layout builder returns undefined for unknown runtime field names", () => {
+  const resource = defineResource("user", {
+    fields: { name: text() },
+  }).form((builder) => [builder.field("missing" as "name")]);
+
+  assert.deepEqual(resource.toSchema().tree, [undefined]);
 });

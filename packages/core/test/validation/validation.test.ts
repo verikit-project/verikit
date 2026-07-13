@@ -9,14 +9,14 @@ import {
   number,
   select,
   text,
-} from "../src/fields/index.js";
-import { defineResource } from "../src/resource/index.js";
+} from "../../src/fields/index.js";
+import { defineResource } from "../../src/resource/index.js";
 import {
   validateField,
   validateFieldAsync,
   validateResource,
   validateResourceAsync,
-} from "../src/validation/index.js";
+} from "../../src/validation/index.js";
 
 test("required and nullable are enforced for missing/null values", () => {
   const required = text().required().toSchema("name");
@@ -44,6 +44,15 @@ test("missing values fall back to the field default before validation", () => {
   assert.deepEqual(validateField(schema, undefined), {
     success: true,
     value: "Anonymous",
+  });
+});
+
+test("default values are still checked against field constraints", () => {
+  const schema = text().default("No").min(3).toSchema("name");
+
+  assert.deepEqual(validateField(schema, undefined), {
+    success: false,
+    issues: [{ path: [], message: "Must be at least 3 characters." }],
   });
 });
 
@@ -230,6 +239,25 @@ test("validateFieldAsync awaits async ~standard validators", async () => {
   });
 });
 
+test("validateFieldAsync unwraps async standard schema issues", async () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: async () => ({
+          issues: [{ message: "not available", path: ["slug"] }],
+        }),
+      },
+    })
+    .toSchema("slug");
+
+  assert.deepEqual(await validateFieldAsync(schema, "taken"), {
+    success: false,
+    issues: [{ path: ["slug"], message: "not available" }],
+  });
+});
+
 test("validateResource aggregates per-field issues prefixed with field name", () => {
   const resource = defineResource("user", {
     fields: {
@@ -284,5 +312,27 @@ test("validateResourceAsync supports async validators across fields", async () =
   assert.deepEqual(await validateResourceAsync(fields, { name: "  Ada  " }), {
     success: true,
     value: { name: "Ada" },
+  });
+});
+
+test("validateResourceAsync prefixes async standard schema issue paths", async () => {
+  const resource = defineResource("user", {
+    fields: {
+      profile: text().validation({
+        "~standard": {
+          version: 1,
+          vendor: "test",
+          validate: async () => ({
+            issues: [{ message: "invalid slug", path: ["slug"] }],
+          }),
+        },
+      }),
+    },
+  });
+  const { fields } = resource.toSchema();
+
+  assert.deepEqual(await validateResourceAsync(fields, { profile: "bad" }), {
+    success: false,
+    issues: [{ path: ["profile", "slug"], message: "invalid slug" }],
   });
 });

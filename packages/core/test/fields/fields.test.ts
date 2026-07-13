@@ -15,17 +15,17 @@ import {
   textarea,
   toggle,
   type InferField,
-} from "../src/fields/index.js";
+} from "../../src/fields/index.js";
 import {
   withAccept,
   withMaxSize,
   withMultiple,
-} from "../src/fields/shared/file-constraints.js";
-import { normalizeOptions } from "../src/fields/shared/options.js";
+} from "../../src/fields/shared/file-constraints.js";
+import { normalizeOptions } from "../../src/fields/shared/options.js";
 import {
   withMaxLength,
   withMinLength,
-} from "../src/fields/shared/string-constraints.js";
+} from "../../src/fields/shared/string-constraints.js";
 
 test("base field builder applies universal schema metadata", () => {
   const schema = text()
@@ -301,6 +301,23 @@ test("validation can transform the inferred field value and stores the validator
 
   assert.equal(inferred, "trimmed");
   assert.equal(schema.validation, validation);
+});
+
+test("standard schema validation narrows inferred output type", () => {
+  const builder = text().validation({
+    "~standard": {
+      version: 1,
+      vendor: "test",
+      validate: (value: unknown) => ({
+        value: Number(value),
+      }),
+    },
+  });
+  const inferred: InferField<typeof builder> = 42;
+  const schema = builder.toSchema("count");
+
+  assert.equal(inferred, 42);
+  assert.equal(schema.validation?.["~standard"]?.vendor, "test");
 });
 
 test("shared helpers return copied state with requested changes", () => {
