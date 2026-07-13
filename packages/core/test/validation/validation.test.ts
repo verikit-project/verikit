@@ -31,7 +31,10 @@ test("required and nullable are enforced for missing/null values", () => {
     success: false,
     issues: [{ path: [], message: "This field cannot be null." }],
   });
-  assert.deepEqual(validateField(nullable, null), { success: true, value: null });
+  assert.deepEqual(validateField(nullable, null), {
+    success: true,
+    value: null,
+  });
   assert.deepEqual(validateField(optional, undefined), {
     success: true,
     value: undefined,
@@ -62,7 +65,10 @@ test("text/textarea/email enforce string type and length constraints", () => {
   assert.equal(validateField(schema, 5).success, false);
   assert.equal(validateField(schema, "a").success, false);
   assert.equal(validateField(schema, "abcde").success, false);
-  assert.deepEqual(validateField(schema, "abc"), { success: true, value: "abc" });
+  assert.deepEqual(validateField(schema, "abc"), {
+    success: true,
+    value: "abc",
+  });
 });
 
 test("email fields additionally validate address format", () => {
@@ -103,14 +109,22 @@ test("date fields accept Date instances and parseable strings", () => {
     value: "2020-01-01",
   });
   const parsed = new Date("2020-01-01");
-  assert.deepEqual(validateField(schema, parsed), { success: true, value: parsed });
+  assert.deepEqual(validateField(schema, parsed), {
+    success: true,
+    value: parsed,
+  });
 });
 
 test("select fields restrict values to configured options", () => {
-  const schema = select<string>().options(["siamese", "tabby"]).toSchema("breed");
+  const schema = select<string>()
+    .options(["siamese", "tabby"])
+    .toSchema("breed");
 
   assert.equal(validateField(schema, "persian").success, false);
-  assert.deepEqual(validateField(schema, "tabby"), { success: true, value: "tabby" });
+  assert.deepEqual(validateField(schema, "tabby"), {
+    success: true,
+    value: "tabby",
+  });
 });
 
 test("file fields accept stored references and validate upload metadata when present", () => {
@@ -127,12 +141,18 @@ test("file fields accept stored references and validate upload metadata when pre
     validateField(single, { size: 20, type: "application/pdf" }).success,
     false,
   ); // too big
-  assert.deepEqual(validateField(single, { size: 5, type: "application/pdf" }), {
-    success: true,
-    value: { size: 5, type: "application/pdf" },
-  });
+  assert.deepEqual(
+    validateField(single, { size: 5, type: "application/pdf" }),
+    {
+      success: true,
+      value: { size: 5, type: "application/pdf" },
+    },
+  );
 
-  assert.equal(validateField(multiple, { size: 5, type: "image/png" }).success, false); // not an array
+  assert.equal(
+    validateField(multiple, { size: 5, type: "image/png" }).success,
+    false,
+  ); // not an array
   const result = validateField(multiple, [
     "uploads/cat.png",
     { size: 20, type: "image/png" },
