@@ -19,11 +19,22 @@ export type Primitive = string | number | boolean | Date | null | undefined;
  *   .validation(z.string().email().toLowerCase())
  * ```
  */
+export interface StandardSchemaIssue {
+  readonly message: string;
+  readonly path?: readonly unknown[];
+}
+
+export type StandardSchemaResult<Output> =
+  | { readonly value: Output }
+  | { readonly issues: readonly StandardSchemaIssue[] };
+
 export interface StandardSchemaLike<Input = unknown, Output = Input> {
   readonly "~standard"?: {
     readonly version: number;
     readonly vendor: string;
-    validate(value: unknown): Output | Promise<Output>;
+    validate(
+      value: Input,
+    ): StandardSchemaResult<Output> | Promise<StandardSchemaResult<Output>>;
   };
   parse?(value: unknown): Output;
   safeParse?(value: unknown): unknown;
