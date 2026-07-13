@@ -4,9 +4,10 @@
     "moduleResolution": "NodeNext",
     "noEmit": true,
     "strict": true,
-    "target": "ES2022"
+    "target": "ES2022",
+    "types": ["node"]
   },
-  "include": ["packages/*/src/**/*.ts"],
+  "include": ["packages/*/src/**/*.ts", "script/**/*.ts"],
   "exclude": ["**/dist", "**/node_modules"],
   "references": [
     {

@@ -4,7 +4,7 @@
   "description": "A TypeScript resource framework.",
   "main": "index.js",
   "scripts": {
-    "vsync": "node script/sync-version.js",
+    "vsync": "tsx script/sync-version.ts",
     "test": "pnpm --filter @verikit/core test",
     "typecheck": "tsc -b",
     "lint": "eslint .",
@@ -24,10 +24,12 @@
   "type": "module",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.1",
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.7.0",
     "prettier": "^3.9.5",
+    "tsx": "^4.23.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.63.0"
   }

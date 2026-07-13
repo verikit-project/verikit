@@ -1,22 +1,36 @@
 #!/usr/bin/env node
+
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+interface PackageJson {
+  name?: string;
+  version?: string;
+  [key: string]: unknown;
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
 
-const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, "utf8"));
+function readJson<T>(filePath: string): T {
+  return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
+}
 
-const rootPkg = readJson(path.join(rootDir, "package.json"));
-
+const rootPkg = readJson<PackageJson>(path.join(rootDir, "package.json"));
 const version = rootPkg.version;
+
+if (!version) {
+  throw new Error("Root package.json is missing a version.");
+}
+
 const workspaceFile = path.join(rootDir, "pnpm-workspace.yaml");
+
 const workspacePatterns = fs
   .readFileSync(workspaceFile, "utf8")
   .split("\n")
-  .map((line) => line.trim().match(/^- "([^"]+\/\*)"/)?.[1])
-  .filter(Boolean);
+  .map((line: string) => line.trim().match(/^- "([^"]+\/\*)"/)?.[1])
+  .filter((pattern): pattern is string => Boolean(pattern));
 
 for (const pattern of workspacePatterns) {
   const workspaceDir = pattern.slice(0, -"/*".length);
@@ -33,12 +47,12 @@ for (const pattern of workspacePatterns) {
       continue;
     }
 
-    const pkg = readJson(pkgPath);
+    const pkg = readJson<PackageJson>(pkgPath);
 
     if (pkg.version !== version) {
       pkg.version = version;
       fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
-      console.log(`✓ ${pkg.name} -> ${version}`);
+      console.log(`✓ ${pkg.name ?? name} -> ${version}`);
     }
   }
 }
