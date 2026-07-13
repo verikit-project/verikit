@@ -4,7 +4,7 @@
   "description": "A TypeScript resource framework.",
   "main": "index.js",
   "scripts": {
-    "vsync": "tsx script/sync-version.ts",
+    "vsync": "pnpm exec tsx script/sync-version.ts",
     "test": "pnpm --filter @verikit/core test",
     "typecheck": "tsc -b",
     "lint": "eslint .",
