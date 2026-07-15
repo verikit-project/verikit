@@ -39,7 +39,9 @@ const book = defineResource("book", {
     summary: text().optional(),
   },
   relationships: {
-    author: belongsTo(() => author).via("authorId").displayField("name"),
+    author: belongsTo(() => author)
+      .via("authorId")
+      .displayField("name"),
   },
 }).form((layout) => [
   layout.section("Book", ["title", "summary", layout.relationship("author")]),

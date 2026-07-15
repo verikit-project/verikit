@@ -128,7 +128,7 @@ type InferRelationship<TRelationship> =
 
 type InferResourceRelationships<TRelationships extends RelationshipMap> =
   string extends keyof TRelationships
-    ? {}
+    ? Record<never, never>
     : {
         [K in keyof TRelationships]: InferRelationship<TRelationships[K]>;
       };

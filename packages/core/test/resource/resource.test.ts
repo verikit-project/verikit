@@ -232,6 +232,7 @@ test("InferResource includes field values and relationship values", () => {
     taggedBooks: [{ title: "Notes" }],
   };
 
+  assert.equal(author.name, "author");
   assert.equal(inferred.name, "Ada");
   assert.equal(inferred.books[0]?.title, "Notes");
   assert.equal(inferred.featuredBook?.title, "Notes");
