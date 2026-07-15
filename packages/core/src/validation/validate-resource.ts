@@ -2,6 +2,7 @@ import { FieldSchema } from "../fields/base.js";
 import { validateField, validateFieldAsync } from "./validate-field.js";
 import { ValidationIssue, ValidationResult } from "../types/validation.js";
 
+/** Merges field validation results into a single resource validation result. */
 function aggregate(
   entries: readonly [string, ValidationResult][],
 ): ValidationResult<Record<string, unknown>> {
@@ -27,11 +28,9 @@ function aggregate(
 }
 
 /**
- * Validate a map of values against a resource's field schemas (e.g.
- * `resource.toSchema().fields`), running `validateField` for each entry and
- * prefixing every issue's path with the field's name. Relationships are
- * intentionally not validated here; they are schema/layout references, while
- * this function validates field value payloads.
+ * Validates values against a resource's field schemas.
+ * Relationships are intentionally excluded because they describe schema
+ * structure rather than value payloads.
  */
 export function validateResource(
   fields: Record<string, FieldSchema>,
@@ -45,7 +44,7 @@ export function validateResource(
   );
 }
 
-/** Async counterpart to `validateResource`, for fields with async `.validation()` validators. */
+/** Async variant of `validateResource` for async field validators. */
 export async function validateResourceAsync(
   fields: Record<string, FieldSchema>,
   values: Record<string, unknown>,

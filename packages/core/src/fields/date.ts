@@ -44,16 +44,12 @@ export class DateTimeFieldBuilder<
   }
 }
 
-/**
- * Create a date-only field.
- */
+/** Creates a date-only field. */
 export function date(): DateFieldBuilder {
   return new DateFieldBuilder();
 }
 
-/**
- * Create a date-and-time field.
- */
+/** Creates a date-and-time field. */
 export function datetime(): DateTimeFieldBuilder {
   return new DateTimeFieldBuilder();
 }

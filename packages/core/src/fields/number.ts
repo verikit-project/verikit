@@ -2,10 +2,7 @@ import { FieldBuilder, FieldSchema } from "./base.js";
 
 /**
  * Schema describing a numeric field.
- *
- * Number fields represent integer or decimal values. UI adapters can use the
- * optional `min`, `max`, and `step` metadata to configure numeric inputs,
- * sliders, steppers, or validation messages.
+ * `min`, `max`, and `step` provide hints for UI adapters.
  */
 export interface NumberFieldSchema extends FieldSchema {
   /** Literal field type discriminator for numeric fields. */
@@ -38,11 +35,6 @@ function assertValidNumberRange(
 
 /**
  * Fluent builder for numeric fields.
- *
- * Number fields inherit universal field behavior such as `.label()`,
- * `.required()`, `.nullable()`, `.default()`, `.hidden()`, and `.readOnly()`
- * from `FieldBuilder`, then add numeric constraints through `.min()`,
- * `.max()`, and `.step()`.
  */
 export class NumberFieldBuilder<
   TValue = number | null | undefined,
@@ -55,12 +47,7 @@ export class NumberFieldBuilder<
     super(state);
   }
 
-  /**
-   * Set the smallest allowed numeric value.
-   *
-   * @param value - Minimum accepted number.
-   * @returns A new number field builder with the minimum value set.
-   */
+  /** Sets the smallest allowed value. */
   min(value: number): NumberFieldBuilder<TValue> {
     assertFiniteNumber("min", value);
     assertValidNumberRange(this.state, { min: value });
@@ -68,12 +55,7 @@ export class NumberFieldBuilder<
     return new NumberFieldBuilder({ ...this.state, min: value });
   }
 
-  /**
-   * Set the largest allowed numeric value.
-   *
-   * @param value - Maximum accepted number.
-   * @returns A new number field builder with the maximum value set.
-   */
+  /** Sets the largest allowed value. */
   max(value: number): NumberFieldBuilder<TValue> {
     assertFiniteNumber("max", value);
     assertValidNumberRange(this.state, { max: value });
@@ -81,12 +63,7 @@ export class NumberFieldBuilder<
     return new NumberFieldBuilder({ ...this.state, max: value });
   }
 
-  /**
-   * Set the increment used by numeric input controls.
-   *
-   * @param value - Step increment, such as `1`, `0.01`, or `5`.
-   * @returns A new number field builder with the step value set.
-   */
+  /** Sets the increment used by numeric input controls. */
   step(value: number): NumberFieldBuilder<TValue> {
     if (!Number.isFinite(value) || value <= 0) {
       throw new Error("step must be a positive finite number.");
@@ -96,11 +73,7 @@ export class NumberFieldBuilder<
   }
 }
 
-/**
- * Create a numeric field.
- *
- * @returns A number field builder ready for fluent configuration.
- */
+/** Creates a numeric field. */
 export function number(): NumberFieldBuilder {
   return new NumberFieldBuilder();
 }

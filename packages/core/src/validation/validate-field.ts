@@ -41,6 +41,7 @@ function isFileLike(value: unknown): value is FileLike {
   );
 }
 
+/** Flattens StandardSchema path segments (which may be `{ key }` objects) to strings/numbers. */
 function normalizeIssuePath(
   path: readonly unknown[] = [],
 ): (string | number)[] {
@@ -276,13 +277,9 @@ function describeError(error: unknown): string {
 }
 
 /**
- * Validate a value against a finalized `FieldSchema`, running the built-in
- * constraint checks implied by the schema (required/nullable, string length,
- * numeric range/step, option membership, file accept/size/multiple), then any
- * attached `.validation()` validator.
- *
- * Returns an issue if the attached validator resolves asynchronously; use
- * `validateFieldAsync` for validators backed by a Promise.
+ * Validates a value against a finalized `FieldSchema`: built-in constraint
+ * checks first, then any attached `.validation()` validator. Reports an
+ * issue if that validator resolves asynchronously; use `validateFieldAsync`.
  */
 export function validateField(
   schema: FieldSchema,

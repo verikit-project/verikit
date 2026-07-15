@@ -15,9 +15,7 @@ export interface ImageFieldSchema extends FileConstraints {
 
 /**
  * Fluent builder for image upload fields.
- *
- * Image fields communicate image-specific intent to UI adapters, while
- * keeping storage and upload handling outside the core package.
+ * Upload transport and storage are handled by adapters.
  */
 export class ImageFieldBuilder<
   TValue = string | null | undefined,
@@ -31,31 +29,23 @@ export class ImageFieldBuilder<
     super(state);
   }
 
-  /**
-   * Restrict accepted image MIME types or extensions.
-   */
+  /** Restricts accepted image MIME types or extensions. */
   accept(types: readonly string[]): ImageFieldBuilder<TValue> {
     return new ImageFieldBuilder(withAccept(this.state, types));
   }
 
-  /**
-   * Set the maximum accepted upload size in bytes.
-   */
+  /** Sets the maximum accepted upload size in bytes. */
   maxSize(bytes: number): ImageFieldBuilder<TValue> {
     return new ImageFieldBuilder(withMaxSize(this.state, bytes));
   }
 
-  /**
-   * Allow one or many uploaded images.
-   */
+  /** Allows one or many uploaded images. */
   multiple(enabled = true): ImageFieldBuilder<TValue> {
     return new ImageFieldBuilder(withMultiple(this.state, enabled));
   }
 }
 
-/**
- * Create an image upload field.
- */
+/** Creates an image upload field. */
 export function image(): ImageFieldBuilder {
   return new ImageFieldBuilder();
 }

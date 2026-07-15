@@ -12,9 +12,6 @@ export interface SelectFieldSchema<
 
 /**
  * Fluent builder for select fields.
- *
- * Select fields constrain values to a finite option list. Options may be
- * supplied as raw primitive values or as `{ label, value }` objects.
  */
 export class SelectFieldBuilder<
   TValue extends OptionValue = OptionValue,
@@ -53,9 +50,7 @@ export class SelectFieldBuilder<
   }
 }
 
-/**
- * Create a select field.
- */
+/** Creates a select field. */
 export function select<
   TValue extends OptionValue = OptionValue,
 >(): SelectFieldBuilder<TValue> {

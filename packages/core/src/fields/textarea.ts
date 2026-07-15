@@ -12,12 +12,7 @@ export interface TextareaFieldSchema extends StringLengthConstraints {
   fieldType: "textarea";
 }
 
-/**
- * Fluent builder for multi-line text fields.
- *
- * Textarea fields are intended for longer free-form content and support
- * string length constraints through `.min()` and `.max()`.
- */
+/** Fluent builder for multi-line text fields. */
 export class TextareaFieldBuilder<
   TValue = string | null | undefined,
 > extends FieldBuilder<TValue, TextareaFieldSchema> {
@@ -29,24 +24,18 @@ export class TextareaFieldBuilder<
     super(state);
   }
 
-  /**
-   * Set the minimum number of characters allowed.
-   */
+  /** Sets the minimum number of characters allowed. */
   min(length: number): TextareaFieldBuilder<TValue> {
     return new TextareaFieldBuilder(withMinLength(this.state, length));
   }
 
-  /**
-   * Set the maximum number of characters allowed.
-   */
+  /** Sets the maximum number of characters allowed. */
   max(length: number): TextareaFieldBuilder<TValue> {
     return new TextareaFieldBuilder(withMaxLength(this.state, length));
   }
 }
 
-/**
- * Create a multi-line text field.
- */
+/** Creates a multi-line text field. */
 export function textarea(): TextareaFieldBuilder {
   return new TextareaFieldBuilder();
 }

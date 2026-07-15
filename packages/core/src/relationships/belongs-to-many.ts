@@ -30,11 +30,8 @@ export interface BelongsToManyRelationshipSchema {
 }
 
 /**
- * Fluent builder for many-to-many relationships.
- *
- * A belongs-to-many relationship links this resource to many rows on the
- * target resource, typically resolved through a join/through resource
- * (e.g. a `book` belongs to many `tags` through a `bookTags` join table).
+ * Fluent builder for many-to-many relationships resolved through a
+ * join/through resource.
  */
 export class BelongsToManyRelationshipBuilder<
   TResource extends Resource = Resource,
@@ -63,16 +60,12 @@ export class BelongsToManyRelationshipBuilder<
     this.displayFieldName = displayFieldName;
   }
 
-  /**
-   * Name of the target resource this relationship points at.
-   */
+  /** Returns the name of the target resource. */
   resourceName(): string {
     return this.target().name;
   }
 
-  /**
-   * Set a human-readable label for the relationship.
-   */
+  /** Sets a human-readable label for the relationship. */
   label(label: string): BelongsToManyRelationshipBuilder<TResource> {
     return new BelongsToManyRelationshipBuilder(
       this.target,
@@ -84,9 +77,7 @@ export class BelongsToManyRelationshipBuilder<
     );
   }
 
-  /**
-   * Name the corresponding relationship field on the target resource.
-   */
+  /** Sets the inverse relationship on the target resource. */
   inverse(field: string): BelongsToManyRelationshipBuilder<TResource> {
     return new BelongsToManyRelationshipBuilder(
       this.target,
@@ -98,9 +89,7 @@ export class BelongsToManyRelationshipBuilder<
     );
   }
 
-  /**
-   * Set the join/through resource used to resolve the many-to-many link.
-   */
+  /** Sets the target field used to represent related records. */
   through(resourceName: string): BelongsToManyRelationshipBuilder<TResource> {
     return new BelongsToManyRelationshipBuilder(
       this.target,
@@ -112,9 +101,7 @@ export class BelongsToManyRelationshipBuilder<
     );
   }
 
-  /**
-   * Set the foreign key column used by the join to look up matching rows.
-   */
+  /** Sets the foreign key column used by the join to look up matching rows. */
   via(foreignKey: unknown): BelongsToManyRelationshipBuilder<TResource> {
     return new BelongsToManyRelationshipBuilder(
       this.target,
@@ -126,10 +113,7 @@ export class BelongsToManyRelationshipBuilder<
     );
   }
 
-  /**
-   * Choose which field on the target resource is shown when this
-   * relationship is rendered (e.g. in a multi-select or table cell).
-   */
+  /** Sets which field on the target resource is shown when this relationship is rendered. */
   displayField(
     field: keyof InferResourceFields<TResource> & string,
   ): BelongsToManyRelationshipBuilder<TResource> {
@@ -143,11 +127,7 @@ export class BelongsToManyRelationshipBuilder<
     );
   }
 
-  /**
-   * Finalize the builder and produce a `BelongsToManyRelationshipSchema`.
-   *
-   * @param name - The relationship's name on its owning resource.
-   */
+  /** Finalizes the builder into a `BelongsToManyRelationshipSchema`. */
   toSchema(name?: string): BelongsToManyRelationshipSchema {
     return {
       type: "relationship",
@@ -163,16 +143,16 @@ export class BelongsToManyRelationshipBuilder<
   }
 }
 
-/** Utility type extracting the inferred array value type of a belongs-to-many relationship. */
+/** Extracts the inferred array value type of a belongs-to-many relationship. */
 export type InferBelongsToMany<TRelationship> =
   TRelationship extends BelongsToManyRelationshipBuilder<infer TResource>
     ? InferResource<TResource>[]
     : never;
 
 /**
- * Create a many-to-many relationship targeting the resource returned by
- * `target`. The target is passed as a thunk so resources can reference each
- * other before both are fully defined, avoiding circular import issues.
+ * Creates a many-to-many relationship.
+ * The target is provided as a thunk so resources can reference each other
+ * before both are fully defined.
  */
 export function belongsToMany<TResource extends Resource>(
   target: () => TResource,

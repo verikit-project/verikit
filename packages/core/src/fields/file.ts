@@ -14,10 +14,8 @@ export interface FileFieldSchema extends FileConstraints {
 }
 
 /**
- * Fluent builder for generic file upload fields.
- *
- * File fields store a file reference or upload token. Storage strategy,
- * upload transport, and persistence are intentionally left to adapters.
+ * Fluent builder for file upload fields. Storage strategy, upload transport,
+ * and persistence are intentionally left to adapters.
  */
 export class FileFieldBuilder<
   TValue = string | null | undefined,
@@ -30,31 +28,23 @@ export class FileFieldBuilder<
     super(state);
   }
 
-  /**
-   * Restrict accepted MIME types or file extensions.
-   */
+  /** Restricts accepted MIME types or file extensions. */
   accept(types: readonly string[]): FileFieldBuilder<TValue> {
     return new FileFieldBuilder(withAccept(this.state, types));
   }
 
-  /**
-   * Set the maximum accepted upload size in bytes.
-   */
+  /** Sets the maximum accepted upload size in bytes. */
   maxSize(bytes: number): FileFieldBuilder<TValue> {
     return new FileFieldBuilder(withMaxSize(this.state, bytes));
   }
 
-  /**
-   * Allow one or many uploaded files.
-   */
+  /** Allows one or many uploaded files. */
   multiple(enabled = true): FileFieldBuilder<TValue> {
     return new FileFieldBuilder(withMultiple(this.state, enabled));
   }
 }
 
-/**
- * Create a generic file upload field.
- */
+/** Creates a file upload field. */
 export function file(): FileFieldBuilder {
   return new FileFieldBuilder();
 }

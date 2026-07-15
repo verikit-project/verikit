@@ -5,8 +5,8 @@ import {
 } from "../resource/resource.js";
 
 /**
- * Schema describing a has-many relationship: the target resource stores the
- * foreign key, and this resource can be linked to many rows on it.
+ * Schema describing a has-many relationship.
+ * The target resource stores the foreign key to this resource.
  */
 export interface HasManyRelationshipSchema {
   /** Literal "relationship" discriminator for discriminated unions. */
@@ -29,10 +29,7 @@ export interface HasManyRelationshipSchema {
 
 /**
  * Fluent builder for has-many relationships.
- *
- * A has-many relationship means the target resource holds the foreign key,
- * and this resource can be linked to many rows on it (e.g. an `author` has
- * many `books`).
+ * The target resource stores the foreign key to this resource.
  */
 export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
   readonly kind = "hasMany";
@@ -56,16 +53,12 @@ export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
     this.displayFieldName = displayFieldName;
   }
 
-  /**
-   * Name of the target resource this relationship points at.
-   */
+  /** Returns the name of the target resource. */
   resourceName(): string {
     return this.target().name;
   }
 
-  /**
-   * Set a human-readable label for the relationship.
-   */
+  /** Sets a human-readable label for the relationship. */
   label(label: string): HasManyRelationshipBuilder<TResource> {
     return new HasManyRelationshipBuilder(
       this.target,
@@ -76,9 +69,7 @@ export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
     );
   }
 
-  /**
-   * Name the corresponding relationship field on the target resource.
-   */
+  /** Sets the inverse relationship on the target resource. */
   inverse(field: string): HasManyRelationshipBuilder<TResource> {
     return new HasManyRelationshipBuilder(
       this.target,
@@ -89,10 +80,7 @@ export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
     );
   }
 
-  /**
-   * Set the foreign key column (on the target resource) used to find rows
-   * that belong to this resource.
-   */
+  /** Sets the foreign key column on the target resource. */
   via(foreignKey: unknown): HasManyRelationshipBuilder<TResource> {
     return new HasManyRelationshipBuilder(
       this.target,
@@ -103,10 +91,7 @@ export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
     );
   }
 
-  /**
-   * Choose which field on the target resource is shown when this
-   * relationship is rendered (e.g. in a list or table cell).
-   */
+  /** Sets the target field used to represent related records. */
   displayField(
     field: keyof InferResourceFields<TResource> & string,
   ): HasManyRelationshipBuilder<TResource> {
@@ -119,11 +104,7 @@ export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
     );
   }
 
-  /**
-   * Finalize the builder and produce a `HasManyRelationshipSchema`.
-   *
-   * @param name - The relationship's name on its owning resource.
-   */
+  /** Finalizes the builder into a `HasManyRelationshipSchema`. */
   toSchema(name?: string): HasManyRelationshipSchema {
     return {
       type: "relationship",
@@ -138,16 +119,16 @@ export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
   }
 }
 
-/** Utility type extracting the inferred array value type of a has-many relationship. */
+/** Extracts the inferred array value type of a has-many relationship. */
 export type InferHasMany<TRelationship> =
   TRelationship extends HasManyRelationshipBuilder<infer TResource>
     ? InferResource<TResource>[]
     : never;
 
 /**
- * Create a has-many relationship targeting the resource returned by
- * `target`. The target is passed as a thunk so resources can reference each
- * other before both are fully defined, avoiding circular import issues.
+ * Creates a has-many relationship.
+ * The target is provided as a thunk so resources can reference each other
+ * before both are fully defined.
  */
 export function hasMany<TResource extends Resource>(
   target: () => TResource,

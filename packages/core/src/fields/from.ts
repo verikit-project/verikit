@@ -22,8 +22,8 @@ export interface FromSelectFieldSchema<
 /**
  * Fluent builder for consume-mode column enrichment.
  *
- * `from(column)` is not a field type. It attaches storage-column metadata to
- * a real field so adapters can connect resource semantics to existing schemas.
+ * `from(column)` is not a field type. It enriches an existing field with
+ * storage-column metadata so adapters can map resources to existing schemas.
  */
 export class FromFieldBuilder<TColumn> {
   private readonly source: FieldSource<TColumn>;
@@ -48,7 +48,7 @@ export class FromFieldBuilder<TColumn> {
   }
 
   /**
-   * Shortcut for enriching a consumed column as a select field.
+   * Shortcut for mapping a consumed column to a select field.
    */
   options<const TOptions extends readonly OptionValue[]>(
     options: TOptions,
@@ -65,7 +65,7 @@ export class FromFieldBuilder<TColumn> {
 }
 
 /**
- * Start a consume-mode field from an existing storage column.
+ * Creates a consume-mode field builder from an existing storage column.
  */
 export function from<TColumn>(column: TColumn): FromFieldBuilder<TColumn> {
   return new FromFieldBuilder(column);

@@ -6,17 +6,21 @@ import type { BelongsToRelationshipSchema } from "../relationships/belongs-to.js
 import type { HasManyRelationshipBuilder } from "../relationships/has-many.js";
 import type { HasManyRelationshipSchema } from "../relationships/has-many.js";
 
+/** Map of field names to their builders. */
 export type FieldMap = Record<string, AnyFieldBuilder>;
 
+/** A finalized field, tagged for the layout tree. */
 export interface FieldNode extends FieldSchema {
   type: "field";
 }
 
+/** Union of the finalized relationship schema shapes. */
 export type RelationshipSchema =
   | BelongsToRelationshipSchema
   | HasManyRelationshipSchema
   | BelongsToManyRelationshipSchema;
 
+/** Finalized relationship schema used in layout trees. */
 export type RelationshipNode = RelationshipSchema;
 
 /**
@@ -27,20 +31,24 @@ export interface AnyRelationshipBuilder {
   toSchema(name?: string): RelationshipSchema;
 }
 
+/** Map of relationship names to their builders. */
 export type RelationshipMap = Record<string, AnyRelationshipBuilder>;
 
+/** A titled group of layout children. */
 export interface SectionNode {
   type: "section";
   title: string;
   children: SchemaNode[];
 }
 
+/** A fixed-column grid of layout children. */
 export interface GridNode {
   type: "grid";
   columns: number;
   children: SchemaNode[];
 }
 
+/** A set of titled tabs, each holding its own layout children. */
 export interface TabsNode {
   type: "tabs";
   tabs: readonly {
@@ -49,6 +57,7 @@ export interface TabsNode {
   }[];
 }
 
+/** A sequence of titled steps, each holding its own layout children. */
 export interface WizardNode {
   type: "wizard";
   steps: readonly {
@@ -57,12 +66,14 @@ export interface WizardNode {
   }[];
 }
 
+/** A repeatable group of layout children (e.g. a dynamic list of entries). */
 export interface RepeaterNode {
   type: "repeater";
   name: string;
   children: SchemaNode[];
 }
 
+/** A named action (e.g. a button) with optional input fields. */
 export interface ActionNode {
   type: "action";
   name: string;
@@ -70,6 +81,7 @@ export interface ActionNode {
   input?: SchemaNode[];
 }
 
+/** Discriminated union of every node type that can appear in a layout tree. */
 export type SchemaNode =
   | FieldNode
   | RelationshipNode
@@ -80,6 +92,9 @@ export type SchemaNode =
   | RepeaterNode
   | ActionNode;
 
+/**
+ * Serializable resource schema produced by `Resource.toSchema()`.
+ */
 export interface ResourceSchema<
   TName extends string = string,
   TFields extends FieldMap = FieldMap,
@@ -99,6 +114,7 @@ export interface ResourceSchema<
   meta?: Record<string, unknown>;
 }
 
+/** Configuration passed to `defineResource()`. */
 export interface ResourceConfig<
   TFields extends FieldMap = FieldMap,
   TTable = unknown,
@@ -110,6 +126,7 @@ export interface ResourceConfig<
   meta?: Record<string, unknown>;
 }
 
+/** Extracts the plain value shape of a resource's fields (e.g. for form values). */
 export type InferResourceFields<TResource> =
   TResource extends Resource<string, infer TFields, unknown, RelationshipMap>
     ? {
@@ -117,6 +134,7 @@ export type InferResourceFields<TResource> =
       }
     : never;
 
+/** Maps a relationship builder to its inferred value type. */
 type InferRelationship<TRelationship> =
   TRelationship extends BelongsToRelationshipBuilder<infer TResource>
     ? InferResource<TResource> | null
@@ -126,6 +144,7 @@ type InferRelationship<TRelationship> =
         ? InferResource<TResource>[]
         : never;
 
+/** Maps relationship builders to their inferred value types. */
 type InferResourceRelationships<TRelationships extends RelationshipMap> =
   string extends keyof TRelationships
     ? Record<never, never>
@@ -133,6 +152,7 @@ type InferResourceRelationships<TRelationships extends RelationshipMap> =
         [K in keyof TRelationships]: InferRelationship<TRelationships[K]>;
       };
 
+/** Infers the plain runtime shape of a resource: its fields merged with its relationship values. */
 export type InferResource<TResource> =
   TResource extends Resource<
     string,
@@ -144,6 +164,10 @@ export type InferResource<TResource> =
         InferResourceRelationships<TRelationships>
     : never;
 
+/**
+ * Immutable resource definition.
+ * Finalize with `.toSchema()` to produce a serializable resource schema.
+ */
 export class Resource<
   TName extends string = string,
   TFields extends FieldMap = FieldMap,
@@ -165,6 +189,7 @@ export class Resource<
     builder: ResourceLayoutBuilder<any, any>,
   ) => SchemaNode[];
 
+  /** @throws {Error} If a field and relationship share the same name. */
   constructor(
     name: TName,
     config: ResourceConfig<TFields, TTable, TRelationships>,
@@ -187,6 +212,7 @@ export class Resource<
     this.meta = config.meta;
   }
 
+  /** Attaches a form layout factory; returns `this` for chaining. */
   form(
     factory: (
       builder: ResourceLayoutBuilder<TFields, TRelationships>,
@@ -196,6 +222,11 @@ export class Resource<
     return this;
   }
 
+  /**
+   * Finalizes fields and relationships into schemas and builds the layout
+   * tree (via the form factory if `.form()` was called, otherwise a flat
+   * list of fields in declaration order).
+   */
   toSchema(): ResourceSchema<TName, TFields, TRelationships> {
     const fields = Object.fromEntries(
       Object.entries(this.fields).map(([name, field]) => [
@@ -224,11 +255,16 @@ export class Resource<
   }
 }
 
+/** A layout child: a field/relationship name to resolve, or a literal node. */
 type LayoutChild<
   TFields extends FieldMap,
   TRelationships extends RelationshipMap,
 > = (keyof TFields & string) | (keyof TRelationships & string) | SchemaNode;
 
+/**
+ * Builder passed into `.form()` factories; resolves field/relationship
+ * names into schema nodes and assembles them into layout tree nodes.
+ */
 export class ResourceLayoutBuilder<
   TFields extends FieldMap,
   TRelationships extends RelationshipMap = RelationshipMap,
@@ -256,6 +292,7 @@ export class ResourceLayoutBuilder<
     this.relationships = relationships;
   }
 
+  /** Returns the finalized field node for `name`. @throws {Error} If unknown. */
   field<TName extends keyof TFields & string>(name: TName): FieldNode {
     if (!Object.hasOwn(this.fields, name)) {
       throw new Error(`Unknown field "${name}" in resource layout.`);
@@ -264,6 +301,7 @@ export class ResourceLayoutBuilder<
     return this.fields[name] as FieldNode;
   }
 
+  /** Returns the finalized relationship node for `name`. @throws {Error} If unknown. */
   relationship<TName extends keyof TRelationships & string>(
     name: TName,
   ): RelationshipNode {
@@ -274,6 +312,7 @@ export class ResourceLayoutBuilder<
     return this.relationships[name] as RelationshipNode;
   }
 
+  /** Resolves a layout child to its corresponding schema node. */
   private resolveChild(
     child: LayoutChild<TFields, TRelationships>,
   ): SchemaNode {
@@ -305,6 +344,7 @@ export class ResourceLayoutBuilder<
     return children.map((child) => this.resolveChild(child));
   }
 
+  /** Builds a titled `SectionNode` from the given children. */
   section(
     title: string,
     children: readonly LayoutChild<TFields, TRelationships>[],
@@ -316,6 +356,7 @@ export class ResourceLayoutBuilder<
     };
   }
 
+  /** Builds a `GridNode` with the given column count and children. */
   grid(
     columns: number,
     children: readonly LayoutChild<TFields, TRelationships>[],
@@ -327,6 +368,7 @@ export class ResourceLayoutBuilder<
     };
   }
 
+  /** Builds a `TabsNode`, resolving each tab's children. */
   tabs(
     tabs: readonly {
       title: string;
@@ -342,6 +384,7 @@ export class ResourceLayoutBuilder<
     };
   }
 
+  /** Builds a `WizardNode`, resolving each step's children. */
   wizard(
     steps: readonly {
       title: string;
@@ -357,6 +400,7 @@ export class ResourceLayoutBuilder<
     };
   }
 
+  /** Builds a `RepeaterNode` from the given name and children. */
   repeater(
     name: string,
     children: readonly LayoutChild<TFields, TRelationships>[],
@@ -368,6 +412,7 @@ export class ResourceLayoutBuilder<
     };
   }
 
+  /** Builds an `ActionNode` with an optional label and input children. */
   action(
     name: string,
     options: {

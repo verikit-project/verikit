@@ -14,11 +14,8 @@ export interface EmailFieldSchema extends StringLengthConstraints {
 }
 
 /**
- * Fluent builder for email fields.
- *
- * Email fields are string fields with email semantics. Runtime validation
- * can still be supplied with `.validation()` when an adapter needs stricter
- * behavior than the field type alone communicates.
+ * Fluent builder for email fields. Attach `.validation()` for stricter
+ * runtime checks than the field type alone communicates.
  */
 export class EmailFieldBuilder<
   TValue = string | null | undefined,
@@ -32,24 +29,18 @@ export class EmailFieldBuilder<
     super(state);
   }
 
-  /**
-   * Set the minimum number of characters allowed.
-   */
+  /** Sets the minimum number of characters allowed. */
   min(length: number): EmailFieldBuilder<TValue> {
     return new EmailFieldBuilder(withMinLength(this.state, length));
   }
 
-  /**
-   * Set the maximum number of characters allowed.
-   */
+  /** Sets the maximum number of characters allowed. */
   max(length: number): EmailFieldBuilder<TValue> {
     return new EmailFieldBuilder(withMaxLength(this.state, length));
   }
 }
 
-/**
- * Create an email field.
- */
+/** Creates an email field. */
 export function email(): EmailFieldBuilder {
   return new EmailFieldBuilder();
 }

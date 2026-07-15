@@ -12,12 +12,7 @@ export interface TextFieldSchema extends StringLengthConstraints {
   fieldType: "text";
 }
 
-/**
- * Fluent builder for single-line text fields.
- *
- * Text fields support the universal field modifiers from `FieldBuilder`,
- * plus string length constraints through `.min()` and `.max()`.
- */
+/** Fluent builder for single-line text fields. */
 export class TextFieldBuilder<
   TValue = string | null | undefined,
 > extends FieldBuilder<TValue, TextFieldSchema> {
@@ -29,24 +24,18 @@ export class TextFieldBuilder<
     super(state);
   }
 
-  /**
-   * Set the minimum number of characters allowed.
-   */
+  /** Sets the minimum number of characters allowed. */
   min(length: number): TextFieldBuilder<TValue> {
     return new TextFieldBuilder(withMinLength(this.state, length));
   }
 
-  /**
-   * Set the maximum number of characters allowed.
-   */
+  /** Sets the maximum number of characters allowed. */
   max(length: number): TextFieldBuilder<TValue> {
     return new TextFieldBuilder(withMaxLength(this.state, length));
   }
 }
 
-/**
- * Create a single-line text field.
- */
+/** Creates a single-line text field. */
 export function text(): TextFieldBuilder {
   return new TextFieldBuilder();
 }
