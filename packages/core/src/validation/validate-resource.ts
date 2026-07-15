@@ -29,7 +29,9 @@ function aggregate(
 /**
  * Validate a map of values against a resource's field schemas (e.g.
  * `resource.toSchema().fields`), running `validateField` for each entry and
- * prefixing every issue's path with the field's name.
+ * prefixing every issue's path with the field's name. Relationships are
+ * intentionally not validated here; they are schema/layout references, while
+ * this function validates field value payloads.
  */
 export function validateResource(
   fields: Record<string, FieldSchema>,

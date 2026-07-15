@@ -21,6 +21,8 @@ test("belongsTo produces a relationship schema referencing the target resource",
     relationshipType: "belongsTo",
     name: undefined,
     resource: "author",
+    label: undefined,
+    inverse: undefined,
     foreignKey: undefined,
     displayField: undefined,
   });
@@ -46,8 +48,27 @@ test("belongsTo via() and displayField() are immutable and chainable", () => {
     relationshipType: "belongsTo",
     name: "author",
     resource: "author",
+    label: undefined,
+    inverse: undefined,
     foreignKey: "authorId",
     displayField: "name",
+  });
+});
+
+test("belongsTo label() and inverse() are immutable and chainable", () => {
+  const base = belongsTo(() => author);
+  const labelled = base.label("Author").inverse("books");
+
+  assert.equal(base.toSchema().label, undefined);
+  assert.deepEqual(labelled.toSchema("author"), {
+    type: "relationship",
+    relationshipType: "belongsTo",
+    name: "author",
+    resource: "author",
+    label: "Author",
+    inverse: "books",
+    foreignKey: undefined,
+    displayField: undefined,
   });
 });
 
@@ -67,12 +88,41 @@ test("hasMany toSchema references the target resource and accepts a name", () =>
     relationshipType: "hasMany",
     name: undefined,
     resource: "author",
+    label: undefined,
+    inverse: undefined,
+    foreignKey: undefined,
+    displayField: undefined,
   });
   assert.deepEqual(relationship.toSchema("books"), {
     type: "relationship",
     relationshipType: "hasMany",
     name: "books",
     resource: "author",
+    label: undefined,
+    inverse: undefined,
+    foreignKey: undefined,
+    displayField: undefined,
+  });
+});
+
+test("hasMany metadata methods are immutable and chainable", () => {
+  const base = hasMany(() => author);
+  const configured = base
+    .label("Books")
+    .inverse("writer")
+    .via("authorId")
+    .displayField("name");
+
+  assert.equal(base.toSchema().label, undefined);
+  assert.deepEqual(configured.toSchema("books"), {
+    type: "relationship",
+    relationshipType: "hasMany",
+    name: "books",
+    resource: "author",
+    label: "Books",
+    inverse: "writer",
+    foreignKey: "authorId",
+    displayField: "name",
   });
 });
 
@@ -92,12 +142,45 @@ test("belongsToMany toSchema references the target resource and accepts a name",
     relationshipType: "belongsToMany",
     name: undefined,
     resource: "author",
+    label: undefined,
+    inverse: undefined,
+    through: undefined,
+    foreignKey: undefined,
+    displayField: undefined,
   });
   assert.deepEqual(relationship.toSchema("tags"), {
     type: "relationship",
     relationshipType: "belongsToMany",
     name: "tags",
     resource: "author",
+    label: undefined,
+    inverse: undefined,
+    through: undefined,
+    foreignKey: undefined,
+    displayField: undefined,
+  });
+});
+
+test("belongsToMany metadata methods are immutable and chainable", () => {
+  const base = belongsToMany(() => author);
+  const configured = base
+    .label("Authors")
+    .inverse("books")
+    .through("book_authors")
+    .via({ left: "book_id", right: "author_id" })
+    .displayField("name");
+
+  assert.equal(base.toSchema().through, undefined);
+  assert.deepEqual(configured.toSchema("authors"), {
+    type: "relationship",
+    relationshipType: "belongsToMany",
+    name: "authors",
+    resource: "author",
+    label: "Authors",
+    inverse: "books",
+    through: "book_authors",
+    foreignKey: { left: "book_id", right: "author_id" },
+    displayField: "name",
   });
 });
 

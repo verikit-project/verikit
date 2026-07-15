@@ -6,7 +6,11 @@ import {
   belongsToMany,
   hasMany,
 } from "../../src/relationships/index.js";
-import { defineResource, Resource } from "../../src/resource/index.js";
+import {
+  defineResource,
+  Resource,
+  type InferResource,
+} from "../../src/resource/index.js";
 
 test("defineResource composes fields into a schema with default tree ordering", () => {
   const resource = defineResource("user", {
@@ -155,6 +159,8 @@ test("relationships are composed into the schema with names assigned from their 
     relationshipType: "belongsTo",
     name: "author",
     resource: "author",
+    label: undefined,
+    inverse: undefined,
     foreignKey: "authorId",
     displayField: undefined,
   });
@@ -178,13 +184,58 @@ test("resource preserves multiple relationship kinds", () => {
     relationshipType: "hasMany",
     name: "books",
     resource: "book",
+    label: undefined,
+    inverse: undefined,
+    foreignKey: undefined,
+    displayField: undefined,
   });
   assert.deepEqual(schema.relationships.tags, {
     type: "relationship",
     relationshipType: "belongsToMany",
     name: "tags",
     resource: "tag",
+    label: undefined,
+    inverse: undefined,
+    through: undefined,
+    foreignKey: undefined,
+    displayField: undefined,
   });
+});
+
+test("resources reject duplicate field and relationship names", () => {
+  const author = defineResource("author", { fields: { name: text() } });
+
+  assert.throws(
+    () =>
+      defineResource("book", {
+        fields: { author: text() },
+        relationships: { author: belongsTo(() => author) },
+      }),
+    /cannot define both a field and relationship named "author"/,
+  );
+});
+
+test("InferResource includes field values and relationship values", () => {
+  const book = defineResource("book", { fields: { title: text().required() } });
+  const author = defineResource("author", {
+    fields: { name: text().required() },
+    relationships: {
+      books: hasMany(() => book),
+      featuredBook: belongsTo(() => book),
+      taggedBooks: belongsToMany(() => book),
+    },
+  });
+  const inferred: InferResource<typeof author> = {
+    name: "Ada",
+    books: [{ title: "Notes" }],
+    featuredBook: { title: "Notes" },
+    taggedBooks: [{ title: "Notes" }],
+  };
+
+  assert.equal(inferred.name, "Ada");
+  assert.equal(inferred.books[0]?.title, "Notes");
+  assert.equal(inferred.featuredBook?.title, "Notes");
+  assert.equal(inferred.taggedBooks.length, 1);
 });
 
 test("layout builder relationship() returns the finalized relationship node by name", () => {

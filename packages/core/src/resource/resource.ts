@@ -1,6 +1,9 @@
 import { AnyFieldBuilder, FieldSchema, InferField } from "../fields/base.js";
+import type { BelongsToManyRelationshipBuilder } from "../relationships/belongs-to-many.js";
 import type { BelongsToManyRelationshipSchema } from "../relationships/belongs-to-many.js";
+import type { BelongsToRelationshipBuilder } from "../relationships/belongs-to.js";
 import type { BelongsToRelationshipSchema } from "../relationships/belongs-to.js";
+import type { HasManyRelationshipBuilder } from "../relationships/has-many.js";
 import type { HasManyRelationshipSchema } from "../relationships/has-many.js";
 
 export type FieldMap = Record<string, AnyFieldBuilder>;
@@ -107,11 +110,38 @@ export interface ResourceConfig<
   meta?: Record<string, unknown>;
 }
 
-export type InferResource<TResource> =
-  TResource extends Resource<string, infer TFields, unknown>
+export type InferResourceFields<TResource> =
+  TResource extends Resource<string, infer TFields, unknown, RelationshipMap>
     ? {
         [K in keyof TFields]: InferField<TFields[K]>;
       }
+    : never;
+
+type InferRelationship<TRelationship> =
+  TRelationship extends BelongsToRelationshipBuilder<infer TResource>
+    ? InferResource<TResource> | null
+    : TRelationship extends HasManyRelationshipBuilder<infer TResource>
+      ? InferResource<TResource>[]
+      : TRelationship extends BelongsToManyRelationshipBuilder<infer TResource>
+        ? InferResource<TResource>[]
+        : never;
+
+type InferResourceRelationships<TRelationships extends RelationshipMap> =
+  string extends keyof TRelationships
+    ? {}
+    : {
+        [K in keyof TRelationships]: InferRelationship<TRelationships[K]>;
+      };
+
+export type InferResource<TResource> =
+  TResource extends Resource<
+    string,
+    infer TFields,
+    unknown,
+    infer TRelationships
+  >
+    ? InferResourceFields<Resource<string, TFields, unknown, TRelationships>> &
+        InferResourceRelationships<TRelationships>
     : never;
 
 export class Resource<
@@ -139,6 +169,17 @@ export class Resource<
     name: TName,
     config: ResourceConfig<TFields, TTable, TRelationships>,
   ) {
+    const relationshipNames = new Set(Object.keys(config.relationships ?? {}));
+    const duplicateName = Object.keys(config.fields).find((fieldName) =>
+      relationshipNames.has(fieldName),
+    );
+
+    if (duplicateName) {
+      throw new Error(
+        `Resource "${name}" cannot define both a field and relationship named "${duplicateName}".`,
+      );
+    }
+
     this.name = name;
     this.table = config.table;
     this.fields = config.fields;
@@ -239,9 +280,23 @@ export class ResourceLayoutBuilder<
     if (typeof child !== "string") {
       return child;
     }
-    return child in this.fields
-      ? this.field(child as keyof TFields & string)
-      : this.relationship(child as keyof TRelationships & string);
+
+    const isField = Object.hasOwn(this.fields, child);
+    const isRelationship = Object.hasOwn(this.relationships, child);
+
+    if (isField && isRelationship) {
+      throw new Error(
+        `Ambiguous layout child "${child}" matches both a field and relationship.`,
+      );
+    }
+    if (isField) {
+      return this.field(child as keyof TFields & string);
+    }
+    if (isRelationship) {
+      return this.relationship(child as keyof TRelationships & string);
+    }
+
+    throw new Error(`Unknown layout child "${child}" in resource layout.`);
   }
 
   private resolveChildren(
