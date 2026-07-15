@@ -120,12 +120,15 @@ test("section and grid accept nested schema nodes alongside field names", () => 
   ]);
 });
 
-test("layout builder returns undefined for unknown runtime field names", () => {
+test("layout builder throws for unknown runtime field names", () => {
   const resource = defineResource("user", {
     fields: { name: text() },
   }).form((builder) => [builder.field("missing" as "name")]);
 
-  assert.deepEqual(resource.toSchema().tree, [undefined]);
+  assert.throws(
+    () => resource.toSchema(),
+    /Unknown field "missing" in resource layout\./,
+  );
 });
 
 test("resource without relationships defaults to an empty relationships map", () => {
@@ -202,14 +205,17 @@ test("layout builder relationship() returns the finalized relationship node by n
   ]);
 });
 
-test("layout builder returns undefined for unknown runtime relationship names", () => {
+test("layout builder throws for unknown runtime relationship names", () => {
   const author = defineResource("author", { fields: { name: text() } });
   const book = defineResource("book", {
     fields: { title: text() },
     relationships: { author: belongsTo(() => author) },
   }).form((builder) => [builder.relationship("missing" as "author")]);
 
-  assert.deepEqual(book.toSchema().tree, [undefined]);
+  assert.throws(
+    () => book.toSchema(),
+    /Unknown relationship "missing" in resource layout\./,
+  );
 });
 
 test("section and grid accept relationship names alongside field names", () => {

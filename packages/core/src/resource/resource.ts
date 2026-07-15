@@ -216,12 +216,20 @@ export class ResourceLayoutBuilder<
   }
 
   field<TName extends keyof TFields & string>(name: TName): FieldNode {
+    if (!Object.hasOwn(this.fields, name)) {
+      throw new Error(`Unknown field "${name}" in resource layout.`);
+    }
+
     return this.fields[name] as FieldNode;
   }
 
   relationship<TName extends keyof TRelationships & string>(
     name: TName,
   ): RelationshipNode {
+    if (!Object.hasOwn(this.relationships, name)) {
+      throw new Error(`Unknown relationship "${name}" in resource layout.`);
+    }
+
     return this.relationships[name] as RelationshipNode;
   }
 
