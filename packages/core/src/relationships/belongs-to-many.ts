@@ -1,11 +1,19 @@
 import { InferResource, Resource } from "../resource/resource.js";
 
+export interface BelongsToManyRelationshipSchema {
+  type: "relationship";
+  relationshipType: "belongsToMany";
+  name?: string;
+  resource: string;
+}
+
 export interface BelongsToManyRelationship<
   TResource extends Resource = Resource,
 > {
   kind: "belongsToMany";
   target: () => TResource;
   resourceName: () => string;
+  toSchema: (name?: string) => BelongsToManyRelationshipSchema;
 }
 
 export type InferBelongsToMany<TRelationship> =
@@ -20,5 +28,11 @@ export function belongsToMany<TResource extends Resource>(
     kind: "belongsToMany",
     target,
     resourceName: () => target().name,
+    toSchema: (name) => ({
+      type: "relationship",
+      relationshipType: "belongsToMany",
+      name,
+      resource: target().name,
+    }),
   };
 }

@@ -59,12 +59,46 @@ test("hasMany resolves its target lazily and exposes the resource name", () => {
   assert.equal(relationship.resourceName(), "author");
 });
 
+test("hasMany toSchema references the target resource and accepts a name", () => {
+  const relationship = hasMany(() => author);
+
+  assert.deepEqual(relationship.toSchema(), {
+    type: "relationship",
+    relationshipType: "hasMany",
+    name: undefined,
+    resource: "author",
+  });
+  assert.deepEqual(relationship.toSchema("books"), {
+    type: "relationship",
+    relationshipType: "hasMany",
+    name: "books",
+    resource: "author",
+  });
+});
+
 test("belongsToMany resolves its target lazily and exposes the resource name", () => {
   const relationship = belongsToMany(() => author);
 
   assert.equal(relationship.kind, "belongsToMany");
   assert.equal(relationship.target(), author);
   assert.equal(relationship.resourceName(), "author");
+});
+
+test("belongsToMany toSchema references the target resource and accepts a name", () => {
+  const relationship = belongsToMany(() => author);
+
+  assert.deepEqual(relationship.toSchema(), {
+    type: "relationship",
+    relationshipType: "belongsToMany",
+    name: undefined,
+    resource: "author",
+  });
+  assert.deepEqual(relationship.toSchema("tags"), {
+    type: "relationship",
+    relationshipType: "belongsToMany",
+    name: "tags",
+    resource: "author",
+  });
 });
 
 test("hasMany and belongsToMany re-evaluate the target thunk on each call", () => {
