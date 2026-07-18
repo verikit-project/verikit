@@ -1,4 +1,4 @@
-import { FieldBuilder } from "./base.js";
+import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
 import {
   StringLengthConstraints,
   withMaxLength,
@@ -30,13 +30,13 @@ export class EmailFieldBuilder<
   }
 
   /** Sets the minimum number of characters allowed. */
-  min(length: number): EmailFieldBuilder<TValue> {
-    return new EmailFieldBuilder(withMinLength(this.state, length));
+  min(length: number): FieldBuilderWithValue<this, TValue, EmailFieldSchema> {
+    return this.withState(withMinLength(this.state, length));
   }
 
   /** Sets the maximum number of characters allowed. */
-  max(length: number): EmailFieldBuilder<TValue> {
-    return new EmailFieldBuilder(withMaxLength(this.state, length));
+  max(length: number): FieldBuilderWithValue<this, TValue, EmailFieldSchema> {
+    return this.withState(withMaxLength(this.state, length));
   }
 }
 

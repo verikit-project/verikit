@@ -1,4 +1,4 @@
-import { FieldBuilder } from "./base.js";
+import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
 import {
   StringLengthConstraints,
   withMaxLength,
@@ -25,13 +25,17 @@ export class TextareaFieldBuilder<
   }
 
   /** Sets the minimum number of characters allowed. */
-  min(length: number): TextareaFieldBuilder<TValue> {
-    return new TextareaFieldBuilder(withMinLength(this.state, length));
+  min(
+    length: number,
+  ): FieldBuilderWithValue<this, TValue, TextareaFieldSchema> {
+    return this.withState(withMinLength(this.state, length));
   }
 
   /** Sets the maximum number of characters allowed. */
-  max(length: number): TextareaFieldBuilder<TValue> {
-    return new TextareaFieldBuilder(withMaxLength(this.state, length));
+  max(
+    length: number,
+  ): FieldBuilderWithValue<this, TValue, TextareaFieldSchema> {
+    return this.withState(withMaxLength(this.state, length));
   }
 }
 

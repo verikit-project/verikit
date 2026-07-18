@@ -1,4 +1,4 @@
-import { FieldBuilder } from "./base.js";
+import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
 import {
   FileConstraints,
   withAccept,
@@ -29,18 +29,22 @@ export class FileFieldBuilder<
   }
 
   /** Restricts accepted MIME types or file extensions. */
-  accept(types: readonly string[]): FileFieldBuilder<TValue> {
-    return new FileFieldBuilder(withAccept(this.state, types));
+  accept(
+    types: readonly string[],
+  ): FieldBuilderWithValue<this, TValue, FileFieldSchema> {
+    return this.withState(withAccept(this.state, types));
   }
 
   /** Sets the maximum accepted upload size in bytes. */
-  maxSize(bytes: number): FileFieldBuilder<TValue> {
-    return new FileFieldBuilder(withMaxSize(this.state, bytes));
+  maxSize(bytes: number): FieldBuilderWithValue<this, TValue, FileFieldSchema> {
+    return this.withState(withMaxSize(this.state, bytes));
   }
 
   /** Allows one or many uploaded files. */
-  multiple(enabled = true): FileFieldBuilder<TValue> {
-    return new FileFieldBuilder(withMultiple(this.state, enabled));
+  multiple(
+    enabled = true,
+  ): FieldBuilderWithValue<this, TValue, FileFieldSchema> {
+    return this.withState(withMultiple(this.state, enabled));
   }
 }
 

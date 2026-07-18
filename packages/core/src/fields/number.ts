@@ -1,4 +1,4 @@
-import { FieldBuilder, FieldSchema } from "./base.js";
+import { FieldBuilder, FieldBuilderWithValue, FieldSchema } from "./base.js";
 
 /**
  * Schema describing a numeric field.
@@ -48,28 +48,28 @@ export class NumberFieldBuilder<
   }
 
   /** Sets the smallest allowed value. */
-  min(value: number): NumberFieldBuilder<TValue> {
+  min(value: number): FieldBuilderWithValue<this, TValue, NumberFieldSchema> {
     assertFiniteNumber("min", value);
     assertValidNumberRange(this.state, { min: value });
 
-    return new NumberFieldBuilder({ ...this.state, min: value });
+    return this.withState({ min: value });
   }
 
   /** Sets the largest allowed value. */
-  max(value: number): NumberFieldBuilder<TValue> {
+  max(value: number): FieldBuilderWithValue<this, TValue, NumberFieldSchema> {
     assertFiniteNumber("max", value);
     assertValidNumberRange(this.state, { max: value });
 
-    return new NumberFieldBuilder({ ...this.state, max: value });
+    return this.withState({ max: value });
   }
 
   /** Sets the increment used by numeric input controls. */
-  step(value: number): NumberFieldBuilder<TValue> {
+  step(value: number): FieldBuilderWithValue<this, TValue, NumberFieldSchema> {
     if (!Number.isFinite(value) || value <= 0) {
       throw new Error("step must be a positive finite number.");
     }
 
-    return new NumberFieldBuilder({ ...this.state, step: value });
+    return this.withState({ step: value });
   }
 }
 

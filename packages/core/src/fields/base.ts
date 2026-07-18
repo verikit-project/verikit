@@ -189,7 +189,7 @@ export class FieldBuilder<
    * `this.constructor`) so subclass methods stay available after chaining.
    */
   protected withState<TNextValue = TValue>(
-    patch: Partial<FieldSchema>,
+    patch: Partial<TSchema>,
   ): FieldBuilderWithValue<this, TNextValue, TSchema> {
     const Builder = this.constructor as BuilderConstructor<this, TSchema>;
 
@@ -214,21 +214,21 @@ export class FieldBuilder<
 
   /** Sets the field's display label. */
   label(label: string): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ label });
+    return this.withState({ label } as Partial<TSchema>);
   }
 
   /** Sets help text describing the field's purpose. */
   description(
     description: string,
   ): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ description });
+    return this.withState({ description } as Partial<TSchema>);
   }
 
   /** Sets placeholder text for empty form inputs. */
   placeholder(
     placeholder: string,
   ): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ placeholder });
+    return this.withState({ placeholder } as Partial<TSchema>);
   }
 
   /** Marks the field required, narrowing TValue and forcing nullable: false. */
@@ -236,7 +236,7 @@ export class FieldBuilder<
     return this.withState<NonNullable<TValue>>({
       nullable: false,
       required: true,
-    });
+    } as Partial<TSchema>);
   }
 
   /** Marks the field optional (TValue | undefined); does not allow null. */
@@ -244,12 +244,15 @@ export class FieldBuilder<
     return this.withState<TValue | undefined>({
       required: false,
       nullable: false,
-    });
+    } as Partial<TSchema>);
   }
 
   /** Allows null (TValue | null); also sets required: false. */
   nullable(): FieldBuilderWithValue<this, TValue | null, TSchema> {
-    return this.withState<TValue | null>({ nullable: true, required: false });
+    return this.withState<TValue | null>({
+      nullable: true,
+      required: false,
+    } as Partial<TSchema>);
   }
 
   /**
@@ -259,27 +262,29 @@ export class FieldBuilder<
   default(
     value: Exclude<TValue, undefined>,
   ): FieldBuilderWithValue<this, Exclude<TValue, undefined>, TSchema> {
-    return this.withState<Exclude<TValue, undefined>>({ defaultValue: value });
+    return this.withState<Exclude<TValue, undefined>>({
+      defaultValue: value,
+    } as Partial<TSchema>);
   }
 
   /** Marks the field searchable in list/table queries. */
   searchable(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ searchable: true });
+    return this.withState({ searchable: true } as Partial<TSchema>);
   }
 
   /** Marks the field sortable in table columns. */
   sortable(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ sortable: true });
+    return this.withState({ sortable: true } as Partial<TSchema>);
   }
 
   /** Hides the field from forms and tables. */
   hidden(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ hidden: true });
+    return this.withState({ hidden: true } as Partial<TSchema>);
   }
 
   /** Makes the field display-only in forms. */
   readOnly(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ readOnly: true });
+    return this.withState({ readOnly: true } as Partial<TSchema>);
   }
 
   /**
@@ -289,7 +294,7 @@ export class FieldBuilder<
   validation<TOutput = TValue>(
     validation: StandardSchemaLike<unknown, TOutput>,
   ): FieldBuilderWithValue<this, TOutput, TSchema> {
-    return this.withState<TOutput>({ validation });
+    return this.withState<TOutput>({ validation } as Partial<TSchema>);
   }
 
   /** Merges adapter-specific metadata into any existing `meta`. */
@@ -301,7 +306,7 @@ export class FieldBuilder<
         ...this.state.meta,
         ...meta,
       },
-    });
+    } as Partial<TSchema>);
   }
 
   /**

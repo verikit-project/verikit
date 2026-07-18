@@ -1,4 +1,4 @@
-import { FieldBuilder } from "./base.js";
+import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
 import {
   FileConstraints,
   withAccept,
@@ -30,18 +30,24 @@ export class ImageFieldBuilder<
   }
 
   /** Restricts accepted image MIME types or extensions. */
-  accept(types: readonly string[]): ImageFieldBuilder<TValue> {
-    return new ImageFieldBuilder(withAccept(this.state, types));
+  accept(
+    types: readonly string[],
+  ): FieldBuilderWithValue<this, TValue, ImageFieldSchema> {
+    return this.withState(withAccept(this.state, types));
   }
 
   /** Sets the maximum accepted upload size in bytes. */
-  maxSize(bytes: number): ImageFieldBuilder<TValue> {
-    return new ImageFieldBuilder(withMaxSize(this.state, bytes));
+  maxSize(
+    bytes: number,
+  ): FieldBuilderWithValue<this, TValue, ImageFieldSchema> {
+    return this.withState(withMaxSize(this.state, bytes));
   }
 
   /** Allows one or many uploaded images. */
-  multiple(enabled = true): ImageFieldBuilder<TValue> {
-    return new ImageFieldBuilder(withMultiple(this.state, enabled));
+  multiple(
+    enabled = true,
+  ): FieldBuilderWithValue<this, TValue, ImageFieldSchema> {
+    return this.withState(withMultiple(this.state, enabled));
   }
 }
 
