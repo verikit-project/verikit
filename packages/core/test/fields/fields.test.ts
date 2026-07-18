@@ -239,6 +239,37 @@ test("file and image fields expose upload constraints through builder methods", 
   assert.deepEqual(pngOnlyImageSchema.accept, ["image/png"]);
 });
 
+test("multiple() widens the inferred field value to an array, matching array validation", () => {
+  const single = file();
+  const multi = file().multiple();
+  const backToSingle = file().multiple().multiple(false);
+  const requiredMulti = file().required().multiple();
+  const nullableMulti = file().nullable().multiple();
+
+  const singleValue: InferField<typeof single> = "uploads/report.pdf";
+  const multiValue: InferField<typeof multi> = [
+    "uploads/a.pdf",
+    "uploads/b.pdf",
+  ];
+  const backToSingleValue: InferField<typeof backToSingle> =
+    "uploads/report.pdf";
+  const requiredMultiValue: InferField<typeof requiredMulti> = [
+    "uploads/a.pdf",
+  ];
+  const nullableMultiValue: InferField<typeof nullableMulti> = null;
+
+  assert.equal(single.toSchema("doc").multiple, undefined);
+  assert.equal(multi.toSchema("doc").multiple, true);
+  assert.equal(backToSingle.toSchema("doc").multiple, false);
+  assert.equal(requiredMulti.toSchema("doc").multiple, true);
+  assert.equal(nullableMulti.toSchema("doc").multiple, true);
+  assert.equal(singleValue, "uploads/report.pdf");
+  assert.deepEqual(multiValue, ["uploads/a.pdf", "uploads/b.pdf"]);
+  assert.equal(backToSingleValue, "uploads/report.pdf");
+  assert.deepEqual(requiredMultiValue, ["uploads/a.pdf"]);
+  assert.equal(nullableMultiValue, null);
+});
+
 test("select field normalizes primitive and labelled options", () => {
   const primitiveSchema = select<string>()
     .label("Breed")

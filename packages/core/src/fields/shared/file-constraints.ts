@@ -9,6 +9,22 @@ export interface FileConstraints extends FieldSchema {
   multiple?: boolean;
 }
 
+/**
+ * Widens a single-file value type to its array form for `.multiple()`,
+ * preserving `null`/`undefined` as field-level (not per-element) optionality.
+ */
+export type ToMultipleFileValue<TValue> = TValue extends null | undefined
+  ? TValue
+  : TValue[];
+
+/**
+ * Narrows an array-of-files value type back to a single value for
+ * `.multiple(false)`, preserving `null`/`undefined` field-level optionality.
+ */
+export type ToSingleFileValue<TValue> = TValue extends (infer TItem)[]
+  ? TItem
+  : TValue;
+
 function assertNonEmptyAcceptType(type: string): void {
   if (type.trim().length === 0) {
     throw new Error("Accepted file types must be non-empty strings.");

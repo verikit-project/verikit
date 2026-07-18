@@ -1,6 +1,8 @@
 import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
 import {
   FileConstraints,
+  ToMultipleFileValue,
+  ToSingleFileValue,
   withAccept,
   withMaxSize,
   withMultiple,
@@ -43,11 +45,24 @@ export class ImageFieldBuilder<
     return this.withState(withMaxSize(this.state, bytes));
   }
 
-  /** Allows one or many uploaded images. */
+  /** Restricts the field back to a single uploaded image. */
+  multiple(
+    enabled: false,
+  ): FieldBuilderWithValue<this, ToSingleFileValue<TValue>, ImageFieldSchema>;
+  /** Allows one or many uploaded images, widening the value to an array. */
+  multiple(
+    enabled?: true,
+  ): FieldBuilderWithValue<this, ToMultipleFileValue<TValue>, ImageFieldSchema>;
   multiple(
     enabled = true,
-  ): FieldBuilderWithValue<this, TValue, ImageFieldSchema> {
-    return this.withState(withMultiple(this.state, enabled));
+  ): FieldBuilderWithValue<
+    this,
+    ToMultipleFileValue<TValue> | ToSingleFileValue<TValue>,
+    ImageFieldSchema
+  > {
+    return this.withState<
+      ToMultipleFileValue<TValue> | ToSingleFileValue<TValue>
+    >(withMultiple(this.state, enabled));
   }
 }
 

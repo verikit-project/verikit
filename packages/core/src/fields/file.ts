@@ -1,6 +1,8 @@
 import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
 import {
   FileConstraints,
+  ToMultipleFileValue,
+  ToSingleFileValue,
   withAccept,
   withMaxSize,
   withMultiple,
@@ -40,11 +42,24 @@ export class FileFieldBuilder<
     return this.withState(withMaxSize(this.state, bytes));
   }
 
-  /** Allows one or many uploaded files. */
+  /** Restricts the field back to a single uploaded file. */
+  multiple(
+    enabled: false,
+  ): FieldBuilderWithValue<this, ToSingleFileValue<TValue>, FileFieldSchema>;
+  /** Allows one or many uploaded files, widening the value to an array. */
+  multiple(
+    enabled?: true,
+  ): FieldBuilderWithValue<this, ToMultipleFileValue<TValue>, FileFieldSchema>;
   multiple(
     enabled = true,
-  ): FieldBuilderWithValue<this, TValue, FileFieldSchema> {
-    return this.withState(withMultiple(this.state, enabled));
+  ): FieldBuilderWithValue<
+    this,
+    ToMultipleFileValue<TValue> | ToSingleFileValue<TValue>,
+    FileFieldSchema
+  > {
+    return this.withState<
+      ToMultipleFileValue<TValue> | ToSingleFileValue<TValue>
+    >(withMultiple(this.state, enabled));
   }
 }
 
