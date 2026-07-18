@@ -6,7 +6,14 @@ import { messageFrom } from "../utils/messages.js";
 import type { ActionRunRequest } from "./action-context.js";
 import type { ActionRunResult } from "./action-result.js";
 
-/** Runs an action, including availability, form validation, execution, and hooks. */
+/**
+ * Runs an action, including availability checks, form validation,
+ * lifecycle hooks, and execution.
+ *
+ * Any error thrown by the `before` hook, action handler, or `after`
+ * hook causes the action to fail and invokes the `error` hook before
+ * returning an execution failure.
+ */
 export async function runAction<
   TName extends string,
   TForm extends ActionFormMap,
