@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "vsync": "node script/sync-version.js",
+    "build": "pnpm --filter @verikit/core build",
     "test": "pnpm --filter @verikit/core test",
     "test:coverage": "pnpm --filter @verikit/core test:coverage",
     "typecheck": "tsc -b",
