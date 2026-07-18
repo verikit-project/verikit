@@ -29,6 +29,7 @@ import {
   withMaxLength,
   withMinLength,
 } from "../../src/fields/shared/string-constraints.js";
+import { cloneValue, isPlainObject } from "../../src/utils/clone.js";
 
 test("base field builder applies universal schema metadata", () => {
   const schema = text()
@@ -133,6 +134,25 @@ test("builder state snapshots caller-owned Date defaults", () => {
 
   assert.notEqual(schema.defaultValue, published);
   assert.deepEqual(schema.defaultValue, new Date("2020-01-01T00:00:00.000Z"));
+});
+
+test("clone utilities recognize null-prototype objects and preserve class instances", () => {
+  class ColumnRef {
+    constructor(readonly name: string) {}
+  }
+
+  const nullPrototype = Object.create(null) as { column?: string };
+  nullPrototype.column = "email";
+  const columnRef = new ColumnRef("email");
+
+  const clonedNullPrototype = cloneValue(nullPrototype);
+  const clonedColumnRef = cloneValue(columnRef);
+
+  assert.equal(isPlainObject(nullPrototype), true);
+  assert.equal(isPlainObject(columnRef), false);
+  assert.deepEqual(clonedNullPrototype, { column: "email" });
+  assert.notEqual(clonedNullPrototype, nullPrototype);
+  assert.equal(clonedColumnRef, columnRef);
 });
 
 test("base modifiers preserve concrete string field methods", () => {

@@ -51,6 +51,15 @@ test("missing values fall back to the field default before validation", () => {
   });
 });
 
+test("provided values take precedence over field defaults", () => {
+  const schema = text().default("Anonymous").toSchema("name");
+
+  assert.deepEqual(validateField(schema, "Ada"), {
+    success: true,
+    value: "Ada",
+  });
+});
+
 test("default values are still checked against field constraints", () => {
   const schema = text().default("No").min(3).toSchema("name");
 
@@ -212,6 +221,24 @@ test("file fields accept extension-based accept patterns", () => {
   );
 });
 
+test("file accept patterns reject uploads missing comparison metadata", () => {
+  const wildcardSchema = file().accept(["image/*"]).toSchema("image");
+  const extensionSchema = file().accept([".csv"]).toSchema("doc");
+  const emptyAcceptSchema = file().accept([]).toSchema("any");
+
+  assert.equal(validateField(wildcardSchema, { size: 10 }).success, false);
+  assert.equal(
+    validateField(wildcardSchema, { size: 10, type: "text/plain" }).success,
+    false,
+  );
+  assert.equal(extensionSchema.fieldType, "file");
+  assert.equal(validateField(extensionSchema, { size: 10 }).success, false);
+  assert.deepEqual(validateField(emptyAcceptSchema, { size: 10 }), {
+    success: true,
+    value: { size: 10 },
+  });
+});
+
 test("attached validation runs after built-in checks and can transform the value", () => {
   const schema = text()
     .validation({ parse: (value: unknown) => String(value).trim() })
@@ -228,6 +255,21 @@ test("attached validation failures surface as issues", () => {
     .validation({
       parse: () => {
         throw new Error("must be unique");
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [{ path: [], message: "must be unique" }],
+  });
+});
+
+test("attached validation non-error throws surface as issues", () => {
+  const schema = text()
+    .validation({
+      parse: () => {
+        throw "must be unique";
       },
     })
     .toSchema("name");
@@ -268,6 +310,73 @@ test("standard schema issue paths drop segments that are not strings, numbers, o
   assert.deepEqual(validateField(schema, "ada"), {
     success: false,
     issues: [{ path: ["field"], message: "broken path" }],
+  });
+});
+
+test("standard schema issue paths drop key objects whose key is not string or number", () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () => ({
+          issues: [
+            {
+              message: "broken key",
+              path: [{ key: Symbol("field") }],
+            },
+          ],
+        }),
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [{ path: [], message: "broken key" }],
+  });
+});
+
+test("standard schema issues without paths default to an empty issue path", () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () => ({
+          issues: [{ message: "missing path" }],
+        }),
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [{ path: [], message: "missing path" }],
+  });
+});
+
+test("standard schema issue paths preserve numeric segments and numeric key objects", () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () => ({
+          issues: [
+            {
+              message: "indexed path",
+              path: [0, { key: 1 }],
+            },
+          ],
+        }),
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [{ path: [0, 1], message: "indexed path" }],
   });
 });
 
@@ -337,6 +446,36 @@ test("validateField rejects promise-returning parse validators synchronously", (
       },
     ],
   });
+});
+
+test("validateField safely rejects rejecting async parse validators synchronously", async () => {
+  const schema = text()
+    .validation({
+      parse: async () => {
+        throw new Error("async parse failed");
+      },
+    })
+    .toSchema("name");
+
+  assert.equal(validateField(schema, "ada").success, false);
+  await Promise.resolve();
+});
+
+test("validateField safely rejects rejecting async standard validators synchronously", async () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: async () => {
+          throw new Error("async standard failed");
+        },
+      },
+    })
+    .toSchema("name");
+
+  assert.equal(validateField(schema, "ada").success, false);
+  await Promise.resolve();
 });
 
 test("validateFieldAsync awaits async ~standard validators", async () => {
