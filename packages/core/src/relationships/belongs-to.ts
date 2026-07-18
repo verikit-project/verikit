@@ -1,4 +1,8 @@
-import { InferResourceFields, Resource } from "../resource/resource.js";
+import { Resource } from "../resource/resource.js";
+import {
+  RelationshipBuilder,
+  RelationshipBuilderState,
+} from "./shared/relationship-builder.js";
 
 /**
  * Schema describing a belongs-to relationship.
@@ -29,71 +33,9 @@ export interface BelongsToRelationshipSchema {
  */
 export class BelongsToRelationshipBuilder<
   TResource extends Resource = Resource,
-> {
-  readonly target: () => TResource;
-  private readonly labelText?: string;
-  private readonly inverseName?: string;
-  private readonly foreignKey?: unknown;
-  private readonly displayFieldName?: string;
-
-  constructor(
-    target: () => TResource,
-    labelText?: string,
-    inverseName?: string,
-    foreignKey?: unknown,
-    displayFieldName?: string,
-  ) {
-    this.target = target;
-    this.labelText = labelText;
-    this.inverseName = inverseName;
-    this.foreignKey = foreignKey;
-    this.displayFieldName = displayFieldName;
-  }
-
-  /** Sets a human-readable label for the relationship. */
-  label(label: string): BelongsToRelationshipBuilder<TResource> {
-    return new BelongsToRelationshipBuilder(
-      this.target,
-      label,
-      this.inverseName,
-      this.foreignKey,
-      this.displayFieldName,
-    );
-  }
-
-  /** Sets the inverse relationship on the target resource. */
-  inverse(field: string): BelongsToRelationshipBuilder<TResource> {
-    return new BelongsToRelationshipBuilder(
-      this.target,
-      this.labelText,
-      field,
-      this.foreignKey,
-      this.displayFieldName,
-    );
-  }
-
-  /** Sets the foreign key column on this resource. */
-  via(foreignKey: unknown): BelongsToRelationshipBuilder<TResource> {
-    return new BelongsToRelationshipBuilder(
-      this.target,
-      this.labelText,
-      this.inverseName,
-      foreignKey,
-      this.displayFieldName,
-    );
-  }
-
-  /** Sets the field displayed for related records. */
-  displayField(
-    field: keyof InferResourceFields<TResource> & string,
-  ): BelongsToRelationshipBuilder<TResource> {
-    return new BelongsToRelationshipBuilder(
-      this.target,
-      this.labelText,
-      this.inverseName,
-      this.foreignKey,
-      field,
-    );
+> extends RelationshipBuilder<TResource, RelationshipBuilderState> {
+  constructor(target: () => TResource, state: RelationshipBuilderState = {}) {
+    super(target, state);
   }
 
   /** Finalizes the builder into a `BelongsToRelationshipSchema`. */
@@ -103,10 +45,10 @@ export class BelongsToRelationshipBuilder<
       relationshipType: "belongsTo",
       name,
       resource: this.target().name,
-      label: this.labelText,
-      inverse: this.inverseName,
-      foreignKey: this.foreignKey,
-      displayField: this.displayFieldName,
+      label: this.state.label,
+      inverse: this.state.inverse,
+      foreignKey: this.state.foreignKey,
+      displayField: this.state.displayField,
     };
   }
 }

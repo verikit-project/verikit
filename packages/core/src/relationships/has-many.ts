@@ -1,8 +1,8 @@
+import { InferResource, Resource } from "../resource/resource.js";
 import {
-  InferResource,
-  InferResourceFields,
-  Resource,
-} from "../resource/resource.js";
+  RelationshipBuilder,
+  RelationshipBuilderState,
+} from "./shared/relationship-builder.js";
 
 /**
  * Schema describing a has-many relationship.
@@ -31,77 +31,13 @@ export interface HasManyRelationshipSchema {
  * Fluent builder for has-many relationships.
  * The target resource stores the foreign key to this resource.
  */
-export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
+export class HasManyRelationshipBuilder<
+  TResource extends Resource = Resource,
+> extends RelationshipBuilder<TResource, RelationshipBuilderState> {
   readonly kind = "hasMany";
-  readonly target: () => TResource;
-  private readonly labelText?: string;
-  private readonly inverseName?: string;
-  private readonly foreignKey?: unknown;
-  private readonly displayFieldName?: string;
 
-  constructor(
-    target: () => TResource,
-    labelText?: string,
-    inverseName?: string,
-    foreignKey?: unknown,
-    displayFieldName?: string,
-  ) {
-    this.target = target;
-    this.labelText = labelText;
-    this.inverseName = inverseName;
-    this.foreignKey = foreignKey;
-    this.displayFieldName = displayFieldName;
-  }
-
-  /** Returns the name of the target resource. */
-  resourceName(): string {
-    return this.target().name;
-  }
-
-  /** Sets a human-readable label for the relationship. */
-  label(label: string): HasManyRelationshipBuilder<TResource> {
-    return new HasManyRelationshipBuilder(
-      this.target,
-      label,
-      this.inverseName,
-      this.foreignKey,
-      this.displayFieldName,
-    );
-  }
-
-  /** Sets the inverse relationship on the target resource. */
-  inverse(field: string): HasManyRelationshipBuilder<TResource> {
-    return new HasManyRelationshipBuilder(
-      this.target,
-      this.labelText,
-      field,
-      this.foreignKey,
-      this.displayFieldName,
-    );
-  }
-
-  /** Sets the foreign key column on the target resource. */
-  via(foreignKey: unknown): HasManyRelationshipBuilder<TResource> {
-    return new HasManyRelationshipBuilder(
-      this.target,
-      this.labelText,
-      this.inverseName,
-      foreignKey,
-      this.displayFieldName,
-    );
-  }
-
-  /** Sets the target field used to represent related records. */
-  displayField(
-    field: keyof InferResourceFields<TResource> & string,
-  ): HasManyRelationshipBuilder<TResource> {
-    return new HasManyRelationshipBuilder(
-      this.target,
-      this.labelText,
-      this.inverseName,
-      this.foreignKey,
-      field,
-    );
+  constructor(target: () => TResource, state: RelationshipBuilderState = {}) {
+    super(target, state);
   }
 
   /** Finalizes the builder into a `HasManyRelationshipSchema`. */
@@ -111,10 +47,10 @@ export class HasManyRelationshipBuilder<TResource extends Resource = Resource> {
       relationshipType: "hasMany",
       name,
       resource: this.target().name,
-      label: this.labelText,
-      inverse: this.inverseName,
-      foreignKey: this.foreignKey,
-      displayField: this.displayFieldName,
+      label: this.state.label,
+      inverse: this.state.inverse,
+      foreignKey: this.state.foreignKey,
+      displayField: this.state.displayField,
     };
   }
 }
