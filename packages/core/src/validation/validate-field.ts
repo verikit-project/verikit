@@ -279,11 +279,16 @@ function describeError(error: unknown): string {
 function rejectAsyncValidator<TValue>(
   result: TValue,
 ): asserts result is Exclude<TValue, Promise<unknown>> {
-  if (result instanceof Promise) {
-    throw new Error(
-      "Async validators are not supported by validateField(); use validateFieldAsync() instead.",
-    );
+  if (!(result instanceof Promise)) {
+    return;
   }
+
+  // Prevent an unhandled rejection if the async validator later rejects.
+  void result.catch(() => {});
+
+  throw new Error(
+    "Async validators are not supported by validateField(); use validateFieldAsync() instead.",
+  );
 }
 
 /**
