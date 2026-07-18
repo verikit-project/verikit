@@ -135,6 +135,17 @@ test("layout builder throws for unknown runtime field names", () => {
   );
 });
 
+test("layout builder throws for bare string children matching neither a field nor a relationship", () => {
+  const resource = defineResource("user", {
+    fields: { name: text() },
+  }).form((builder) => [builder.section("Basic", ["missing" as "name"])]);
+
+  assert.throws(
+    () => resource.toSchema(),
+    /Unknown layout child "missing" in resource layout\./,
+  );
+});
+
 test("resource without relationships defaults to an empty relationships map", () => {
   const resource = defineResource("user", { fields: { name: text() } });
   const schema = resource.toSchema();

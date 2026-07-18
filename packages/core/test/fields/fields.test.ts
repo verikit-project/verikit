@@ -124,6 +124,17 @@ test("builder state snapshots caller-owned objects and arrays", () => {
   });
 });
 
+test("builder state snapshots caller-owned Date defaults", () => {
+  const published = new Date("2020-01-01T00:00:00.000Z");
+
+  const schema = date().default(published).toSchema("publishedAt");
+
+  published.setUTCFullYear(1999);
+
+  assert.notEqual(schema.defaultValue, published);
+  assert.deepEqual(schema.defaultValue, new Date("2020-01-01T00:00:00.000Z"));
+});
+
 test("base modifiers preserve concrete string field methods", () => {
   const textSchema = text()
     .label("Title")

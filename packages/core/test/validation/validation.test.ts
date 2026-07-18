@@ -4,6 +4,7 @@ import {
   boolean,
   date,
   email,
+  FieldSchema,
   file,
   image,
   number,
@@ -91,6 +92,19 @@ test("number fields validate type, range, and step", () => {
   assert.deepEqual(validateField(schema, 4), { success: true, value: 4 });
 });
 
+test("number fields reject non-finite numbers before range/step checks", () => {
+  const schema = number().toSchema("count");
+
+  assert.deepEqual(validateField(schema, Number.NaN), {
+    success: false,
+    issues: [{ path: [], message: "Must be a finite number." }],
+  });
+  assert.deepEqual(validateField(schema, Number.POSITIVE_INFINITY), {
+    success: false,
+    issues: [{ path: [], message: "Must be a finite number." }],
+  });
+});
+
 test("boolean fields require an actual boolean", () => {
   const schema = boolean().toSchema("active");
 
@@ -115,6 +129,19 @@ test("date fields accept Date instances and parseable strings", () => {
   });
 });
 
+test("unrecognized field types skip type-specific checks", () => {
+  const schema: FieldSchema = {
+    type: "field",
+    name: "custom",
+    fieldType: "custom" as FieldSchema["fieldType"],
+  };
+
+  assert.deepEqual(validateField(schema, "anything"), {
+    success: true,
+    value: "anything",
+  });
+});
+
 test("select fields restrict values to configured options", () => {
   const schema = select<string>()
     .options(["siamese", "tabby"])
@@ -124,6 +151,15 @@ test("select fields restrict values to configured options", () => {
   assert.deepEqual(validateField(schema, "tabby"), {
     success: true,
     value: "tabby",
+  });
+});
+
+test("select fields without configured options accept any value", () => {
+  const schema = select<string>().toSchema("breed");
+
+  assert.deepEqual(validateField(schema, "anything"), {
+    success: true,
+    value: "anything",
   });
 });
 
@@ -163,6 +199,19 @@ test("file fields accept stored references and validate upload metadata when pre
   }
 });
 
+test("file fields accept extension-based accept patterns", () => {
+  const schema = file().accept([".csv"]).toSchema("doc");
+
+  assert.deepEqual(validateField(schema, { name: "data.csv", size: 10 }), {
+    success: true,
+    value: { name: "data.csv", size: 10 },
+  });
+  assert.equal(
+    validateField(schema, { name: "data.txt", size: 10 }).success,
+    false,
+  );
+});
+
 test("attached validation runs after built-in checks and can transform the value", () => {
   const schema = text()
     .validation({ parse: (value: unknown) => String(value).trim() })
@@ -186,6 +235,39 @@ test("attached validation failures surface as issues", () => {
   assert.deepEqual(validateField(schema, "ada"), {
     success: false,
     issues: [{ path: [], message: "must be unique" }],
+  });
+});
+
+test("a validator with neither parse nor ~standard leaves the value unchanged", () => {
+  const schema = text().validation({}).toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: true,
+    value: "ada",
+  });
+});
+
+test("standard schema issue paths drop segments that are not strings, numbers, or {key}", () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () => ({
+          issues: [
+            {
+              message: "broken path",
+              path: [{ notKey: true }, "field"],
+            },
+          ],
+        }),
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [{ path: ["field"], message: "broken path" }],
   });
 });
 
@@ -275,6 +357,66 @@ test("validateFieldAsync unwraps async standard schema issues", async () => {
   assert.deepEqual(await validateFieldAsync(schema, "taken"), {
     success: false,
     issues: [{ path: ["slug"], message: "not available" }],
+  });
+});
+
+test("validateFieldAsync short-circuits on failed built-in checks without invoking the validator", async () => {
+  const schema = text()
+    .required()
+    .validation({
+      parse: async () => {
+        throw new Error("should not run");
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(await validateFieldAsync(schema, undefined), {
+    success: false,
+    issues: [{ path: [], message: "This field is required." }],
+  });
+});
+
+test("validateFieldAsync passes through fields with no attached validator", async () => {
+  const schema = text().toSchema("name");
+
+  assert.deepEqual(await validateFieldAsync(schema, "Ada"), {
+    success: true,
+    value: "Ada",
+  });
+});
+
+test("validateFieldAsync awaits async parse-style validators", async () => {
+  const schema = text()
+    .validation({ parse: async (value: unknown) => String(value).trim() })
+    .toSchema("name");
+
+  assert.deepEqual(await validateFieldAsync(schema, "  ada  "), {
+    success: true,
+    value: "ada",
+  });
+});
+
+test("validateFieldAsync leaves the value unchanged for a validator with neither parse nor ~standard", async () => {
+  const schema = text().validation({}).toSchema("name");
+
+  assert.deepEqual(await validateFieldAsync(schema, "ada"), {
+    success: true,
+    value: "ada",
+  });
+});
+
+test("validateFieldAsync catches rejected parse-style validators as issues", async () => {
+  const schema = text()
+    .validation({
+      parse: async () => {
+        throw new Error("must be unique");
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(await validateFieldAsync(schema, "ada"), {
+    success: false,
+    issues: [{ path: [], message: "must be unique" }],
   });
 });
 
