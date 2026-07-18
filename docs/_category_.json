@@ -1,0 +1,8 @@
+{
+  "label": "Verikit",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Build resource schemas, validation, layout metadata, and runtime actions with Verikit."
+  }
+}
