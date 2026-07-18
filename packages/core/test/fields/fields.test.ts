@@ -315,6 +315,7 @@ test("validation can transform the inferred field value and stores the validator
 
   assert.equal(inferred, "trimmed");
   assert.equal(schema.validation, validation);
+  assert.equal(schema.validation?.parse?.("  padded  "), "padded");
 });
 
 test("standard schema validation narrows inferred output type", () => {
@@ -332,6 +333,9 @@ test("standard schema validation narrows inferred output type", () => {
 
   assert.equal(inferred, 42);
   assert.equal(schema.validation?.["~standard"]?.vendor, "test");
+  assert.deepEqual(schema.validation?.["~standard"]?.validate("42"), {
+    value: 42,
+  });
 });
 
 test("shared helpers return copied state with requested changes", () => {
