@@ -7,6 +7,36 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.join(__dirname, "..");
 
 const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, "utf8"));
+const writeJson = (filePath, value) => {
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
+};
+
+const syncPackageLockVersion = (packageDir, version) => {
+  const lockPath = path.join(packageDir, "package-lock.json");
+
+  if (!fs.existsSync(lockPath)) {
+    return false;
+  }
+
+  const lock = readJson(lockPath);
+  let changed = false;
+
+  if (lock.version !== undefined && lock.version !== version) {
+    lock.version = version;
+    changed = true;
+  }
+
+  if (lock.packages?.[""] && lock.packages[""].version !== version) {
+    lock.packages[""].version = version;
+    changed = true;
+  }
+
+  if (changed) {
+    writeJson(lockPath, lock);
+  }
+
+  return changed;
+};
 
 const rootPkg = readJson(path.join(rootDir, "package.json"));
 
@@ -35,10 +65,18 @@ for (const pattern of workspacePatterns) {
 
     const pkg = readJson(pkgPath);
 
-    if (pkg.version !== version) {
+    const packageChanged = pkg.version !== version;
+
+    if (packageChanged) {
       pkg.version = version;
-      fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
-      console.log(`✓ ${pkg.name} -> ${version}`);
+      writeJson(pkgPath, pkg);
+    }
+
+    const lockChanged = syncPackageLockVersion(path.dirname(pkgPath), version);
+
+    if (packageChanged || lockChanged) {
+      const suffix = lockChanged ? " (package-lock synced)" : "";
+      console.log(`${pkg.name} -> ${version}${suffix}`);
     }
   }
 }
