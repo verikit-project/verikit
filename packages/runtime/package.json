@@ -27,8 +27,8 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "build": "pnpm clean && tsc -b",
     "prepack": "pnpm build",
-    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json",
-    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json"
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
   },
   "files": [
     "dist"
