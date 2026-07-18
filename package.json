@@ -15,8 +15,17 @@
     "format:check": "prettier --check .",
     "verify": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "typescript",
+    "resource",
+    "schema",
+    "resource-model",
+    "metadata",
+    "builder",
+    "validation",
+    "framework"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
   "license": "MIT",
   "devEngines": {
     "packageManager": {

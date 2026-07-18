@@ -307,6 +307,33 @@ test("from attaches consume-mode column source without finalizing the field", ()
   });
 });
 
+test("from as() preserves type-specific field modifiers", () => {
+  const emailColumn = { table: "users", column: "email" };
+  const fileColumn = { table: "documents", column: "attachment" };
+
+  const emailSchema = from(emailColumn).as(email()).max(255).toSchema("email");
+  const fileSchema = from(fileColumn)
+    .as(file())
+    .maxSize(1024)
+    .multiple()
+    .toSchema("attachment");
+
+  assert.equal(emailSchema.fieldType, "email");
+  assert.equal(emailSchema.maxLength, 255);
+  assert.deepEqual(emailSchema.source, {
+    mode: "consume",
+    column: emailColumn,
+  });
+
+  assert.equal(fileSchema.fieldType, "file");
+  assert.equal(fileSchema.maxSize, 1024);
+  assert.equal(fileSchema.multiple, true);
+  assert.deepEqual(fileSchema.source, {
+    mode: "consume",
+    column: fileColumn,
+  });
+});
+
 test("from is not directly finalizable as a field", () => {
   const sourced = from({ table: "users", column: "email" });
 
