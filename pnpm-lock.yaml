@@ -404,6 +404,19 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/runtime:
+    dependencies:
+      '@verikit/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
 packages:
 
   '@eslint-community/eslint-utils@4.9.1':

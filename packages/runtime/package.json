@@ -1,0 +1,43 @@
+{
+  "name": "@verikit/runtime",
+  "version": "0.4.6",
+  "description": "Runtime helpers for executing Verikit resource workflows.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "keywords": [
+    "typescript",
+    "resource",
+    "schema",
+    "resource-model",
+    "metadata",
+    "builder",
+    "validation",
+    "framework"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
+  "license": "MIT",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "build": "pnpm clean && tsc -b",
+    "prepack": "pnpm build",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@verikit/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^6.0.3"
+  }
+}
