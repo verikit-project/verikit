@@ -5,7 +5,9 @@ title: Introduction
 
 # Verikit
 
-Verikit is a TypeScript resource framework for describing data resources, fields, relationships, form layouts, validation, and runtime actions in reusable schemas.
+Validation, Entities, Resources & Interfaces Toolkit.
+
+Verikit is a TypeScript toolkit for defining reusable resource schemas: fields, relationships, layouts, validation, and runtime actions from one typed model.
 
 It is designed for projects that want one typed resource definition to drive multiple layers of an application:
 
@@ -22,7 +24,7 @@ Verikit is split into focused packages:
 
 | Package | Purpose |
 | --- | --- |
-| `@verikit/core` | Resource builders, field builders, relationships, layouts, and validation helpers. |
+| `@verikit/core` | Resource builders, field builders, relationships, layouts, and validation utilities. |
 | `@verikit/runtime` | Runtime action builders and execution helpers for resource workflows. |
 
 ## The basic shape
