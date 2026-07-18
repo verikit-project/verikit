@@ -320,18 +320,11 @@ export class ResourceLayoutBuilder<
       return child;
     }
 
-    const isField = Object.hasOwn(this.fields, child);
-    const isRelationship = Object.hasOwn(this.relationships, child);
-
-    if (isField && isRelationship) {
-      throw new Error(
-        `Ambiguous layout child "${child}" matches both a field and relationship.`,
-      );
-    }
-    if (isField) {
+    if (Object.hasOwn(this.fields, child)) {
       return this.field(child as keyof TFields & string);
     }
-    if (isRelationship) {
+
+    if (Object.hasOwn(this.relationships, child)) {
       return this.relationship(child as keyof TRelationships & string);
     }
 
