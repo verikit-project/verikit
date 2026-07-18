@@ -212,6 +212,15 @@ export class FieldBuilder<
     return cloneBuilderState(this.state);
   }
 
+  /**
+   * Returns a sourced copy of this builder while preserving the concrete
+   * builder type; used by `from(column).as(field)`.
+   * @internal
+   */
+  withSource(source: FieldSource): this {
+    return this.withState({ source } as Partial<TSchema>) as this;
+  }
+
   /** Sets the field's display label. */
   label(label: string): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ label } as Partial<TSchema>);

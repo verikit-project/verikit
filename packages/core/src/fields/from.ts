@@ -1,16 +1,6 @@
-import {
-  FieldBuilder,
-  FieldBuilderState,
-  FieldSchema,
-  FieldSource,
-  OptionValue,
-} from "./base.js";
+import { FieldBuilder, FieldSchema, FieldSource, OptionValue } from "./base.js";
 import { normalizeOptions, OptionFieldSchema } from "./shared/options.js";
 import { cloneValue } from "../utils/clone.js";
-
-type FieldBuilderConstructor<TBuilder, TSchema extends FieldSchema> = new (
-  state: FieldBuilderState<TSchema>,
-) => TBuilder;
 
 /**
  * Schema extension for fields derived from an existing storage column.
@@ -53,15 +43,7 @@ export class FromFieldBuilder<TColumn> {
     TSchema extends FieldSchema,
     TBuilder extends FieldBuilder<TValue, TSchema>,
   >(field: TBuilder): TBuilder {
-    const Builder = field.constructor as FieldBuilderConstructor<
-      TBuilder,
-      TSchema
-    >;
-
-    return new Builder({
-      ...field.getState(),
-      source: this.source,
-    } as FieldBuilderState<TSchema>);
+    return field.withSource(this.source);
   }
 
   /**
