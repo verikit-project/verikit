@@ -129,14 +129,21 @@ function validateOption(
 }
 
 function matchesAccept(patterns: readonly string[], file: FileLike): boolean {
+  const fileType = file.type?.toLowerCase();
+  const fileName = file.name?.toLowerCase();
+
   return patterns.some((pattern) => {
-    if (pattern.endsWith("/*")) {
-      return file.type?.startsWith(pattern.slice(0, -1)) ?? false;
+    const normalizedPattern = pattern.toLowerCase();
+
+    if (normalizedPattern.endsWith("/*")) {
+      return fileType?.startsWith(normalizedPattern.slice(0, -1)) ?? false;
     }
-    if (pattern.startsWith(".")) {
-      return file.name?.toLowerCase().endsWith(pattern.toLowerCase()) ?? false;
+
+    if (normalizedPattern.startsWith(".")) {
+      return fileName?.endsWith(normalizedPattern) ?? false;
     }
-    return file.type === pattern;
+
+    return fileType === normalizedPattern;
   });
 }
 
