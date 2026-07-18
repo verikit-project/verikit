@@ -1,66 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { number, text } from "@verikit/core";
-import { action, runAction, type InferActionInput } from "../../src/index.js";
-
-test("action builder produces a schema for identity, presentation, confirmation, form, and result", () => {
-  const publish = action("publish")
-    .label("Publish")
-    .description("Make the record visible")
-    .icon("send")
-    .variant("primary")
-    .meta({ placement: "toolbar" })
-    .confirmation({
-      title: "Publish record",
-      message: "Publish this record now?",
-      confirmLabel: "Publish",
-      cancelLabel: "Cancel",
-    })
-    .form({
-      note: text().required(),
-    })
-    .result({
-      successMessage: "Published",
-      errorMessage: "Could not publish",
-    });
-
-  assert.deepEqual(publish.toSchema(), {
-    type: "action",
-    name: "publish",
-    label: "Publish",
-    description: "Make the record visible",
-    icon: "send",
-    variant: "primary",
-    confirmation: {
-      title: "Publish record",
-      message: "Publish this record now?",
-      confirmLabel: "Publish",
-      cancelLabel: "Cancel",
-    },
-    form: {
-      note: {
-        type: "field",
-        name: "note",
-        fieldType: "text",
-        required: true,
-        nullable: false,
-      },
-    },
-    result: {
-      successMessage: "Published",
-      errorMessage: "Could not publish",
-    },
-    meta: { placement: "toolbar" },
-  });
-});
-
-test("action builder methods are immutable", () => {
-  const base = action("archive");
-  const labelled = base.label("Archive");
-
-  assert.equal(base.toSchema().label, undefined);
-  assert.equal(labelled.toSchema().label, "Archive");
-});
+import { action } from "../../../src/actions/builders/index.js";
+import { runAction } from "../../../src/actions/execution/index.js";
+import type { InferActionInput } from "../../../src/actions/types/index.js";
 
 test("runAction returns unavailable before validation or execution", async () => {
   let executed = false;
