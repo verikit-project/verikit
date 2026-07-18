@@ -1,9 +1,10 @@
 {
   "name": "verikit",
   "version": "0.4.3",
+  "private": true,
   "description": "A TypeScript resource framework.",
-  "main": "index.js",
   "scripts": {
+    "prepack": "node -e \"console.error('Workspace root is private; publish @verikit/core instead.'); process.exit(1)\"",
     "vsync": "node script/sync-version.js",
     "build": "pnpm --filter @verikit/core build",
     "test": "pnpm --filter @verikit/core test",
