@@ -6,6 +6,7 @@
   "scripts": {
     "vsync": "node script/sync-version.js",
     "test": "pnpm --filter @verikit/core test",
+    "test:coverage": "pnpm --filter @verikit/core test:coverage",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "format": "prettier --write .",

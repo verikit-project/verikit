@@ -7,11 +7,14 @@ import {
   datetime,
   email,
   file,
+  FileFieldBuilder,
   from,
   image,
   number,
+  NumberFieldBuilder,
   select,
   text,
+  TextFieldBuilder,
   textarea,
   toggle,
   type InferField,
@@ -389,6 +392,58 @@ test("field constraints reject invalid values and ranges", () => {
   assert.throws(() => number().step(0), /step/);
   assert.throws(() => file().accept([""]), /non-empty/);
   assert.throws(() => image().maxSize(-1), /maxSize/);
+});
+
+test("type-specific modifiers preserve subclass identity like base modifiers do", () => {
+  class CurrencyFieldBuilder<
+    TValue = number | null | undefined,
+  > extends NumberFieldBuilder<TValue> {
+    isCurrency(): true {
+      return true;
+    }
+  }
+  class SlugFieldBuilder<
+    TValue = string | null | undefined,
+  > extends TextFieldBuilder<TValue> {
+    isSlug(): true {
+      return true;
+    }
+  }
+  class AttachmentFieldBuilder<
+    TValue = string | null | undefined,
+  > extends FileFieldBuilder<TValue> {
+    isAttachment(): true {
+      return true;
+    }
+  }
+
+  const currencyBuilder = new CurrencyFieldBuilder()
+    .label("Price")
+    .min(0)
+    .max(100)
+    .step(0.01);
+  const slugBuilder = new SlugFieldBuilder().required().min(1).max(80);
+  const attachmentBuilder = new AttachmentFieldBuilder()
+    .accept(["application/pdf"])
+    .maxSize(1024)
+    .multiple();
+
+  assert.ok(currencyBuilder instanceof CurrencyFieldBuilder);
+  assert.equal(currencyBuilder.isCurrency(), true);
+  assert.ok(slugBuilder instanceof SlugFieldBuilder);
+  assert.equal(slugBuilder.isSlug(), true);
+  assert.ok(attachmentBuilder instanceof AttachmentFieldBuilder);
+  assert.equal(attachmentBuilder.isAttachment(), true);
+
+  assert.deepEqual(currencyBuilder.toSchema("price"), {
+    type: "field",
+    name: "price",
+    fieldType: "number",
+    label: "Price",
+    min: 0,
+    max: 100,
+    step: 0.01,
+  });
 });
 
 test("createField remains available for custom core field construction", () => {

@@ -11,7 +11,8 @@
     }
   },
   "scripts": {
-    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
   },
   "files": [
     "dist"
