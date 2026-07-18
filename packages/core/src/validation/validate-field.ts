@@ -276,6 +276,16 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function rejectAsyncValidator<TValue>(
+  result: TValue,
+): asserts result is Exclude<TValue, Promise<unknown>> {
+  if (result instanceof Promise) {
+    throw new Error(
+      "Async validators are not supported by validateField(); use validateFieldAsync() instead.",
+    );
+  }
+}
+
 /**
  * Validates a value against a finalized `FieldSchema`: built-in constraint
  * checks first, then any attached `.validation()` validator. Reports an
@@ -297,15 +307,13 @@ export function validateField(
 
   try {
     if (validator.parse) {
-      return ok(validator.parse(builtIn.value));
+      const result = validator.parse(builtIn.value);
+      rejectAsyncValidator(result);
+      return ok(result);
     }
     if (validator["~standard"]) {
       const result = validator["~standard"].validate(builtIn.value);
-      if (result instanceof Promise) {
-        throw new Error(
-          "Async validators are not supported by validateField(); use validateFieldAsync() instead.",
-        );
-      }
+      rejectAsyncValidator(result);
       return fromStandardResult(result);
     }
     return builtIn;

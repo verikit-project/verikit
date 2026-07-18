@@ -322,6 +322,23 @@ test("validateField rejects promise-returning ~standard validators synchronously
   assert.equal(validateField(schema, "ada").success, false);
 });
 
+test("validateField rejects promise-returning parse validators synchronously", () => {
+  const schema = text()
+    .validation({ parse: async (value: unknown) => String(value) })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [
+      {
+        path: [],
+        message:
+          "Async validators are not supported by validateField(); use validateFieldAsync() instead.",
+      },
+    ],
+  });
+});
+
 test("validateFieldAsync awaits async ~standard validators", async () => {
   const schema = text()
     .validation({
