@@ -94,7 +94,7 @@ Display label shown to users in forms and tables (e.g., "Email Address")
 
 ### meta?
 
-> `optional` **meta?**: `Record`\<`string`, `unknown`>
+> `optional` **meta?**: `Record`\<`string`, `unknown`>>>
 
 Defined in: [fields/base.ts:109](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L109)
 
@@ -136,7 +136,7 @@ Field can store null as an explicit value (distinct from undefined/omitted)
 
 ### options?
 
-> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<`TValue`>[]
+> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<`TValue`>>>[]
 
 Defined in: [fields/shared/options.ts:9](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/shared/options.ts#L9)
 
@@ -248,7 +248,7 @@ Literal "field" discriminator for discriminated unions
 
 ### validation?
 
-> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`>
+> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`>>>
 
 Defined in: [fields/base.ts:105](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L105)
 

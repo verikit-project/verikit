@@ -25,7 +25,7 @@ names into schema nodes and assembles them into layout tree nodes.
 
 ### Constructor
 
-> **new ResourceLayoutBuilder**\<`TFields`, `TRelationships`>(`fields`, `relationships`): `ResourceLayoutBuilder`\<`TFields`, `TRelationships`>
+> **new ResourceLayoutBuilder**\<`TFields`, `TRelationships`>>>(`fields`, `relationships`): `ResourceLayoutBuilder`\<`TFields`, `TRelationships`>>>
 
 Defined in: [resource/resource.ts:283](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L283)
 
@@ -77,7 +77,7 @@ readonly `LayoutChild`\<`TFields`, `TRelationships`\>[]
 
 ### field()
 
-> **field**\<`TName`>(`name`): [`FieldNode`](../interfaces/FieldNode.md)
+> **field**\<`TName`>>>(`name`): [`FieldNode`](../interfaces/FieldNode.md)
 
 Defined in: [resource/resource.ts:296](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L296)
 
@@ -131,7 +131,7 @@ readonly `LayoutChild`\<`TFields`, `TRelationships`\>[]
 
 ### relationship()
 
-> **relationship**\<`TName`>(`name`): [`RelationshipSchema`](../type-aliases/RelationshipSchema.md)
+> **relationship**\<`TName`>>>(`name`): [`RelationshipSchema`](../type-aliases/RelationshipSchema.md)
 
 Defined in: [resource/resource.ts:305](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L305)
 

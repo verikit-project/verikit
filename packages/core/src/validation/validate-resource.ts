@@ -48,7 +48,7 @@ export function validateResource(
 export async function validateResourceAsync(
   fields: Record<string, FieldSchema>,
   values: Record<string, unknown>,
-): Promise<ValidationResult<Record<string, unknown> {
+): Promise<ValidationResult<Record<string, unknown>>> {
   const entries = await Promise.all(
     Object.entries(fields).map(
       async ([name, schema]): Promise<[string, ValidationResult]> => [

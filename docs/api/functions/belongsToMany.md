@@ -6,7 +6,7 @@
 
 # Function: belongsToMany()
 
-> **belongsToMany**\<`TResource`>(`target`): [`BelongsToManyRelationshipBuilder`](../classes/BelongsToManyRelationshipBuilder.md)\<`TResource`>
+> **belongsToMany**\<`TResource`>>>(`target`): [`BelongsToManyRelationshipBuilder`](../classes/BelongsToManyRelationshipBuilder.md)\<`TResource`>>>
 
 Defined in: [relationships/belongs-to-many.ts:88](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/belongs-to-many.ts#L88)
 

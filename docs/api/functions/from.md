@@ -6,7 +6,7 @@
 
 # Function: from()
 
-> **from**\<`TColumn`>(`column`): [`FromFieldBuilder`](../classes/FromFieldBuilder.md)\<`TColumn`>
+> **from**\<`TColumn`>>>(`column`): [`FromFieldBuilder`](../classes/FromFieldBuilder.md)\<`TColumn`>>>
 
 Defined in: [fields/from.ts:69](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/from.ts#L69)
 

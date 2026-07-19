@@ -36,7 +36,7 @@ Defined in: [fields/base.ts:20](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 #### validate()
 
-> **validate**(`value`): [`StandardSchemaResult`](../type-aliases/StandardSchemaResult.md)\<`Output`>\| `Promise`\<[`StandardSchemaResult`](../type-aliases/StandardSchemaResult.md)\<`Output`>
+> **validate**(`value`): [`StandardSchemaResult`](../type-aliases/StandardSchemaResult.md)\<`Output`>>>\| `Promise`\<[`StandardSchemaResult`](../type-aliases/StandardSchemaResult.md)\<`Output`>>>
 
 ##### Parameters
 

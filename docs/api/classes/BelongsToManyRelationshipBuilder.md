@@ -25,7 +25,7 @@ join/through resource.
 
 ### Constructor
 
-> **new BelongsToManyRelationshipBuilder**\<`TResource`>(`target`, `state?`): `BelongsToManyRelationshipBuilder`\<`TResource`>
+> **new BelongsToManyRelationshipBuilder**\<`TResource`>>>(`target`, `state?`): `BelongsToManyRelationshipBuilder`\<`TResource`>>>
 
 Defined in: [relationships/belongs-to-many.ts:49](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/belongs-to-many.ts#L49)
 
