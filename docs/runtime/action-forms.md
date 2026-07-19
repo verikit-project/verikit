@@ -13,7 +13,10 @@ import { action } from "@verikit/runtime";
 
 type AppContext = {
   reviews: {
-    reject(id: string, reason: string): Promise<{ id: string; status: "rejected" }>;
+    reject(
+      id: string,
+      reason: string,
+    ): Promise<{ id: string; status: "rejected" }>;
   };
 };
 

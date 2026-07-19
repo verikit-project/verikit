@@ -16,7 +16,9 @@ const author = defineResource("author", {
     name: text().required(),
   },
   relationships: {
-    books: hasMany(() => book).via("authorId").displayField("title"),
+    books: hasMany(() => book)
+      .via("authorId")
+      .displayField("title"),
   },
 });
 
@@ -27,7 +29,9 @@ const book = defineResource("book", {
     authorId: text().required().hidden(),
   },
   relationships: {
-    author: belongsTo(() => author).via("authorId").displayField("name"),
+    author: belongsTo(() => author)
+      .via("authorId")
+      .displayField("name"),
   },
 });
 ```
@@ -36,27 +40,27 @@ Targets are functions so two resources can refer to each other before both defin
 
 ## Relationship types
 
-| Helper | Schema `relationshipType` | Value shape |
-| --- | --- | --- |
-| `belongsTo(() => resource)` | `belongsTo` | target resource or `null` |
-| `hasMany(() => resource)` | `hasMany` | array of target resources |
-| `belongsToMany(() => resource)` | `belongsToMany` | array of target resources |
+| Helper                          | Schema `relationshipType` | Value shape               |
+| ------------------------------- | ------------------------- | ------------------------- |
+| `belongsTo(() => resource)`     | `belongsTo`               | target resource or `null` |
+| `hasMany(() => resource)`       | `hasMany`                 | array of target resources |
+| `belongsToMany(() => resource)` | `belongsToMany`           | array of target resources |
 
 ## Relationship modifiers
 
 All relationship builders support:
 
-| Modifier | Purpose |
-| --- | --- |
-| `.label(label)` | Sets display copy. |
-| `.inverse(name)` | Names the corresponding relationship on the target resource. |
-| `.via(foreignKey)` | Stores the foreign key or column reference. |
-| `.displayField(name)` | Names the target field adapters should display. |
+| Modifier              | Purpose                                                      |
+| --------------------- | ------------------------------------------------------------ |
+| `.label(label)`       | Sets display copy.                                           |
+| `.inverse(name)`      | Names the corresponding relationship on the target resource. |
+| `.via(foreignKey)`    | Stores the foreign key or column reference.                  |
+| `.displayField(name)` | Names the target field adapters should display.              |
 
 `belongsToMany()` also supports:
 
-| Modifier | Purpose |
-| --- | --- |
+| Modifier                 | Purpose                                                     |
+| ------------------------ | ----------------------------------------------------------- |
 | `.through(resourceName)` | Names the join/through resource used to link the two sides. |
 
 ## Many-to-many example

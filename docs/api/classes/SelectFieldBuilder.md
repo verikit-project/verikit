@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / SelectFieldBuilder
 
@@ -18,13 +18,13 @@ Fluent builder for select fields.
 
 ### TValue
 
-`TValue` *extends* [`OptionValue`](../type-aliases/OptionValue.md) = [`OptionValue`](../type-aliases/OptionValue.md)
+`TValue` _extends_ [`OptionValue`](../type-aliases/OptionValue.md) = [`OptionValue`](../type-aliases/OptionValue.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new SelectFieldBuilder**\<`TValue`\>(`state?`): `SelectFieldBuilder`\<`TValue`\>
+> **new SelectFieldBuilder**\<`TValue`>\>(`state?`): `SelectFieldBuilder`\<`TValue`>\>
 
 Defined in: [fields/select.ts:19](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/select.ts#L19)
 
@@ -57,11 +57,11 @@ Does not exist at runtime; used only for type inference.
 
 [`FieldBuilder`](FieldBuilder.md).[`$value`](FieldBuilder.md#value)
 
-***
+---
 
 ### state
 
-> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`\>
+> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>\>
 
 Defined in: [fields/base.ts:177](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L177)
 
@@ -76,7 +76,7 @@ Exposed as protected so subclasses can access and extend state.
 
 ### default()
 
-> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `Exclude`\<`TValue`, `undefined`\> \| `null`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `Exclude`\<`TValue`, `undefined`> \> \| `null`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:271](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L271)
 
@@ -97,11 +97,11 @@ undefined from TValue.
 
 [`FieldBuilder`](FieldBuilder.md).[`default`](FieldBuilder.md#default)
 
-***
+---
 
 ### description()
 
-> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:230](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L230)
 
@@ -121,11 +121,11 @@ Sets help text describing the field's purpose.
 
 [`FieldBuilder`](FieldBuilder.md).[`description`](FieldBuilder.md#description)
 
-***
+---
 
 ### getState()
 
-> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`\>
+> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>\>
 
 Defined in: [fields/base.ts:211](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L211)
 
@@ -142,11 +142,11 @@ internally to compose builders (e.g. `from(column).as(field)`).
 
 [`FieldBuilder`](FieldBuilder.md).[`getState`](FieldBuilder.md#getstate)
 
-***
+---
 
 ### hidden()
 
-> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:290](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L290)
 
@@ -160,11 +160,11 @@ Hides the field from forms and tables.
 
 [`FieldBuilder`](FieldBuilder.md).[`hidden`](FieldBuilder.md#hidden)
 
-***
+---
 
 ### label()
 
-> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:225](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L225)
 
@@ -184,11 +184,11 @@ Sets the field's display label.
 
 [`FieldBuilder`](FieldBuilder.md).[`label`](FieldBuilder.md#label)
 
-***
+---
 
 ### meta()
 
-> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:310](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L310)
 
@@ -208,11 +208,11 @@ Merges adapter-specific metadata into any existing `meta`.
 
 [`FieldBuilder`](FieldBuilder.md).[`meta`](FieldBuilder.md#meta)
 
-***
+---
 
 ### nullable()
 
-> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:260](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L260)
 
@@ -226,11 +226,11 @@ Allows null (TValue | null); also sets required: false.
 
 [`FieldBuilder`](FieldBuilder.md).[`nullable`](FieldBuilder.md#nullable)
 
-***
+---
 
 ### optional()
 
-> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:252](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L252)
 
@@ -244,13 +244,13 @@ Marks the field optional (TValue | undefined); does not allow null.
 
 [`FieldBuilder`](FieldBuilder.md).[`optional`](FieldBuilder.md#optional)
 
-***
+---
 
 ### options()
 
 #### Call Signature
 
-> **options**\<`TOptions`\>(`options`): [`FieldBuilder`](FieldBuilder.md)\<`TOptions`\[`number`\] \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TOptions`\[`number`\]\>\>
+> **options**\<`TOptions`>\>(`options`): [`FieldBuilder`](FieldBuilder.md)\<`TOptions`\[`number`\] \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TOptions`\[`number`\]\>\>
 
 Defined in: [fields/select.ts:30](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/select.ts#L30)
 
@@ -260,7 +260,7 @@ Set select options from primitive values.
 
 ###### TOptions
 
-`TOptions` *extends* readonly `TValue`[]
+`TOptions` _extends_ readonly `TValue`[]
 
 ##### Parameters
 
@@ -274,7 +274,7 @@ Set select options from primitive values.
 
 #### Call Signature
 
-> **options**\<`TOptions`\>(`options`): [`FieldBuilder`](FieldBuilder.md)\<`TOptions`\[`number`\]\[`"value"`\] \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TOptions`\[`number`\]\[`"value"`\]\>\>
+> **options**\<`TOptions`>\>(`options`): [`FieldBuilder`](FieldBuilder.md)\<`TOptions`\[`number`\]\[`"value"`\] \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TOptions`\[`number`\]\[`"value"`\]\>\>
 
 Defined in: [fields/select.ts:39](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/select.ts#L39)
 
@@ -284,7 +284,7 @@ Set select options from labelled option objects.
 
 ###### TOptions
 
-`TOptions` *extends* readonly [`FieldOption`](../interfaces/FieldOption.md)\<`TValue`\>[]
+`TOptions` _extends_ readonly [`FieldOption`](../interfaces/FieldOption.md)\<`TValue`\>[]
 
 ##### Parameters
 
@@ -296,11 +296,11 @@ Set select options from labelled option objects.
 
 [`FieldBuilder`](FieldBuilder.md)\<`TOptions`\[`number`\]\[`"value"`\] \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TOptions`\[`number`\]\[`"value"`\]\>\>
 
-***
+---
 
 ### placeholder()
 
-> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:237](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L237)
 
@@ -320,11 +320,11 @@ Sets placeholder text for empty form inputs.
 
 [`FieldBuilder`](FieldBuilder.md).[`placeholder`](FieldBuilder.md#placeholder)
 
-***
+---
 
 ### readOnly()
 
-> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:295](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L295)
 
@@ -338,11 +338,11 @@ Makes the field display-only in forms.
 
 [`FieldBuilder`](FieldBuilder.md).[`readOnly`](FieldBuilder.md#readonly)
 
-***
+---
 
 ### required()
 
-> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:244](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L244)
 
@@ -356,11 +356,11 @@ Marks the field required, narrowing TValue and forcing nullable: false.
 
 [`FieldBuilder`](FieldBuilder.md).[`required`](FieldBuilder.md#required)
 
-***
+---
 
 ### searchable()
 
-> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:280](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L280)
 
@@ -374,11 +374,11 @@ Marks the field searchable in list/table queries.
 
 [`FieldBuilder`](FieldBuilder.md).[`searchable`](FieldBuilder.md#searchable)
 
-***
+---
 
 ### sortable()
 
-> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TValue` \| `null` \| `undefined`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:285](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L285)
 
@@ -392,7 +392,7 @@ Marks the field sortable in table columns.
 
 [`FieldBuilder`](FieldBuilder.md).[`sortable`](FieldBuilder.md#sortable)
 
-***
+---
 
 ### toSchema()
 
@@ -420,11 +420,11 @@ If `name` is empty or whitespace-only.
 
 [`FieldBuilder`](FieldBuilder.md).[`toSchema`](FieldBuilder.md#toschema)
 
-***
+---
 
 ### validation()
 
-> **validation**\<`TOutput`\>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TOutput`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> **validation**\<`TOutput`>\>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TOutput`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:303](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L303)
 
@@ -451,7 +451,7 @@ output type becomes the new TValue.
 
 [`FieldBuilder`](FieldBuilder.md).[`validation`](FieldBuilder.md#validation)
 
-***
+---
 
 ### withSource()
 
@@ -478,11 +478,11 @@ builder type; used by `from(column).as(field)`.
 
 [`FieldBuilder`](FieldBuilder.md).[`withSource`](FieldBuilder.md#withsource)
 
-***
+---
 
 ### withState()
 
-> `protected` **withState**\<`TNextValue`\>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`\>, `TNextValue`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`\>\>
+> `protected` **withState**\<`TNextValue`>\>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>\>, `TNextValue`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>\>\>
 
 Defined in: [fields/base.ts:191](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L191)
 

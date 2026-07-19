@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / SectionNode
 
@@ -18,7 +18,7 @@ A titled group of layout children.
 
 Defined in: [resource/resource.ts:41](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L41)
 
-***
+---
 
 ### title
 
@@ -26,7 +26,7 @@ Defined in: [resource/resource.ts:41](https://github.com/iamceeso/verikit/blob/b
 
 Defined in: [resource/resource.ts:40](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L40)
 
-***
+---
 
 ### type
 

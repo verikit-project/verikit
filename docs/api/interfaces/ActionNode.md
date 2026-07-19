@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / ActionNode
 
@@ -18,7 +18,7 @@ A named action (e.g. a button) with optional input fields.
 
 Defined in: [resource/resource.ts:81](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L81)
 
-***
+---
 
 ### label?
 
@@ -26,7 +26,7 @@ Defined in: [resource/resource.ts:81](https://github.com/iamceeso/verikit/blob/b
 
 Defined in: [resource/resource.ts:80](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L80)
 
-***
+---
 
 ### name
 
@@ -34,7 +34,7 @@ Defined in: [resource/resource.ts:80](https://github.com/iamceeso/verikit/blob/b
 
 Defined in: [resource/resource.ts:79](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L79)
 
-***
+---
 
 ### type
 

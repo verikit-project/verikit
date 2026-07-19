@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / ResourceSchema
 
@@ -14,15 +14,15 @@ Serializable resource schema produced by `Resource.toSchema()`.
 
 ### TName
 
-`TName` *extends* `string` = `string`
+`TName` _extends_ `string` = `string`
 
 ### TFields
 
-`TFields` *extends* [`FieldMap`](../type-aliases/FieldMap.md) = [`FieldMap`](../type-aliases/FieldMap.md)
+`TFields` _extends_ [`FieldMap`](../type-aliases/FieldMap.md) = [`FieldMap`](../type-aliases/FieldMap.md)
 
 ### TRelationships
 
-`TRelationships` *extends* [`RelationshipMap`](../type-aliases/RelationshipMap.md) = [`RelationshipMap`](../type-aliases/RelationshipMap.md)
+`TRelationships` _extends_ [`RelationshipMap`](../type-aliases/RelationshipMap.md) = [`RelationshipMap`](../type-aliases/RelationshipMap.md)
 
 ## Properties
 
@@ -32,15 +32,15 @@ Serializable resource schema produced by `Resource.toSchema()`.
 
 Defined in: [resource/resource.ts:105](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L105)
 
-***
+---
 
 ### meta?
 
-> `optional` **meta?**: `Record`\<`string`, `unknown`\>
+> `optional` **meta?**: `Record`\<`string`, `unknown`>\>
 
 Defined in: [resource/resource.ts:114](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L114)
 
-***
+---
 
 ### name
 
@@ -48,7 +48,7 @@ Defined in: [resource/resource.ts:114](https://github.com/iamceeso/verikit/blob/
 
 Defined in: [resource/resource.ts:104](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L104)
 
-***
+---
 
 ### relationships
 
@@ -56,7 +56,7 @@ Defined in: [resource/resource.ts:104](https://github.com/iamceeso/verikit/blob/
 
 Defined in: [resource/resource.ts:108](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L108)
 
-***
+---
 
 ### tree
 
@@ -64,7 +64,7 @@ Defined in: [resource/resource.ts:108](https://github.com/iamceeso/verikit/blob/
 
 Defined in: [resource/resource.ts:113](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L113)
 
-***
+---
 
 ### type
 

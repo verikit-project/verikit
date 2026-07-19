@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / Resource
 
@@ -15,11 +15,11 @@ Finalize with `.toSchema()` to produce a serializable resource schema.
 
 ### TName
 
-`TName` *extends* `string` = `string`
+`TName` _extends_ `string` = `string`
 
 ### TFields
 
-`TFields` *extends* [`FieldMap`](../type-aliases/FieldMap.md) = [`FieldMap`](../type-aliases/FieldMap.md)
+`TFields` _extends_ [`FieldMap`](../type-aliases/FieldMap.md) = [`FieldMap`](../type-aliases/FieldMap.md)
 
 ### TTable
 
@@ -27,13 +27,13 @@ Finalize with `.toSchema()` to produce a serializable resource schema.
 
 ### TRelationships
 
-`TRelationships` *extends* [`RelationshipMap`](../type-aliases/RelationshipMap.md) = [`RelationshipMap`](../type-aliases/RelationshipMap.md)
+`TRelationships` _extends_ [`RelationshipMap`](../type-aliases/RelationshipMap.md) = [`RelationshipMap`](../type-aliases/RelationshipMap.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new Resource**\<`TName`, `TFields`, `TTable`, `TRelationships`\>(`name`, `config`): `Resource`\<`TName`, `TFields`, `TTable`, `TRelationships`\>
+> **new Resource**\<`TName`, `TFields`, `TTable`, `TRelationships`>\>(`name`, `config`): `Resource`\<`TName`, `TFields`, `TTable`, `TRelationships`>\>
 
 Defined in: [resource/resource.ts:193](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L193)
 
@@ -63,15 +63,15 @@ If a field and relationship share the same name.
 
 Defined in: [resource/resource.ts:179](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L179)
 
-***
+---
 
 ### meta?
 
-> `readonly` `optional` **meta?**: `Record`\<`string`, `unknown`\>
+> `readonly` `optional` **meta?**: `Record`\<`string`, `unknown`>\>
 
 Defined in: [resource/resource.ts:181](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L181)
 
-***
+---
 
 ### name
 
@@ -79,7 +79,7 @@ Defined in: [resource/resource.ts:181](https://github.com/iamceeso/verikit/blob/
 
 Defined in: [resource/resource.ts:177](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L177)
 
-***
+---
 
 ### relationships
 
@@ -87,7 +87,7 @@ Defined in: [resource/resource.ts:177](https://github.com/iamceeso/verikit/blob/
 
 Defined in: [resource/resource.ts:180](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L180)
 
-***
+---
 
 ### table?
 
@@ -115,11 +115,11 @@ Attaches a form layout factory; returns `this` for chaining.
 
 `this`
 
-***
+---
 
 ### toSchema()
 
-> **toSchema**(): [`ResourceSchema`](../interfaces/ResourceSchema.md)\<`TName`, `TFields`, `TRelationships`\>
+> **toSchema**(): [`ResourceSchema`](../interfaces/ResourceSchema.md)\<`TName`, `TFields`, `TRelationships`>\>
 
 Defined in: [resource/resource.ts:230](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L230)
 

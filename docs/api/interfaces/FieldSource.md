@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / FieldSource
 
@@ -26,7 +26,7 @@ Defined in: [fields/base.ts:64](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Reference to the column being consumed
 
-***
+---
 
 ### mode
 

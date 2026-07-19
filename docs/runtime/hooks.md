@@ -33,11 +33,11 @@ const publish = action("publish")
 
 ## Hook timing
 
-| Hook | Runs |
-| --- | --- |
-| `before(run)` | After availability and input validation, before the handler. |
-| `after(run, result)` | After the handler resolves successfully. |
-| `error(run, error)` | If the handler throws. |
+| Hook                 | Runs                                                         |
+| -------------------- | ------------------------------------------------------------ |
+| `before(run)`        | After availability and input validation, before the handler. |
+| `after(run, result)` | After the handler resolves successfully.                     |
+| `error(run, error)`  | If the handler throws.                                       |
 
 Hooks can be synchronous or asynchronous.
 

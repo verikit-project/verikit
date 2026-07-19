@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / FieldSchema
 
@@ -30,7 +30,7 @@ Defined in: [fields/base.ts:101](https://github.com/iamceeso/verikit/blob/b02d6a
 
 Fallback value if the field is not provided (e.g., radio default, checkbox unchecked)
 
-***
+---
 
 ### description?
 
@@ -40,7 +40,7 @@ Defined in: [fields/base.ts:85](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Help text explaining the field's purpose
 
-***
+---
 
 ### fieldType
 
@@ -50,7 +50,7 @@ Defined in: [fields/base.ts:77](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 The input type category (text, select, boolean, etc.)
 
-***
+---
 
 ### hidden?
 
@@ -60,7 +60,7 @@ Defined in: [fields/base.ts:97](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Field should not be displayed in forms or tables (stored but hidden from UI)
 
-***
+---
 
 ### label?
 
@@ -70,17 +70,17 @@ Defined in: [fields/base.ts:83](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Display label shown to users in forms and tables (e.g., "Email Address")
 
-***
+---
 
 ### meta?
 
-> `optional` **meta?**: `Record`\<`string`, `unknown`\>
+> `optional` **meta?**: `Record`\<`string`, `unknown`>\>
 
 Defined in: [fields/base.ts:109](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L109)
 
 Vendor-specific or adapter-specific metadata (e.g., custom component params)
 
-***
+---
 
 ### name
 
@@ -90,7 +90,7 @@ Defined in: [fields/base.ts:75](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Unique identifier for this field within its resource
 
-***
+---
 
 ### nullable?
 
@@ -100,17 +100,17 @@ Defined in: [fields/base.ts:91](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Field can store null as an explicit value (distinct from undefined/omitted)
 
-***
+---
 
 ### options?
 
-> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<[`OptionValue`](../type-aliases/OptionValue.md)\>[]
+> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<[`OptionValue`](../type-aliases/OptionValue.md)>\>[]
 
 Defined in: [fields/base.ts:103](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L103)
 
 Enumerated options for select-type fields
 
-***
+---
 
 ### placeholder?
 
@@ -120,7 +120,7 @@ Defined in: [fields/base.ts:87](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Placeholder text for empty form inputs
 
-***
+---
 
 ### readOnly?
 
@@ -130,7 +130,7 @@ Defined in: [fields/base.ts:99](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Field is visible but cannot be edited; display-only in forms
 
-***
+---
 
 ### required?
 
@@ -140,7 +140,7 @@ Defined in: [fields/base.ts:89](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Field must have a non-null, non-undefined value; form submission fails without it
 
-***
+---
 
 ### searchable?
 
@@ -150,7 +150,7 @@ Defined in: [fields/base.ts:93](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Field supports full-text search in list/table queries
 
-***
+---
 
 ### sortable?
 
@@ -160,17 +160,17 @@ Defined in: [fields/base.ts:95](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Column can be used for sorting in tables
 
-***
+---
 
 ### source?
 
-> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`\>
+> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`>\>
 
 Defined in: [fields/base.ts:107](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L107)
 
 Consume-mode reference to a column
 
-***
+---
 
 ### type
 
@@ -180,11 +180,11 @@ Defined in: [fields/base.ts:73](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 Literal "field" discriminator for discriminated unions
 
-***
+---
 
 ### validation?
 
-> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`\>
+> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`>\>
 
 Defined in: [fields/base.ts:105](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L105)
 

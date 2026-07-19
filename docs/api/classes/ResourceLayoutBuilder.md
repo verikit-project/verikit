@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / ResourceLayoutBuilder
 
@@ -15,17 +15,17 @@ names into schema nodes and assembles them into layout tree nodes.
 
 ### TFields
 
-`TFields` *extends* [`FieldMap`](../type-aliases/FieldMap.md)
+`TFields` _extends_ [`FieldMap`](../type-aliases/FieldMap.md)
 
 ### TRelationships
 
-`TRelationships` *extends* [`RelationshipMap`](../type-aliases/RelationshipMap.md) = [`RelationshipMap`](../type-aliases/RelationshipMap.md)
+`TRelationships` _extends_ [`RelationshipMap`](../type-aliases/RelationshipMap.md) = [`RelationshipMap`](../type-aliases/RelationshipMap.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new ResourceLayoutBuilder**\<`TFields`, `TRelationships`\>(`fields`, `relationships`): `ResourceLayoutBuilder`\<`TFields`, `TRelationships`\>
+> **new ResourceLayoutBuilder**\<`TFields`, `TRelationships`>\>(`fields`, `relationships`): `ResourceLayoutBuilder`\<`TFields`, `TRelationships`>\>
 
 Defined in: [resource/resource.ts:283](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L283)
 
@@ -73,11 +73,11 @@ readonly `LayoutChild`\<`TFields`, `TRelationships`\>[]
 
 [`ActionNode`](../interfaces/ActionNode.md)
 
-***
+---
 
 ### field()
 
-> **field**\<`TName`\>(`name`): [`FieldNode`](../interfaces/FieldNode.md)
+> **field**\<`TName`>\>(`name`): [`FieldNode`](../interfaces/FieldNode.md)
 
 Defined in: [resource/resource.ts:296](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L296)
 
@@ -87,7 +87,7 @@ Returns the finalized field node for `name`.
 
 ##### TName
 
-`TName` *extends* `string`
+`TName` _extends_ `string`
 
 #### Parameters
 
@@ -103,7 +103,7 @@ Returns the finalized field node for `name`.
 
 If unknown.
 
-***
+---
 
 ### grid()
 
@@ -127,11 +127,11 @@ readonly `LayoutChild`\<`TFields`, `TRelationships`\>[]
 
 [`GridNode`](../interfaces/GridNode.md)
 
-***
+---
 
 ### relationship()
 
-> **relationship**\<`TName`\>(`name`): [`RelationshipSchema`](../type-aliases/RelationshipSchema.md)
+> **relationship**\<`TName`>\>(`name`): [`RelationshipSchema`](../type-aliases/RelationshipSchema.md)
 
 Defined in: [resource/resource.ts:305](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L305)
 
@@ -141,7 +141,7 @@ Returns the finalized relationship node for `name`.
 
 ##### TName
 
-`TName` *extends* `string`
+`TName` _extends_ `string`
 
 #### Parameters
 
@@ -157,7 +157,7 @@ Returns the finalized relationship node for `name`.
 
 If unknown.
 
-***
+---
 
 ### repeater()
 
@@ -181,7 +181,7 @@ readonly `LayoutChild`\<`TFields`, `TRelationships`\>[]
 
 [`RepeaterNode`](../interfaces/RepeaterNode.md)
 
-***
+---
 
 ### section()
 
@@ -205,7 +205,7 @@ readonly `LayoutChild`\<`TFields`, `TRelationships`\>[]
 
 [`SectionNode`](../interfaces/SectionNode.md)
 
-***
+---
 
 ### tabs()
 
@@ -225,7 +225,7 @@ readonly `object`[]
 
 [`TabsNode`](../interfaces/TabsNode.md)
 
-***
+---
 
 ### wizard()
 

@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / BelongsToManyRelationshipBuilder
 
@@ -19,13 +19,13 @@ join/through resource.
 
 ### TResource
 
-`TResource` *extends* [`Resource`](Resource.md) = [`Resource`](Resource.md)
+`TResource` _extends_ [`Resource`](Resource.md) = [`Resource`](Resource.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new BelongsToManyRelationshipBuilder**\<`TResource`\>(`target`, `state?`): `BelongsToManyRelationshipBuilder`\<`TResource`\>
+> **new BelongsToManyRelationshipBuilder**\<`TResource`>\>(`target`, `state?`): `BelongsToManyRelationshipBuilder`\<`TResource`>\>
 
 Defined in: [relationships/belongs-to-many.ts:49](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/belongs-to-many.ts#L49)
 
@@ -55,7 +55,7 @@ Defined in: [relationships/belongs-to-many.ts:49](https://github.com/iamceeso/ve
 
 Defined in: [relationships/belongs-to-many.ts:47](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/belongs-to-many.ts#L47)
 
-***
+---
 
 ### state
 
@@ -67,7 +67,7 @@ Defined in: [relationships/shared/relationship-builder.ts:25](https://github.com
 
 `RelationshipBuilder.state`
 
-***
+---
 
 ### target
 
@@ -107,7 +107,7 @@ keyof [`InferResourceFields`](../type-aliases/InferResourceFields.md)\<`TResourc
 
 `RelationshipBuilder.displayField`
 
-***
+---
 
 ### inverse()
 
@@ -131,7 +131,7 @@ Sets the inverse relationship on the target resource.
 
 `RelationshipBuilder.inverse`
 
-***
+---
 
 ### label()
 
@@ -155,7 +155,7 @@ Sets a human-readable label for the relationship.
 
 `RelationshipBuilder.label`
 
-***
+---
 
 ### resourceName()
 
@@ -173,7 +173,7 @@ Returns the name of the target resource.
 
 `RelationshipBuilder.resourceName`
 
-***
+---
 
 ### through()
 
@@ -193,7 +193,7 @@ Sets the join/through resource name linking the two sides.
 
 `this`
 
-***
+---
 
 ### toSchema()
 
@@ -213,7 +213,7 @@ Finalizes the builder into a `BelongsToManyRelationshipSchema`.
 
 [`BelongsToManyRelationshipSchema`](../interfaces/BelongsToManyRelationshipSchema.md)
 
-***
+---
 
 ### via()
 
@@ -237,7 +237,7 @@ Sets the foreign key column used to look up matching rows.
 
 `RelationshipBuilder.via`
 
-***
+---
 
 ### withState()
 

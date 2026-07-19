@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / NumberFieldSchema
 
@@ -29,7 +29,7 @@ Fallback value if the field is not provided (e.g., radio default, checkbox unche
 
 [`FieldSchema`](FieldSchema.md).[`defaultValue`](FieldSchema.md#defaultvalue)
 
-***
+---
 
 ### description?
 
@@ -43,7 +43,7 @@ Help text explaining the field's purpose
 
 [`FieldSchema`](FieldSchema.md).[`description`](FieldSchema.md#description)
 
-***
+---
 
 ### fieldType
 
@@ -57,7 +57,7 @@ Literal field type discriminator for numeric fields.
 
 [`FieldSchema`](FieldSchema.md).[`fieldType`](FieldSchema.md#fieldtype)
 
-***
+---
 
 ### hidden?
 
@@ -71,7 +71,7 @@ Field should not be displayed in forms or tables (stored but hidden from UI)
 
 [`FieldSchema`](FieldSchema.md).[`hidden`](FieldSchema.md#hidden)
 
-***
+---
 
 ### label?
 
@@ -85,7 +85,7 @@ Display label shown to users in forms and tables (e.g., "Email Address")
 
 [`FieldSchema`](FieldSchema.md).[`label`](FieldSchema.md#label)
 
-***
+---
 
 ### max?
 
@@ -95,11 +95,11 @@ Defined in: [fields/number.ts:13](https://github.com/iamceeso/verikit/blob/b02d6
 
 Largest allowed value.
 
-***
+---
 
 ### meta?
 
-> `optional` **meta?**: `Record`\<`string`, `unknown`\>
+> `optional` **meta?**: `Record`\<`string`, `unknown`>\>
 
 Defined in: [fields/base.ts:109](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L109)
 
@@ -109,7 +109,7 @@ Vendor-specific or adapter-specific metadata (e.g., custom component params)
 
 [`FieldSchema`](FieldSchema.md).[`meta`](FieldSchema.md#meta)
 
-***
+---
 
 ### min?
 
@@ -119,7 +119,7 @@ Defined in: [fields/number.ts:11](https://github.com/iamceeso/verikit/blob/b02d6
 
 Smallest allowed value.
 
-***
+---
 
 ### name
 
@@ -133,7 +133,7 @@ Unique identifier for this field within its resource
 
 [`FieldSchema`](FieldSchema.md).[`name`](FieldSchema.md#name)
 
-***
+---
 
 ### nullable?
 
@@ -147,11 +147,11 @@ Field can store null as an explicit value (distinct from undefined/omitted)
 
 [`FieldSchema`](FieldSchema.md).[`nullable`](FieldSchema.md#nullable)
 
-***
+---
 
 ### options?
 
-> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<[`OptionValue`](../type-aliases/OptionValue.md)\>[]
+> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<[`OptionValue`](../type-aliases/OptionValue.md)>\>[]
 
 Defined in: [fields/base.ts:103](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L103)
 
@@ -161,7 +161,7 @@ Enumerated options for select-type fields
 
 [`FieldSchema`](FieldSchema.md).[`options`](FieldSchema.md#options)
 
-***
+---
 
 ### placeholder?
 
@@ -175,7 +175,7 @@ Placeholder text for empty form inputs
 
 [`FieldSchema`](FieldSchema.md).[`placeholder`](FieldSchema.md#placeholder)
 
-***
+---
 
 ### readOnly?
 
@@ -189,7 +189,7 @@ Field is visible but cannot be edited; display-only in forms
 
 [`FieldSchema`](FieldSchema.md).[`readOnly`](FieldSchema.md#readonly)
 
-***
+---
 
 ### required?
 
@@ -203,7 +203,7 @@ Field must have a non-null, non-undefined value; form submission fails without i
 
 [`FieldSchema`](FieldSchema.md).[`required`](FieldSchema.md#required)
 
-***
+---
 
 ### searchable?
 
@@ -217,7 +217,7 @@ Field supports full-text search in list/table queries
 
 [`FieldSchema`](FieldSchema.md).[`searchable`](FieldSchema.md#searchable)
 
-***
+---
 
 ### sortable?
 
@@ -231,11 +231,11 @@ Column can be used for sorting in tables
 
 [`FieldSchema`](FieldSchema.md).[`sortable`](FieldSchema.md#sortable)
 
-***
+---
 
 ### source?
 
-> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`\>
+> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`>\>
 
 Defined in: [fields/base.ts:107](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L107)
 
@@ -245,7 +245,7 @@ Consume-mode reference to a column
 
 [`FieldSchema`](FieldSchema.md).[`source`](FieldSchema.md#source)
 
-***
+---
 
 ### step?
 
@@ -255,7 +255,7 @@ Defined in: [fields/number.ts:15](https://github.com/iamceeso/verikit/blob/b02d6
 
 Increment used by numeric controls.
 
-***
+---
 
 ### type
 
@@ -269,11 +269,11 @@ Literal "field" discriminator for discriminated unions
 
 [`FieldSchema`](FieldSchema.md).[`type`](FieldSchema.md#type)
 
-***
+---
 
 ### validation?
 
-> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`\>
+> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`>\>
 
 Defined in: [fields/base.ts:105](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L105)
 

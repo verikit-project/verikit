@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / NumberFieldBuilder
 
@@ -24,7 +24,7 @@ Fluent builder for numeric fields.
 
 ### Constructor
 
-> **new NumberFieldBuilder**\<`TValue`\>(`state?`): `NumberFieldBuilder`\<`TValue`\>
+> **new NumberFieldBuilder**\<`TValue`>\>(`state?`): `NumberFieldBuilder`\<`TValue`>\>
 
 Defined in: [fields/number.ts:42](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/number.ts#L42)
 
@@ -57,11 +57,11 @@ Does not exist at runtime; used only for type inference.
 
 [`FieldBuilder`](FieldBuilder.md).[`$value`](FieldBuilder.md#value)
 
-***
+---
 
 ### state
 
-> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`\>
+> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>\>
 
 Defined in: [fields/base.ts:177](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L177)
 
@@ -76,7 +76,7 @@ Exposed as protected so subclasses can access and extend state.
 
 ### default()
 
-> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `Exclude`\<`TValue`, `undefined`\>, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `Exclude`\<`TValue`, `undefined`>\>, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:271](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L271)
 
@@ -97,11 +97,11 @@ undefined from TValue.
 
 [`FieldBuilder`](FieldBuilder.md).[`default`](FieldBuilder.md#default)
 
-***
+---
 
 ### description()
 
-> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:230](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L230)
 
@@ -121,11 +121,11 @@ Sets help text describing the field's purpose.
 
 [`FieldBuilder`](FieldBuilder.md).[`description`](FieldBuilder.md#description)
 
-***
+---
 
 ### getState()
 
-> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`\>
+> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>\>
 
 Defined in: [fields/base.ts:211](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L211)
 
@@ -142,11 +142,11 @@ internally to compose builders (e.g. `from(column).as(field)`).
 
 [`FieldBuilder`](FieldBuilder.md).[`getState`](FieldBuilder.md#getstate)
 
-***
+---
 
 ### hidden()
 
-> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:290](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L290)
 
@@ -160,11 +160,11 @@ Hides the field from forms and tables.
 
 [`FieldBuilder`](FieldBuilder.md).[`hidden`](FieldBuilder.md#hidden)
 
-***
+---
 
 ### label()
 
-> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:225](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L225)
 
@@ -184,11 +184,11 @@ Sets the field's display label.
 
 [`FieldBuilder`](FieldBuilder.md).[`label`](FieldBuilder.md#label)
 
-***
+---
 
 ### max()
 
-> **max**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **max**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/number.ts:59](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/number.ts#L59)
 
@@ -204,11 +204,11 @@ Sets the largest allowed value.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
 
-***
+---
 
 ### meta()
 
-> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:310](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L310)
 
@@ -228,11 +228,11 @@ Merges adapter-specific metadata into any existing `meta`.
 
 [`FieldBuilder`](FieldBuilder.md).[`meta`](FieldBuilder.md#meta)
 
-***
+---
 
 ### min()
 
-> **min**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **min**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/number.ts:51](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/number.ts#L51)
 
@@ -248,11 +248,11 @@ Sets the smallest allowed value.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
 
-***
+---
 
 ### nullable()
 
-> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue` \| `null`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue` \| `null`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:260](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L260)
 
@@ -266,11 +266,11 @@ Allows null (TValue | null); also sets required: false.
 
 [`FieldBuilder`](FieldBuilder.md).[`nullable`](FieldBuilder.md#nullable)
 
-***
+---
 
 ### optional()
 
-> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue` \| `undefined`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue` \| `undefined`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:252](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L252)
 
@@ -284,11 +284,11 @@ Marks the field optional (TValue | undefined); does not allow null.
 
 [`FieldBuilder`](FieldBuilder.md).[`optional`](FieldBuilder.md#optional)
 
-***
+---
 
 ### placeholder()
 
-> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:237](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L237)
 
@@ -308,11 +308,11 @@ Sets placeholder text for empty form inputs.
 
 [`FieldBuilder`](FieldBuilder.md).[`placeholder`](FieldBuilder.md#placeholder)
 
-***
+---
 
 ### readOnly()
 
-> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:295](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L295)
 
@@ -326,11 +326,11 @@ Makes the field display-only in forms.
 
 [`FieldBuilder`](FieldBuilder.md).[`readOnly`](FieldBuilder.md#readonly)
 
-***
+---
 
 ### required()
 
-> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `NonNullable`\<`TValue`\>, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `NonNullable`\<`TValue`>\>, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:244](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L244)
 
@@ -344,11 +344,11 @@ Marks the field required, narrowing TValue and forcing nullable: false.
 
 [`FieldBuilder`](FieldBuilder.md).[`required`](FieldBuilder.md#required)
 
-***
+---
 
 ### searchable()
 
-> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:280](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L280)
 
@@ -362,11 +362,11 @@ Marks the field searchable in list/table queries.
 
 [`FieldBuilder`](FieldBuilder.md).[`searchable`](FieldBuilder.md#searchable)
 
-***
+---
 
 ### sortable()
 
-> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:285](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L285)
 
@@ -380,11 +380,11 @@ Marks the field sortable in table columns.
 
 [`FieldBuilder`](FieldBuilder.md).[`sortable`](FieldBuilder.md#sortable)
 
-***
+---
 
 ### step()
 
-> **step**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **step**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/number.ts:67](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/number.ts#L67)
 
@@ -400,7 +400,7 @@ Sets the increment used by numeric input controls.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
 
-***
+---
 
 ### toSchema()
 
@@ -428,11 +428,11 @@ If `name` is empty or whitespace-only.
 
 [`FieldBuilder`](FieldBuilder.md).[`toSchema`](FieldBuilder.md#toschema)
 
-***
+---
 
 ### validation()
 
-> **validation**\<`TOutput`\>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TOutput`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> **validation**\<`TOutput`>\>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TOutput`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:303](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L303)
 
@@ -459,7 +459,7 @@ output type becomes the new TValue.
 
 [`FieldBuilder`](FieldBuilder.md).[`validation`](FieldBuilder.md#validation)
 
-***
+---
 
 ### withSource()
 
@@ -486,11 +486,11 @@ builder type; used by `from(column).as(field)`.
 
 [`FieldBuilder`](FieldBuilder.md).[`withSource`](FieldBuilder.md#withsource)
 
-***
+---
 
 ### withState()
 
-> `protected` **withState**\<`TNextValue`\>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`\>, `TNextValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)\>
+> `protected` **withState**\<`TNextValue`>\>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`NumberFieldBuilder`\<`TValue`>\>, `TNextValue`, [`NumberFieldSchema`](../interfaces/NumberFieldSchema.md)>\>
 
 Defined in: [fields/base.ts:191](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L191)
 

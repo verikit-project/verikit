@@ -27,7 +27,9 @@ export const author = defineResource("author", {
     email: email().required(),
   },
   relationships: {
-    posts: hasMany(() => post).via("authorId").displayField("title"),
+    posts: hasMany(() => post)
+      .via("authorId")
+      .displayField("title"),
   },
 });
 
@@ -37,7 +39,9 @@ export const tag = defineResource("tag", {
     name: text().required().searchable(),
   },
   relationships: {
-    posts: belongsToMany(() => post).through("postTag").displayField("title"),
+    posts: belongsToMany(() => post)
+      .through("postTag")
+      .displayField("title"),
   },
 });
 
@@ -53,16 +57,15 @@ export const post = defineResource("post", {
     authorId: text().required().hidden(),
   },
   relationships: {
-    author: belongsTo(() => author).via("authorId").displayField("name"),
-    tags: belongsToMany(() => tag).through("postTag").displayField("name"),
+    author: belongsTo(() => author)
+      .via("authorId")
+      .displayField("name"),
+    tags: belongsToMany(() => tag)
+      .through("postTag")
+      .displayField("name"),
   },
 }).form((layout) => [
-  layout.section("Post", [
-    "title",
-    "slug",
-    "excerpt",
-    "body",
-  ]),
+  layout.section("Post", ["title", "slug", "excerpt", "body"]),
   layout.grid(2, ["status", "publishedAt"]),
   layout.section("Relationships", [
     layout.relationship("author"),

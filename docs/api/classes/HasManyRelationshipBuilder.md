@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / HasManyRelationshipBuilder
 
@@ -19,13 +19,13 @@ The target resource stores the foreign key to this resource.
 
 ### TResource
 
-`TResource` *extends* [`Resource`](Resource.md) = [`Resource`](Resource.md)
+`TResource` _extends_ [`Resource`](Resource.md) = [`Resource`](Resource.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new HasManyRelationshipBuilder**\<`TResource`\>(`target`, `state?`): `HasManyRelationshipBuilder`\<`TResource`\>
+> **new HasManyRelationshipBuilder**\<`TResource`>\>(`target`, `state?`): `HasManyRelationshipBuilder`\<`TResource`>\>
 
 Defined in: [relationships/has-many.ts:39](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/has-many.ts#L39)
 
@@ -55,7 +55,7 @@ Defined in: [relationships/has-many.ts:39](https://github.com/iamceeso/verikit/b
 
 Defined in: [relationships/has-many.ts:37](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/has-many.ts#L37)
 
-***
+---
 
 ### state
 
@@ -67,7 +67,7 @@ Defined in: [relationships/shared/relationship-builder.ts:25](https://github.com
 
 `RelationshipBuilder.state`
 
-***
+---
 
 ### target
 
@@ -107,7 +107,7 @@ keyof [`InferResourceFields`](../type-aliases/InferResourceFields.md)\<`TResourc
 
 `RelationshipBuilder.displayField`
 
-***
+---
 
 ### inverse()
 
@@ -131,7 +131,7 @@ Sets the inverse relationship on the target resource.
 
 `RelationshipBuilder.inverse`
 
-***
+---
 
 ### label()
 
@@ -155,7 +155,7 @@ Sets a human-readable label for the relationship.
 
 `RelationshipBuilder.label`
 
-***
+---
 
 ### resourceName()
 
@@ -173,7 +173,7 @@ Returns the name of the target resource.
 
 `RelationshipBuilder.resourceName`
 
-***
+---
 
 ### toSchema()
 
@@ -193,7 +193,7 @@ Finalizes the builder into a `HasManyRelationshipSchema`.
 
 [`HasManyRelationshipSchema`](../interfaces/HasManyRelationshipSchema.md)
 
-***
+---
 
 ### via()
 
@@ -217,7 +217,7 @@ Sets the foreign key column used to look up matching rows.
 
 `RelationshipBuilder.via`
 
-***
+---
 
 ### withState()
 

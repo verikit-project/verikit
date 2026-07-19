@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / SelectFieldSchema
 
@@ -18,7 +18,7 @@ Schema describing a select field with enumerated options.
 
 ### TValue
 
-`TValue` *extends* [`OptionValue`](../type-aliases/OptionValue.md) = [`OptionValue`](../type-aliases/OptionValue.md)
+`TValue` _extends_ [`OptionValue`](../type-aliases/OptionValue.md) = [`OptionValue`](../type-aliases/OptionValue.md)
 
 ## Properties
 
@@ -34,7 +34,7 @@ Fallback value if the field is not provided (e.g., radio default, checkbox unche
 
 `OptionFieldSchema.defaultValue`
 
-***
+---
 
 ### description?
 
@@ -48,7 +48,7 @@ Help text explaining the field's purpose
 
 `OptionFieldSchema.description`
 
-***
+---
 
 ### fieldType
 
@@ -62,7 +62,7 @@ The input type category (text, select, boolean, etc.)
 
 `OptionFieldSchema.fieldType`
 
-***
+---
 
 ### hidden?
 
@@ -76,7 +76,7 @@ Field should not be displayed in forms or tables (stored but hidden from UI)
 
 `OptionFieldSchema.hidden`
 
-***
+---
 
 ### label?
 
@@ -90,11 +90,11 @@ Display label shown to users in forms and tables (e.g., "Email Address")
 
 `OptionFieldSchema.label`
 
-***
+---
 
 ### meta?
 
-> `optional` **meta?**: `Record`\<`string`, `unknown`\>
+> `optional` **meta?**: `Record`\<`string`, `unknown`>\>
 
 Defined in: [fields/base.ts:109](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L109)
 
@@ -104,7 +104,7 @@ Vendor-specific or adapter-specific metadata (e.g., custom component params)
 
 `OptionFieldSchema.meta`
 
-***
+---
 
 ### name
 
@@ -118,7 +118,7 @@ Unique identifier for this field within its resource
 
 `OptionFieldSchema.name`
 
-***
+---
 
 ### nullable?
 
@@ -132,11 +132,11 @@ Field can store null as an explicit value (distinct from undefined/omitted)
 
 `OptionFieldSchema.nullable`
 
-***
+---
 
 ### options?
 
-> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<`TValue`\>[]
+> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<`TValue`>\>[]
 
 Defined in: [fields/shared/options.ts:9](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/shared/options.ts#L9)
 
@@ -146,7 +146,7 @@ Enumerated options for select-type fields
 
 `OptionFieldSchema.options`
 
-***
+---
 
 ### placeholder?
 
@@ -160,7 +160,7 @@ Placeholder text for empty form inputs
 
 `OptionFieldSchema.placeholder`
 
-***
+---
 
 ### readOnly?
 
@@ -174,7 +174,7 @@ Field is visible but cannot be edited; display-only in forms
 
 `OptionFieldSchema.readOnly`
 
-***
+---
 
 ### required?
 
@@ -188,7 +188,7 @@ Field must have a non-null, non-undefined value; form submission fails without i
 
 `OptionFieldSchema.required`
 
-***
+---
 
 ### searchable?
 
@@ -202,7 +202,7 @@ Field supports full-text search in list/table queries
 
 `OptionFieldSchema.searchable`
 
-***
+---
 
 ### sortable?
 
@@ -216,11 +216,11 @@ Column can be used for sorting in tables
 
 `OptionFieldSchema.sortable`
 
-***
+---
 
 ### source?
 
-> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`\>
+> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`>\>
 
 Defined in: [fields/base.ts:107](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L107)
 
@@ -230,7 +230,7 @@ Consume-mode reference to a column
 
 `OptionFieldSchema.source`
 
-***
+---
 
 ### type
 
@@ -244,11 +244,11 @@ Literal "field" discriminator for discriminated unions
 
 `OptionFieldSchema.type`
 
-***
+---
 
 ### validation?
 
-> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`\>
+> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`>\>
 
 Defined in: [fields/base.ts:105](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L105)
 

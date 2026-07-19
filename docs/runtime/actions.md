@@ -47,13 +47,13 @@ Actions are immutable builders. Each method returns the next builder state.
 
 ## Presentation
 
-| Method | Purpose |
-| --- | --- |
-| `.label(label)` | Display label. |
-| `.description(description)` | Supporting UI copy. |
-| `.icon(icon)` | Adapter-specific icon name. |
-| `.variant(variant)` | Visual intent: `primary`, `secondary`, or `danger`. |
-| `.meta(meta)` | Adapter-specific metadata. |
+| Method                      | Purpose                                             |
+| --------------------------- | --------------------------------------------------- |
+| `.label(label)`             | Display label.                                      |
+| `.description(description)` | Supporting UI copy.                                 |
+| `.icon(icon)`               | Adapter-specific icon name.                         |
+| `.variant(variant)`         | Visual intent: `primary`, `secondary`, or `danger`. |
+| `.meta(meta)`               | Adapter-specific metadata.                          |
 
 ## Confirmation
 

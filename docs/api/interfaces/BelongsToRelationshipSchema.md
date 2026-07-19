@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / BelongsToRelationshipSchema
 
@@ -21,7 +21,7 @@ Defined in: [relationships/belongs-to.ts:27](https://github.com/iamceeso/verikit
 
 Field on the target resource shown when this relationship is rendered.
 
-***
+---
 
 ### foreignKey?
 
@@ -31,7 +31,7 @@ Defined in: [relationships/belongs-to.ts:25](https://github.com/iamceeso/verikit
 
 Foreign key column (on this resource) used to look up the target row.
 
-***
+---
 
 ### inverse?
 
@@ -41,7 +41,7 @@ Defined in: [relationships/belongs-to.ts:23](https://github.com/iamceeso/verikit
 
 Name of the corresponding relationship field on the target resource.
 
-***
+---
 
 ### label?
 
@@ -51,7 +51,7 @@ Defined in: [relationships/belongs-to.ts:21](https://github.com/iamceeso/verikit
 
 Display label shown to users in forms and tables.
 
-***
+---
 
 ### name?
 
@@ -61,7 +61,7 @@ Defined in: [relationships/belongs-to.ts:17](https://github.com/iamceeso/verikit
 
 Name of the relationship on its owning resource, set by `toSchema`.
 
-***
+---
 
 ### relationshipType
 
@@ -71,7 +71,7 @@ Defined in: [relationships/belongs-to.ts:15](https://github.com/iamceeso/verikit
 
 Literal discriminator identifying this as a belongs-to relationship.
 
-***
+---
 
 ### resource
 
@@ -81,7 +81,7 @@ Defined in: [relationships/belongs-to.ts:19](https://github.com/iamceeso/verikit
 
 Name of the target resource this relationship points at.
 
-***
+---
 
 ### type
 

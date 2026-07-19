@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / TextareaFieldSchema
 
@@ -28,7 +28,7 @@ Fallback value if the field is not provided (e.g., radio default, checkbox unche
 
 `StringLengthConstraints.defaultValue`
 
-***
+---
 
 ### description?
 
@@ -42,7 +42,7 @@ Help text explaining the field's purpose
 
 `StringLengthConstraints.description`
 
-***
+---
 
 ### fieldType
 
@@ -56,7 +56,7 @@ The input type category (text, select, boolean, etc.)
 
 `StringLengthConstraints.fieldType`
 
-***
+---
 
 ### hidden?
 
@@ -70,7 +70,7 @@ Field should not be displayed in forms or tables (stored but hidden from UI)
 
 `StringLengthConstraints.hidden`
 
-***
+---
 
 ### label?
 
@@ -84,7 +84,7 @@ Display label shown to users in forms and tables (e.g., "Email Address")
 
 `StringLengthConstraints.label`
 
-***
+---
 
 ### maxLength?
 
@@ -96,11 +96,11 @@ Defined in: [fields/shared/string-constraints.ts:8](https://github.com/iamceeso/
 
 `StringLengthConstraints.maxLength`
 
-***
+---
 
 ### meta?
 
-> `optional` **meta?**: `Record`\<`string`, `unknown`\>
+> `optional` **meta?**: `Record`\<`string`, `unknown`>\>
 
 Defined in: [fields/base.ts:109](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L109)
 
@@ -110,7 +110,7 @@ Vendor-specific or adapter-specific metadata (e.g., custom component params)
 
 `StringLengthConstraints.meta`
 
-***
+---
 
 ### minLength?
 
@@ -122,7 +122,7 @@ Defined in: [fields/shared/string-constraints.ts:7](https://github.com/iamceeso/
 
 `StringLengthConstraints.minLength`
 
-***
+---
 
 ### name
 
@@ -136,7 +136,7 @@ Unique identifier for this field within its resource
 
 `StringLengthConstraints.name`
 
-***
+---
 
 ### nullable?
 
@@ -150,11 +150,11 @@ Field can store null as an explicit value (distinct from undefined/omitted)
 
 `StringLengthConstraints.nullable`
 
-***
+---
 
 ### options?
 
-> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<[`OptionValue`](../type-aliases/OptionValue.md)\>[]
+> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<[`OptionValue`](../type-aliases/OptionValue.md)>\>[]
 
 Defined in: [fields/base.ts:103](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L103)
 
@@ -164,7 +164,7 @@ Enumerated options for select-type fields
 
 `StringLengthConstraints.options`
 
-***
+---
 
 ### placeholder?
 
@@ -178,7 +178,7 @@ Placeholder text for empty form inputs
 
 `StringLengthConstraints.placeholder`
 
-***
+---
 
 ### readOnly?
 
@@ -192,7 +192,7 @@ Field is visible but cannot be edited; display-only in forms
 
 `StringLengthConstraints.readOnly`
 
-***
+---
 
 ### required?
 
@@ -206,7 +206,7 @@ Field must have a non-null, non-undefined value; form submission fails without i
 
 `StringLengthConstraints.required`
 
-***
+---
 
 ### searchable?
 
@@ -220,7 +220,7 @@ Field supports full-text search in list/table queries
 
 `StringLengthConstraints.searchable`
 
-***
+---
 
 ### sortable?
 
@@ -234,11 +234,11 @@ Column can be used for sorting in tables
 
 `StringLengthConstraints.sortable`
 
-***
+---
 
 ### source?
 
-> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`\>
+> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`>\>
 
 Defined in: [fields/base.ts:107](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L107)
 
@@ -248,7 +248,7 @@ Consume-mode reference to a column
 
 `StringLengthConstraints.source`
 
-***
+---
 
 ### type
 
@@ -262,11 +262,11 @@ Literal "field" discriminator for discriminated unions
 
 `StringLengthConstraints.type`
 
-***
+---
 
 ### validation?
 
-> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`\>
+> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`>\>
 
 Defined in: [fields/base.ts:105](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L105)
 

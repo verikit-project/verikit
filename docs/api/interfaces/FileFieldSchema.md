@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / FileFieldSchema
 
@@ -26,7 +26,7 @@ Defined in: [fields/shared/file-constraints.ts:7](https://github.com/iamceeso/ve
 
 `FileConstraints.accept`
 
-***
+---
 
 ### defaultValue?
 
@@ -40,7 +40,7 @@ Fallback value if the field is not provided (e.g., radio default, checkbox unche
 
 `FileConstraints.defaultValue`
 
-***
+---
 
 ### description?
 
@@ -54,7 +54,7 @@ Help text explaining the field's purpose
 
 `FileConstraints.description`
 
-***
+---
 
 ### fieldType
 
@@ -68,7 +68,7 @@ The input type category (text, select, boolean, etc.)
 
 `FileConstraints.fieldType`
 
-***
+---
 
 ### hidden?
 
@@ -82,7 +82,7 @@ Field should not be displayed in forms or tables (stored but hidden from UI)
 
 `FileConstraints.hidden`
 
-***
+---
 
 ### label?
 
@@ -96,7 +96,7 @@ Display label shown to users in forms and tables (e.g., "Email Address")
 
 `FileConstraints.label`
 
-***
+---
 
 ### maxSize?
 
@@ -108,11 +108,11 @@ Defined in: [fields/shared/file-constraints.ts:8](https://github.com/iamceeso/ve
 
 `FileConstraints.maxSize`
 
-***
+---
 
 ### meta?
 
-> `optional` **meta?**: `Record`\<`string`, `unknown`\>
+> `optional` **meta?**: `Record`\<`string`, `unknown`>\>
 
 Defined in: [fields/base.ts:109](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L109)
 
@@ -122,7 +122,7 @@ Vendor-specific or adapter-specific metadata (e.g., custom component params)
 
 `FileConstraints.meta`
 
-***
+---
 
 ### multiple?
 
@@ -134,7 +134,7 @@ Defined in: [fields/shared/file-constraints.ts:9](https://github.com/iamceeso/ve
 
 `FileConstraints.multiple`
 
-***
+---
 
 ### name
 
@@ -148,7 +148,7 @@ Unique identifier for this field within its resource
 
 `FileConstraints.name`
 
-***
+---
 
 ### nullable?
 
@@ -162,11 +162,11 @@ Field can store null as an explicit value (distinct from undefined/omitted)
 
 `FileConstraints.nullable`
 
-***
+---
 
 ### options?
 
-> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<[`OptionValue`](../type-aliases/OptionValue.md)\>[]
+> `optional` **options?**: readonly [`FieldOption`](FieldOption.md)\<[`OptionValue`](../type-aliases/OptionValue.md)>\>[]
 
 Defined in: [fields/base.ts:103](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L103)
 
@@ -176,7 +176,7 @@ Enumerated options for select-type fields
 
 `FileConstraints.options`
 
-***
+---
 
 ### placeholder?
 
@@ -190,7 +190,7 @@ Placeholder text for empty form inputs
 
 `FileConstraints.placeholder`
 
-***
+---
 
 ### readOnly?
 
@@ -204,7 +204,7 @@ Field is visible but cannot be edited; display-only in forms
 
 `FileConstraints.readOnly`
 
-***
+---
 
 ### required?
 
@@ -218,7 +218,7 @@ Field must have a non-null, non-undefined value; form submission fails without i
 
 `FileConstraints.required`
 
-***
+---
 
 ### searchable?
 
@@ -232,7 +232,7 @@ Field supports full-text search in list/table queries
 
 `FileConstraints.searchable`
 
-***
+---
 
 ### sortable?
 
@@ -246,11 +246,11 @@ Column can be used for sorting in tables
 
 `FileConstraints.sortable`
 
-***
+---
 
 ### source?
 
-> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`\>
+> `optional` **source?**: [`FieldSource`](FieldSource.md)\<`unknown`>\>
 
 Defined in: [fields/base.ts:107](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L107)
 
@@ -260,7 +260,7 @@ Consume-mode reference to a column
 
 `FileConstraints.source`
 
-***
+---
 
 ### type
 
@@ -274,11 +274,11 @@ Literal "field" discriminator for discriminated unions
 
 `FileConstraints.type`
 
-***
+---
 
 ### validation?
 
-> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`\>
+> `optional` **validation?**: [`StandardSchemaLike`](StandardSchemaLike.md)\<`unknown`, `unknown`>\>
 
 Defined in: [fields/base.ts:105](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L105)
 

@@ -1,6 +1,6 @@
 **@verikit/core**
 
-***
+---
 
 # @verikit/core
 

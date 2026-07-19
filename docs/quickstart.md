@@ -23,7 +23,9 @@ const author = defineResource("author", {
     email: email().required(),
   },
   relationships: {
-    books: hasMany(() => book).via("authorId").displayField("title"),
+    books: hasMany(() => book)
+      .via("authorId")
+      .displayField("title"),
   },
 });
 
@@ -34,14 +36,12 @@ const book = defineResource("book", {
     authorId: text().required().hidden(),
   },
   relationships: {
-    author: belongsTo(() => author).via("authorId").displayField("name"),
+    author: belongsTo(() => author)
+      .via("authorId")
+      .displayField("name"),
   },
 }).form((layout) => [
-  layout.section("Book", [
-    "title",
-    "summary",
-    layout.relationship("author"),
-  ]),
+  layout.section("Book", ["title", "summary", layout.relationship("author")]),
 ]);
 
 const schema = book.toSchema();

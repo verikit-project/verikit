@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / HasManyRelationshipSchema
 
@@ -21,7 +21,7 @@ Defined in: [relationships/has-many.ts:27](https://github.com/iamceeso/verikit/b
 
 Field on the target resource shown when this relationship is rendered.
 
-***
+---
 
 ### foreignKey?
 
@@ -31,7 +31,7 @@ Defined in: [relationships/has-many.ts:25](https://github.com/iamceeso/verikit/b
 
 Foreign key column (on the target resource) used to find matching rows.
 
-***
+---
 
 ### inverse?
 
@@ -41,7 +41,7 @@ Defined in: [relationships/has-many.ts:23](https://github.com/iamceeso/verikit/b
 
 Name of the corresponding relationship field on the target resource.
 
-***
+---
 
 ### label?
 
@@ -51,7 +51,7 @@ Defined in: [relationships/has-many.ts:21](https://github.com/iamceeso/verikit/b
 
 Display label shown to users in forms and tables.
 
-***
+---
 
 ### name?
 
@@ -61,7 +61,7 @@ Defined in: [relationships/has-many.ts:17](https://github.com/iamceeso/verikit/b
 
 Name of the relationship on its owning resource, set by `toSchema`.
 
-***
+---
 
 ### relationshipType
 
@@ -71,7 +71,7 @@ Defined in: [relationships/has-many.ts:15](https://github.com/iamceeso/verikit/b
 
 Literal discriminator identifying this as a has-many relationship.
 
-***
+---
 
 ### resource
 
@@ -81,7 +81,7 @@ Defined in: [relationships/has-many.ts:19](https://github.com/iamceeso/verikit/b
 
 Name of the target resource this relationship points at.
 
-***
+---
 
 ### type
 

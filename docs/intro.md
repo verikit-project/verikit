@@ -22,10 +22,10 @@ It is designed for projects that want one typed resource definition to drive mul
 
 Verikit is split into focused packages:
 
-| Package | Purpose |
-| --- | --- |
-| `@verikit/core` | Resource builders, field builders, relationships, layouts, and validation utilities. |
-| `@verikit/runtime` | Runtime action builders and execution helpers for resource workflows. |
+| Package            | Purpose                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------ |
+| `@verikit/core`    | Resource builders, field builders, relationships, layouts, and validation utilities. |
+| `@verikit/runtime` | Runtime action builders and execution helpers for resource workflows.                |
 
 ## The basic shape
 

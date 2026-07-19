@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / RepeaterNode
 
@@ -18,7 +18,7 @@ A repeatable group of layout children (e.g. a dynamic list of entries).
 
 Defined in: [resource/resource.ts:73](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L73)
 
-***
+---
 
 ### name
 
@@ -26,7 +26,7 @@ Defined in: [resource/resource.ts:73](https://github.com/iamceeso/verikit/blob/b
 
 Defined in: [resource/resource.ts:72](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L72)
 
-***
+---
 
 ### type
 

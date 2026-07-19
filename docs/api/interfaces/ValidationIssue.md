@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / ValidationIssue
 
@@ -20,7 +20,7 @@ prefixes each field's issues with that field's name.
 
 Defined in: [types/validation.ts:8](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/types/validation.ts#L8)
 
-***
+---
 
 ### path
 

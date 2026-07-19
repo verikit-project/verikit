@@ -19,7 +19,10 @@ type AdminContext = {
   posts: {
     publish(id: string): Promise<{ id: string; status: "published" }>;
     archive(id: string): Promise<{ id: string; status: "archived" }>;
-    reject(id: string, reason: string): Promise<{ id: string; status: "rejected" }>;
+    reject(
+      id: string,
+      reason: string,
+    ): Promise<{ id: string; status: "rejected" }>;
   };
   audit: {
     write(event: string, payload: unknown): Promise<void>;

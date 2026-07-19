@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / FieldBuilder
 
@@ -32,13 +32,13 @@ Call `.toSchema(name)` to finalize into a `FieldSchema`.
 
 ### TSchema
 
-`TSchema` *extends* [`FieldSchema`](../interfaces/FieldSchema.md) = [`FieldSchema`](../interfaces/FieldSchema.md)
+`TSchema` _extends_ [`FieldSchema`](../interfaces/FieldSchema.md) = [`FieldSchema`](../interfaces/FieldSchema.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new FieldBuilder**\<`TValue`, `TSchema`\>(`state`): `FieldBuilder`\<`TValue`, `TSchema`\>
+> **new FieldBuilder**\<`TValue`, `TSchema`>\>(`state`): `FieldBuilder`\<`TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:183](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L183)
 
@@ -66,11 +66,11 @@ Defined in: [fields/base.ts:171](https://github.com/iamceeso/verikit/blob/b02d6a
 Phantom property used by InferField to extract TValue.
 Does not exist at runtime; used only for type inference.
 
-***
+---
 
 ### state
 
-> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`\>
+> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>\>
 
 Defined in: [fields/base.ts:177](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L177)
 
@@ -81,7 +81,7 @@ Exposed as protected so subclasses can access and extend state.
 
 ### default()
 
-> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `Exclude`\<`TValue`, `undefined`\>, `TSchema`\>
+> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `Exclude`\<`TValue`, `undefined`>\>, `TSchema`>\>
 
 Defined in: [fields/base.ts:271](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L271)
 
@@ -98,11 +98,11 @@ undefined from TValue.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `Exclude`\<`TValue`, `undefined`\>, `TSchema`\>
 
-***
+---
 
 ### description()
 
-> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
+> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:230](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L230)
 
@@ -118,11 +118,11 @@ Sets help text describing the field's purpose.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
 
-***
+---
 
 ### getState()
 
-> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`\>
+> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>\>
 
 Defined in: [fields/base.ts:211](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L211)
 
@@ -135,11 +135,11 @@ internally to compose builders (e.g. `from(column).as(field)`).
 
 [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`\>
 
-***
+---
 
 ### hidden()
 
-> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
+> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:290](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L290)
 
@@ -149,11 +149,11 @@ Hides the field from forms and tables.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
 
-***
+---
 
 ### label()
 
-> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
+> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:225](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L225)
 
@@ -169,11 +169,11 @@ Sets the field's display label.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
 
-***
+---
 
 ### meta()
 
-> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
+> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:310](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L310)
 
@@ -189,11 +189,11 @@ Merges adapter-specific metadata into any existing `meta`.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
 
-***
+---
 
 ### nullable()
 
-> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue` \| `null`, `TSchema`\>
+> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue` \| `null`, `TSchema`>\>
 
 Defined in: [fields/base.ts:260](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L260)
 
@@ -203,11 +203,11 @@ Allows null (TValue | null); also sets required: false.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue` \| `null`, `TSchema`\>
 
-***
+---
 
 ### optional()
 
-> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue` \| `undefined`, `TSchema`\>
+> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue` \| `undefined`, `TSchema`>\>
 
 Defined in: [fields/base.ts:252](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L252)
 
@@ -217,11 +217,11 @@ Marks the field optional (TValue | undefined); does not allow null.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue` \| `undefined`, `TSchema`\>
 
-***
+---
 
 ### placeholder()
 
-> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
+> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:237](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L237)
 
@@ -237,11 +237,11 @@ Sets placeholder text for empty form inputs.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
 
-***
+---
 
 ### readOnly()
 
-> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
+> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:295](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L295)
 
@@ -251,11 +251,11 @@ Makes the field display-only in forms.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
 
-***
+---
 
 ### required()
 
-> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `NonNullable`\<`TValue`\>, `TSchema`\>
+> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `NonNullable`\<`TValue`>\>, `TSchema`>\>
 
 Defined in: [fields/base.ts:244](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L244)
 
@@ -265,11 +265,11 @@ Marks the field required, narrowing TValue and forcing nullable: false.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `NonNullable`\<`TValue`\>, `TSchema`\>
 
-***
+---
 
 ### searchable()
 
-> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
+> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:280](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L280)
 
@@ -279,11 +279,11 @@ Marks the field searchable in list/table queries.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
 
-***
+---
 
 ### sortable()
 
-> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
+> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:285](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L285)
 
@@ -293,7 +293,7 @@ Marks the field sortable in table columns.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TValue`, `TSchema`\>
 
-***
+---
 
 ### toSchema()
 
@@ -317,11 +317,11 @@ Finalizes the builder into a `FieldSchema`.
 
 If `name` is empty or whitespace-only.
 
-***
+---
 
 ### validation()
 
-> **validation**\<`TOutput`\>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TOutput`, `TSchema`\>
+> **validation**\<`TOutput`>\>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TOutput`, `TSchema`>\>
 
 Defined in: [fields/base.ts:303](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L303)
 
@@ -344,7 +344,7 @@ output type becomes the new TValue.
 
 [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TOutput`, `TSchema`\>
 
-***
+---
 
 ### withSource()
 
@@ -367,11 +367,11 @@ builder type; used by `from(column).as(field)`.
 
 `this`
 
-***
+---
 
 ### withState()
 
-> `protected` **withState**\<`TNextValue`\>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`\>, `TNextValue`, `TSchema`\>
+> `protected` **withState**\<`TNextValue`>\>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`FieldBuilder`\<`TValue`, `TSchema`>\>, `TNextValue`, `TSchema`>\>
 
 Defined in: [fields/base.ts:191](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L191)
 

@@ -1,12 +1,12 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / defineResource
 
 # Function: defineResource()
 
-> **defineResource**\<`TName`, `TFields`, `TTable`, `TRelationships`\>(`name`, `config`): [`Resource`](../classes/Resource.md)\<`TName`, `TFields`, `TTable`, `TRelationships`\>
+> **defineResource**\<`TName`, `TFields`, `TTable`, `TRelationships`>\>(`name`, `config`): [`Resource`](../classes/Resource.md)\<`TName`, `TFields`, `TTable`, `TRelationships`>\>
 
 Defined in: [resource/define-resource.ts:9](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/define-resource.ts#L9)
 
@@ -16,11 +16,11 @@ Creates a `Resource` from a name and field/relationship configuration.
 
 ### TName
 
-`TName` *extends* `string`
+`TName` _extends_ `string`
 
 ### TFields
 
-`TFields` *extends* [`FieldMap`](../type-aliases/FieldMap.md)
+`TFields` _extends_ [`FieldMap`](../type-aliases/FieldMap.md)
 
 ### TTable
 
@@ -28,7 +28,7 @@ Creates a `Resource` from a name and field/relationship configuration.
 
 ### TRelationships
 
-`TRelationships` *extends* [`RelationshipMap`](../type-aliases/RelationshipMap.md) = [`RelationshipMap`](../type-aliases/RelationshipMap.md)
+`TRelationships` _extends_ [`RelationshipMap`](../type-aliases/RelationshipMap.md) = [`RelationshipMap`](../type-aliases/RelationshipMap.md)
 
 ## Parameters
 

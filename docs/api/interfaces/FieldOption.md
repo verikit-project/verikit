@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / FieldOption
 
@@ -14,7 +14,7 @@ A single option for select-type fields.
 
 ### TValue
 
-`TValue` *extends* [`OptionValue`](../type-aliases/OptionValue.md) = [`OptionValue`](../type-aliases/OptionValue.md)
+`TValue` _extends_ [`OptionValue`](../type-aliases/OptionValue.md) = [`OptionValue`](../type-aliases/OptionValue.md)
 
 ## Properties
 
@@ -24,7 +24,7 @@ A single option for select-type fields.
 
 Defined in: [fields/base.ts:52](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L52)
 
-***
+---
 
 ### value
 

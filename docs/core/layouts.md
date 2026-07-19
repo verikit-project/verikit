@@ -19,11 +19,7 @@ const book = defineResource("book", {
     publishedAt: date().optional(),
   },
 }).form((layout) => [
-  layout.section("Book", [
-    "title",
-    "summary",
-    layout.grid(2, ["publishedAt"]),
-  ]),
+  layout.section("Book", ["title", "summary", layout.grid(2, ["publishedAt"])]),
 ]);
 ```
 
@@ -31,16 +27,16 @@ The layout factory receives a `ResourceLayoutBuilder`. Children can be field nam
 
 ## Layout helpers
 
-| Helper | Purpose |
-| --- | --- |
-| `layout.field(name)` | Resolves a field into its finalized field node. |
-| `layout.relationship(name)` | Resolves a relationship into its finalized relationship node. |
-| `layout.section(title, children)` | Groups children under a titled section. |
-| `layout.grid(columns, children)` | Groups children into a fixed-column grid. |
-| `layout.tabs(tabs)` | Creates titled tabs, each with its own children. |
-| `layout.wizard(steps)` | Creates a step sequence. |
-| `layout.repeater(name, children)` | Creates a repeatable child group. |
-| `layout.action(name, options)` | Adds an action node with optional input children. |
+| Helper                            | Purpose                                                       |
+| --------------------------------- | ------------------------------------------------------------- |
+| `layout.field(name)`              | Resolves a field into its finalized field node.               |
+| `layout.relationship(name)`       | Resolves a relationship into its finalized relationship node. |
+| `layout.section(title, children)` | Groups children under a titled section.                       |
+| `layout.grid(columns, children)`  | Groups children into a fixed-column grid.                     |
+| `layout.tabs(tabs)`               | Creates titled tabs, each with its own children.              |
+| `layout.wizard(steps)`            | Creates a step sequence.                                      |
+| `layout.repeater(name, children)` | Creates a repeatable child group.                             |
+| `layout.action(name, options)`    | Adds an action node with optional input children.             |
 
 ## Tabs
 

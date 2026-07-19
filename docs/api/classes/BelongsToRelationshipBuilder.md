@@ -1,6 +1,6 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / BelongsToRelationshipBuilder
 
@@ -19,13 +19,13 @@ foreign key.
 
 ### TResource
 
-`TResource` *extends* [`Resource`](Resource.md) = [`Resource`](Resource.md)
+`TResource` _extends_ [`Resource`](Resource.md) = [`Resource`](Resource.md)
 
 ## Constructors
 
 ### Constructor
 
-> **new BelongsToRelationshipBuilder**\<`TResource`\>(`target`, `state?`): `BelongsToRelationshipBuilder`\<`TResource`\>
+> **new BelongsToRelationshipBuilder**\<`TResource`>\>(`target`, `state?`): `BelongsToRelationshipBuilder`\<`TResource`>\>
 
 Defined in: [relationships/belongs-to.ts:37](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/belongs-to.ts#L37)
 
@@ -59,7 +59,7 @@ Defined in: [relationships/shared/relationship-builder.ts:25](https://github.com
 
 `RelationshipBuilder.state`
 
-***
+---
 
 ### target
 
@@ -99,7 +99,7 @@ keyof [`InferResourceFields`](../type-aliases/InferResourceFields.md)\<`TResourc
 
 `RelationshipBuilder.displayField`
 
-***
+---
 
 ### inverse()
 
@@ -123,7 +123,7 @@ Sets the inverse relationship on the target resource.
 
 `RelationshipBuilder.inverse`
 
-***
+---
 
 ### label()
 
@@ -147,7 +147,7 @@ Sets a human-readable label for the relationship.
 
 `RelationshipBuilder.label`
 
-***
+---
 
 ### resourceName()
 
@@ -165,7 +165,7 @@ Returns the name of the target resource.
 
 `RelationshipBuilder.resourceName`
 
-***
+---
 
 ### toSchema()
 
@@ -185,7 +185,7 @@ Finalizes the builder into a `BelongsToRelationshipSchema`.
 
 [`BelongsToRelationshipSchema`](../interfaces/BelongsToRelationshipSchema.md)
 
-***
+---
 
 ### via()
 
@@ -209,7 +209,7 @@ Sets the foreign key column used to look up matching rows.
 
 `RelationshipBuilder.via`
 
-***
+---
 
 ### withState()
 

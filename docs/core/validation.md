@@ -46,15 +46,15 @@ Resource validation prefixes field-level issues with the field name.
 
 Verikit validates built-in field constraints:
 
-| Field type | Checks |
-| --- | --- |
-| `text`, `textarea` | string type, `minLength`, `maxLength` |
-| `email` | string type, email shape, `minLength`, `maxLength` |
-| `number` | number type, finite number, `min`, `max`, `step` |
-| `select` | allowed option values |
-| `boolean` | boolean type |
-| `date`, `datetime` | date/string date values |
-| `file`, `image` | file reference/upload shape, `accept`, `maxSize`, `multiple` |
+| Field type         | Checks                                                       |
+| ------------------ | ------------------------------------------------------------ |
+| `text`, `textarea` | string type, `minLength`, `maxLength`                        |
+| `email`            | string type, email shape, `minLength`, `maxLength`           |
+| `number`           | number type, finite number, `min`, `max`, `step`             |
+| `select`           | allowed option values                                        |
+| `boolean`          | boolean type                                                 |
+| `date`, `datetime` | date/string date values                                      |
+| `file`, `image`    | file reference/upload shape, `accept`, `maxSize`, `multiple` |
 
 Required, optional, nullable, and default values are handled before type-specific checks.
 

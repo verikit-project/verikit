@@ -1,12 +1,12 @@
 [**@verikit/core**](../README.md)
 
-***
+---
 
 [@verikit/core](../README.md) / belongsTo
 
 # Function: belongsTo()
 
-> **belongsTo**\<`TResource`\>(`target`): [`BelongsToRelationshipBuilder`](../classes/BelongsToRelationshipBuilder.md)\<`TResource`\>
+> **belongsTo**\<`TResource`>\>(`target`): [`BelongsToRelationshipBuilder`](../classes/BelongsToRelationshipBuilder.md)\<`TResource`>\>
 
 Defined in: [relationships/belongs-to.ts:61](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/belongs-to.ts#L61)
 
@@ -18,7 +18,7 @@ before both are fully defined.
 
 ### TResource
 
-`TResource` *extends* [`Resource`](../classes/Resource.md)\<`string`, [`FieldMap`](../type-aliases/FieldMap.md), `unknown`, [`RelationshipMap`](../type-aliases/RelationshipMap.md)\>
+`TResource` _extends_ [`Resource`](../classes/Resource.md)\<`string`, [`FieldMap`](../type-aliases/FieldMap.md), `unknown`, [`RelationshipMap`](../type-aliases/RelationshipMap.md)\>
 
 ## Parameters
 
