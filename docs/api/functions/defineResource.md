@@ -6,7 +6,7 @@
 
 # Function: defineResource()
 
-> **defineResource**\<`TName`, `TFields`, `TTable`, `TRelationships`>\>(`name`, `config`): [`Resource`](../classes/Resource.md)\<`TName`, `TFields`, `TTable`, `TRelationships`>\>
+> **defineResource**\<`TName`, `TFields`, `TTable`, `TRelationships`>>>\>(`name`, `config`): [`Resource`](../classes/Resource.md)\<`TName`, `TFields`, `TTable`, `TRelationships`>>>\>
 
 Defined in: [resource/define-resource.ts:9](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/define-resource.ts#L9)
 

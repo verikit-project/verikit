@@ -6,7 +6,7 @@
 
 # Function: validateFieldAsync()
 
-> **validateFieldAsync**(`schema`, `value`): `Promise`\<[`ValidationResult`](../type-aliases/ValidationResult.md)>\>
+> **validateFieldAsync**(`schema`, `value`): `Promise`\<[`ValidationResult`](../type-aliases/ValidationResult.md)>>>\>
 
 Defined in: [validation/validate-field.ts:341](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/validation/validate-field.ts#L341)
 
