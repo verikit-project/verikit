@@ -11,8 +11,9 @@ import type { ActionRunResult } from "./action-result.js";
  * lifecycle hooks, and execution.
  *
  * Any error thrown by the `before` hook, action handler, or `after`
- * hook causes the action to fail and invokes the `error` hook before
- * returning an execution failure.
+ * hook causes the action to fail. The optional `error` hook is then
+ * invoked. Errors thrown by the `error` hook are ignored so they do
+ * not mask the original execution failure.
  */
 export async function runAction<
   TName extends string,
@@ -84,7 +85,11 @@ export async function runAction<
       message: messageFrom(runtime.result?.successMessage, result),
     };
   } catch (error) {
-    await runtime.hooks?.error?.(run, error);
+    try {
+      await runtime.hooks?.error?.(run, error);
+    } catch (hookError) {
+      console.error("Action error hook failed:", hookError);
+    }
 
     return {
       success: false,

@@ -2,6 +2,6 @@
   "entryPoints": ["packages/runtime/src/index.ts"],
   "out": "docs/api/runtime",
   "plugin": ["typedoc-plugin-markdown"],
-  "entryFileName": "README",
+  "entryFileName": "runtime",
   "readme": "none"
 }
