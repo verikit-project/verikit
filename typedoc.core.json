@@ -1,0 +1,6 @@
+{
+  "entryPoints": ["packages/core/src/index.ts"],
+  "out": "docs/api/core",
+  "plugin": ["typedoc-plugin-markdown"],
+  "readme": "none"
+}

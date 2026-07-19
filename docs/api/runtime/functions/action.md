@@ -1,0 +1,29 @@
+[**@verikit/runtime**](../README.md)
+
+***
+
+[@verikit/runtime](../README.md) / action
+
+# Function: action()
+
+> **action**\<`TName`\>(`name`): [`ActionBuilder`](../classes/ActionBuilder.md)\<`TName`\>
+
+Defined in: builders/action-builder.d.ts:59
+
+Creates a runtime action builder.
+
+## Type Parameters
+
+### TName
+
+`TName` *extends* `string`
+
+## Parameters
+
+### name
+
+`TName`
+
+## Returns
+
+[`ActionBuilder`](../classes/ActionBuilder.md)\<`TName`\>
