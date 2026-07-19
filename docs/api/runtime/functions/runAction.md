@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / runAction
+[@verikit/runtime](../runtime.md) / runAction
 
 # Function: runAction()
 

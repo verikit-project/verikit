@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FieldNode
+[@verikit/core](../core.md) / FieldNode
 
 # Interface: FieldNode
 

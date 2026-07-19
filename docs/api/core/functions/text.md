@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / text
+[@verikit/core](../core.md) / text
 
 # Function: text()
 

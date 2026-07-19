@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionSchema
+[@verikit/runtime](../runtime.md) / ActionSchema
 
 # Interface: ActionSchema\<TName\>
 

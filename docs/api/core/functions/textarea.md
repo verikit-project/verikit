@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / textarea
+[@verikit/core](../core.md) / textarea
 
 # Function: textarea()
 

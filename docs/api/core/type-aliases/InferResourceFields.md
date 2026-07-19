@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / InferResourceFields
+[@verikit/core](../core.md) / InferResourceFields
 
 # Type Alias: InferResourceFields\<TResource\>
 

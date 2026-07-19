@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FileFieldSchema
+[@verikit/core](../core.md) / FileFieldSchema
 
 # Interface: FileFieldSchema
 

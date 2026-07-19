@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionState
+[@verikit/runtime](../runtime.md) / ActionState
 
 # Interface: ActionState\<TContext, TRecord, TInput, TResult\>
 

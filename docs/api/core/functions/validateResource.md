@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / validateResource
+[@verikit/core](../core.md) / validateResource
 
 # Function: validateResource()
 

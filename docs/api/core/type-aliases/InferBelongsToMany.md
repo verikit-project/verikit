@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / InferBelongsToMany
+[@verikit/core](../core.md) / InferBelongsToMany
 
 # Type Alias: InferBelongsToMany\<TRelationship\>
 

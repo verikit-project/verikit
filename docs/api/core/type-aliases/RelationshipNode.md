@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / RelationshipNode
+[@verikit/core](../core.md) / RelationshipNode
 
 # Type Alias: RelationshipNode
 

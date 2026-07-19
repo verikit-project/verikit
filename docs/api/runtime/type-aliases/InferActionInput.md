@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / InferActionInput
+[@verikit/runtime](../runtime.md) / InferActionInput
 
 # Type Alias: InferActionInput\<TAction\>
 

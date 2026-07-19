@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionConfirmation
+[@verikit/runtime](../runtime.md) / ActionConfirmation
 
 # Interface: ActionConfirmation
 

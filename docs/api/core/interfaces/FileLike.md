@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FileLike
+[@verikit/core](../core.md) / FileLike
 
 # Interface: FileLike
 

@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / ValidationResult
+[@verikit/core](../core.md) / ValidationResult
 
 # Type Alias: ValidationResult\<TValue\>
 

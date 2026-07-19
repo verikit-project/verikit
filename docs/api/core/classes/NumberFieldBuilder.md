@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / NumberFieldBuilder
+[@verikit/core](../core.md) / NumberFieldBuilder
 
 # Class: NumberFieldBuilder\<TValue\>
 

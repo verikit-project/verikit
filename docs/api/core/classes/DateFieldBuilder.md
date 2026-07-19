@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / DateFieldBuilder
+[@verikit/core](../core.md) / DateFieldBuilder
 
 # Class: DateFieldBuilder\<TValue\>
 

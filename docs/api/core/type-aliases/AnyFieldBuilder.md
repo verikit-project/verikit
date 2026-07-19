@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / AnyFieldBuilder
+[@verikit/core](../core.md) / AnyFieldBuilder
 
 # Type Alias: AnyFieldBuilder
 

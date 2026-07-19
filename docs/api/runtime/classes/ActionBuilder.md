@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionBuilder
+[@verikit/runtime](../runtime.md) / ActionBuilder
 
 # Class: ActionBuilder\<TName, TForm, TContext, TRecord, TResult\>
 

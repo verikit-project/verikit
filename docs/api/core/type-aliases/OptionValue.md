@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / OptionValue
+[@verikit/core](../core.md) / OptionValue
 
 # Type Alias: OptionValue
 

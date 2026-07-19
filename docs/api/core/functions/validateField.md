@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / validateField
+[@verikit/core](../core.md) / validateField
 
 # Function: validateField()
 

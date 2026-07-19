@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / ResourceSchema
+[@verikit/core](../core.md) / ResourceSchema
 
 # Interface: ResourceSchema\<TName, TFields, TRelationships\>
 

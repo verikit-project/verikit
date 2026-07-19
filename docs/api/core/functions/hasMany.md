@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / hasMany
+[@verikit/core](../core.md) / hasMany
 
 # Function: hasMany()
 

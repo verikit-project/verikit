@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / ImageFieldBuilder
+[@verikit/core](../core.md) / ImageFieldBuilder
 
 # Class: ImageFieldBuilder\<TValue\>
 

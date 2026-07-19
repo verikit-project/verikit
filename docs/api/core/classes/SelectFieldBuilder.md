@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / SelectFieldBuilder
+[@verikit/core](../core.md) / SelectFieldBuilder
 
 # Class: SelectFieldBuilder\<TValue\>
 

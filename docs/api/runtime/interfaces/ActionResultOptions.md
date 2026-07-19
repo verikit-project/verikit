@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionResultOptions
+[@verikit/runtime](../runtime.md) / ActionResultOptions
 
 # Interface: ActionResultOptions\<TResult\>
 

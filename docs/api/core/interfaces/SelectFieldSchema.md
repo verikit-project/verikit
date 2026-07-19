@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / SelectFieldSchema
+[@verikit/core](../core.md) / SelectFieldSchema
 
 # Interface: SelectFieldSchema\<TValue\>
 

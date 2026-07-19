@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / BelongsToRelationshipSchema
+[@verikit/core](../core.md) / BelongsToRelationshipSchema
 
 # Interface: BelongsToRelationshipSchema
 

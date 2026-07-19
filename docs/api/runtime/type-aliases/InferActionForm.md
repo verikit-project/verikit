@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / InferActionForm
+[@verikit/runtime](../runtime.md) / InferActionForm
 
 # Type Alias: InferActionForm\<TForm\>
 

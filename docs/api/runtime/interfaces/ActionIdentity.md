@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionIdentity
+[@verikit/runtime](../runtime.md) / ActionIdentity
 
 # Interface: ActionIdentity\<TName\>
 

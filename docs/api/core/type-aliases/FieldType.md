@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FieldType
+[@verikit/core](../core.md) / FieldType
 
 # Type Alias: FieldType
 

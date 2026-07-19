@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FromFieldSchema
+[@verikit/core](../core.md) / FromFieldSchema
 
 # Interface: FromFieldSchema
 

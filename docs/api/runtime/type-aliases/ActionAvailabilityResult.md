@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionAvailabilityResult
+[@verikit/runtime](../runtime.md) / ActionAvailabilityResult
 
 # Type Alias: ActionAvailabilityResult
 

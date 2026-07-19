@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionHooks
+[@verikit/runtime](../runtime.md) / ActionHooks
 
 # Interface: ActionHooks\<TContext, TRecord, TInput, TResult\>
 

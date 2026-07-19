@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FieldMap
+[@verikit/core](../core.md) / FieldMap
 
 # Type Alias: FieldMap
 

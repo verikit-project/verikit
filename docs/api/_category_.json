@@ -1,0 +1,8 @@
+{
+  "label": "API Reference",
+  "position": 995,
+  "link": {
+    "type": "generated-index",
+    "description": "Generated TypeScript API reference for @verikit/core and @verikit/runtime."
+  }
+}

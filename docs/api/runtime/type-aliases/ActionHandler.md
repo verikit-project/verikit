@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionHandler
+[@verikit/runtime](../runtime.md) / ActionHandler
 
 # Type Alias: ActionHandler\<TContext, TRecord, TInput, TResult\>
 

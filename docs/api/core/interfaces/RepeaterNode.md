@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / RepeaterNode
+[@verikit/core](../core.md) / RepeaterNode
 
 # Interface: RepeaterNode
 

@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / Resource
+[@verikit/core](../core.md) / Resource
 
 # Class: Resource\<TName, TFields, TTable, TRelationships\>
 

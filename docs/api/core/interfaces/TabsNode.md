@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / TabsNode
+[@verikit/core](../core.md) / TabsNode
 
 # Interface: TabsNode
 

@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / BelongsToManyRelationshipBuilder
+[@verikit/core](../core.md) / BelongsToManyRelationshipBuilder
 
 # Class: BelongsToManyRelationshipBuilder\<TResource\>
 

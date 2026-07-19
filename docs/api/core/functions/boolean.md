@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / boolean
+[@verikit/core](../core.md) / boolean
 
 # Function: boolean()
 

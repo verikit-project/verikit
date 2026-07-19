@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / TextareaFieldBuilder
+[@verikit/core](../core.md) / TextareaFieldBuilder
 
 # Class: TextareaFieldBuilder\<TValue\>
 

@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / schemaResultMessages
+[@verikit/runtime](../runtime.md) / schemaResultMessages
 
 # Function: schemaResultMessages()
 

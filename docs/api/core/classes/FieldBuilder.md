@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FieldBuilder
+[@verikit/core](../core.md) / FieldBuilder
 
 # Class: FieldBuilder\<TValue, TSchema\>
 

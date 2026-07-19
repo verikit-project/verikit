@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / ResourceLayoutBuilder
+[@verikit/core](../core.md) / ResourceLayoutBuilder
 
 # Class: ResourceLayoutBuilder\<TFields, TRelationships\>
 

@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FieldBuilderWithValue
+[@verikit/core](../core.md) / FieldBuilderWithValue
 
 # Type Alias: FieldBuilderWithValue\<TBuilder, TValue, TSchema\>
 

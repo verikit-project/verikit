@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / belongsToMany
+[@verikit/core](../core.md) / belongsToMany
 
 # Function: belongsToMany()
 

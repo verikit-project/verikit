@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FieldSource
+[@verikit/core](../core.md) / FieldSource
 
 # Interface: FieldSource\<TColumn\>
 

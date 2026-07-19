@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / StandardSchemaLike
+[@verikit/core](../core.md) / StandardSchemaLike
 
 # Interface: StandardSchemaLike\<Input, Output\>
 

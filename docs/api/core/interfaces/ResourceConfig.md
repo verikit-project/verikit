@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / ResourceConfig
+[@verikit/core](../core.md) / ResourceConfig
 
 # Interface: ResourceConfig\<TFields, TTable, TRelationships\>
 

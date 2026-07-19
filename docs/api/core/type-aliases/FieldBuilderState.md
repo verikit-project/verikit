@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FieldBuilderState
+[@verikit/core](../core.md) / FieldBuilderState
 
 # Type Alias: FieldBuilderState\<TSchema\>
 

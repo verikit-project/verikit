@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / FieldOption
+[@verikit/core](../core.md) / FieldOption
 
 # Interface: FieldOption\<TValue\>
 

@@ -1,8 +1,8 @@
-[**@verikit/runtime**](../README.md)
+[**@verikit/runtime**](../runtime.md)
 
 ***
 
-[@verikit/runtime](../README.md) / ActionFormMap
+[@verikit/runtime](../runtime.md) / ActionFormMap
 
 # Type Alias: ActionFormMap
 

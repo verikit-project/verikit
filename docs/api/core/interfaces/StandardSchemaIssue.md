@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / StandardSchemaIssue
+[@verikit/core](../core.md) / StandardSchemaIssue
 
 # Interface: StandardSchemaIssue
 

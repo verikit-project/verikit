@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / AnyRelationshipBuilder
+[@verikit/core](../core.md) / AnyRelationshipBuilder
 
 # Interface: AnyRelationshipBuilder
 

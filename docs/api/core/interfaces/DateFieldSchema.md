@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / DateFieldSchema
+[@verikit/core](../core.md) / DateFieldSchema
 
 # Interface: DateFieldSchema
 

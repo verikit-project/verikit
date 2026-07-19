@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / SchemaNode
+[@verikit/core](../core.md) / SchemaNode
 
 # Type Alias: SchemaNode
 

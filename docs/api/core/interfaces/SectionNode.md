@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / SectionNode
+[@verikit/core](../core.md) / SectionNode
 
 # Interface: SectionNode
 

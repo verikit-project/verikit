@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / RelationshipSchema
+[@verikit/core](../core.md) / RelationshipSchema
 
 # Type Alias: RelationshipSchema
 

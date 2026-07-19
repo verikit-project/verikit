@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / TextFieldSchema
+[@verikit/core](../core.md) / TextFieldSchema
 
 # Interface: TextFieldSchema
 

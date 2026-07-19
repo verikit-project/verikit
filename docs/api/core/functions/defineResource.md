@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / defineResource
+[@verikit/core](../core.md) / defineResource
 
 # Function: defineResource()
 

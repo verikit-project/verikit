@@ -1,8 +1,8 @@
-[**@verikit/core**](../README.md)
+[**@verikit/core**](../core.md)
 
 ***
 
-[@verikit/core](../README.md) / validateResourceAsync
+[@verikit/core](../core.md) / validateResourceAsync
 
 # Function: validateResourceAsync()
 
