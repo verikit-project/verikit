@@ -76,7 +76,7 @@ Exposed as protected so subclasses can access and extend state.
 
 ### default()
 
-> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>>>, `Exclude`\<`TValue`, `undefined`> > > > > > \> \| `null`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>>
+> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`SelectFieldBuilder`\<`TValue`>>>, `Exclude`\<`TValue`, `undefined`>>>\| `null`, [`SelectFieldSchema`](../interfaces/SelectFieldSchema.md)\<`TValue`>>>
 
 Defined in: [fields/base.ts:271](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L271)
 

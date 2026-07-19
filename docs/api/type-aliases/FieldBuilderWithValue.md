@@ -6,7 +6,7 @@
 
 # Type Alias: FieldBuilderWithValue\<TBuilder, TValue, TSchema\>
 
-> **FieldBuilderWithValue**\<`TBuilder`, `TValue`, `TSchema`> > > > > > \> = `Omit`\<`TBuilder`, `"$value"`> > > > > > \> & [`FieldBuilder`](../classes/FieldBuilder.md)\<`TValue`, `TSchema`>>>
+> **FieldBuilderWithValue**\<`TBuilder`, `TValue`, `TSchema`>>>= `Omit`\<`TBuilder`, `"$value"`>>>& [`FieldBuilder`](../classes/FieldBuilder.md)\<`TValue`, `TSchema`>>>
 
 Defined in: [fields/base.ts:137](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L137)
 
