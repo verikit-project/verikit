@@ -24,7 +24,7 @@ Fluent builder for date-only fields.
 
 ### Constructor
 
-> **new DateFieldBuilder**\<`TValue`>>>\>(`state?`): `DateFieldBuilder`\<`TValue`>>>\>
+> **new DateFieldBuilder**\<`TValue`>>>(`state?`): `DateFieldBuilder`\<`TValue`>>>
 
 Defined in: [fields/date.ts:23](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/date.ts#L23)
 
@@ -61,7 +61,7 @@ Does not exist at runtime; used only for type inference.
 
 ### state
 
-> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>\>
+> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>
 
 Defined in: [fields/base.ts:177](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L177)
 
@@ -76,7 +76,7 @@ Exposed as protected so subclasses can access and extend state.
 
 ### default()
 
-> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `Exclude`\<`TValue`, `undefined`>>>\>, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `Exclude`\<`TValue`, `undefined`>>>, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:271](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L271)
 
@@ -101,7 +101,7 @@ undefined from TValue.
 
 ### description()
 
-> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:230](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L230)
 
@@ -125,7 +125,7 @@ Sets help text describing the field's purpose.
 
 ### getState()
 
-> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>\>
+> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>
 
 Defined in: [fields/base.ts:211](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L211)
 
@@ -146,7 +146,7 @@ internally to compose builders (e.g. `from(column).as(field)`).
 
 ### hidden()
 
-> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:290](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L290)
 
@@ -164,7 +164,7 @@ Hides the field from forms and tables.
 
 ### label()
 
-> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:225](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L225)
 
@@ -188,7 +188,7 @@ Sets the field's display label.
 
 ### meta()
 
-> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:310](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L310)
 
@@ -212,7 +212,7 @@ Merges adapter-specific metadata into any existing `meta`.
 
 ### nullable()
 
-> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue` \| `null`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue` \| `null`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:260](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L260)
 
@@ -230,7 +230,7 @@ Allows null (TValue | null); also sets required: false.
 
 ### optional()
 
-> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue` \| `undefined`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue` \| `undefined`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:252](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L252)
 
@@ -248,7 +248,7 @@ Marks the field optional (TValue | undefined); does not allow null.
 
 ### placeholder()
 
-> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:237](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L237)
 
@@ -272,7 +272,7 @@ Sets placeholder text for empty form inputs.
 
 ### readOnly()
 
-> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:295](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L295)
 
@@ -290,7 +290,7 @@ Makes the field display-only in forms.
 
 ### required()
 
-> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `NonNullable`\<`TValue`>>>\>, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `NonNullable`\<`TValue`>>>, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:244](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L244)
 
@@ -308,7 +308,7 @@ Marks the field required, narrowing TValue and forcing nullable: false.
 
 ### searchable()
 
-> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:280](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L280)
 
@@ -326,7 +326,7 @@ Marks the field searchable in list/table queries.
 
 ### sortable()
 
-> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:285](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L285)
 
@@ -372,7 +372,7 @@ If `name` is empty or whitespace-only.
 
 ### validation()
 
-> **validation**\<`TOutput`>>>\>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TOutput`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> **validation**\<`TOutput`>>>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TOutput`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:303](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L303)
 
@@ -430,7 +430,7 @@ builder type; used by `from(column).as(field)`.
 
 ### withState()
 
-> `protected` **withState**\<`TNextValue`>>>\>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>\>, `TNextValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>\>
+> `protected` **withState**\<`TNextValue`>>>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`DateFieldBuilder`\<`TValue`>>>, `TNextValue`, [`DateFieldSchema`](../interfaces/DateFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:191](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L191)
 

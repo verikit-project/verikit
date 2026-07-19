@@ -23,7 +23,7 @@ storage-column metadata so adapters can map resources to existing schemas.
 
 ### Constructor
 
-> **new FromFieldBuilder**\<`TColumn`>>>\>(`column`): `FromFieldBuilder`\<`TColumn`>>>\>
+> **new FromFieldBuilder**\<`TColumn`>>>(`column`): `FromFieldBuilder`\<`TColumn`>>>
 
 Defined in: [fields/from.ts:31](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/from.ts#L31)
 
@@ -41,7 +41,7 @@ Defined in: [fields/from.ts:31](https://github.com/iamceeso/verikit/blob/b02d6ad
 
 ### as()
 
-> **as**\<`TValue`, `TSchema`, `TBuilder`>>>\>(`field`): `TBuilder`
+> **as**\<`TValue`, `TSchema`, `TBuilder`>>>(`field`): `TBuilder`
 
 Defined in: [fields/from.ts:41](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/from.ts#L41)
 
@@ -75,7 +75,7 @@ Attach this column source to a concrete field definition.
 
 ### options()
 
-> **options**\<`TOptions`>>>\>(`options`): [`FieldBuilder`](FieldBuilder.md)\<`TOptions`\[`number`\] \| `null` \| `undefined`, [`FromSelectFieldSchema`](../interfaces/FromSelectFieldSchema.md)\<`TOptions`\[`number`\]\>\>
+> **options**\<`TOptions`>>>(`options`): [`FieldBuilder`](FieldBuilder.md)\<`TOptions`\[`number`\] \| `null` \| `undefined`, [`FromSelectFieldSchema`](../interfaces/FromSelectFieldSchema.md)\<`TOptions`\[`number`\]\>\>
 
 Defined in: [fields/from.ts:52](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/from.ts#L52)
 

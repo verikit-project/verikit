@@ -6,7 +6,7 @@
 
 # Function: validateResource()
 
-> **validateResource**(`fields`, `values`): [`ValidationResult`](../type-aliases/ValidationResult.md)\<`Record`\<`string`, `unknown`>>>>>>\>\>
+> **validateResource**(`fields`, `values`): [`ValidationResult`](../type-aliases/ValidationResult.md)\<`Record`\<`string`, `unknown`>>>>>>>\>
 
 Defined in: [validation/validate-resource.ts:35](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/validation/validate-resource.ts#L35)
 

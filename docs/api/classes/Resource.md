@@ -33,7 +33,7 @@ Finalize with `.toSchema()` to produce a serializable resource schema.
 
 ### Constructor
 
-> **new Resource**\<`TName`, `TFields`, `TTable`, `TRelationships`>>>\>(`name`, `config`): `Resource`\<`TName`, `TFields`, `TTable`, `TRelationships`>>>\>
+> **new Resource**\<`TName`, `TFields`, `TTable`, `TRelationships`>>>(`name`, `config`): `Resource`\<`TName`, `TFields`, `TTable`, `TRelationships`>>>
 
 Defined in: [resource/resource.ts:193](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L193)
 
@@ -67,7 +67,7 @@ Defined in: [resource/resource.ts:179](https://github.com/iamceeso/verikit/blob/
 
 ### meta?
 
-> `readonly` `optional` **meta?**: `Record`\<`string`, `unknown`>>>\>
+> `readonly` `optional` **meta?**: `Record`\<`string`, `unknown`>>>
 
 Defined in: [resource/resource.ts:181](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L181)
 
@@ -119,7 +119,7 @@ Attaches a form layout factory; returns `this` for chaining.
 
 ### toSchema()
 
-> **toSchema**(): [`ResourceSchema`](../interfaces/ResourceSchema.md)\<`TName`, `TFields`, `TRelationships`>>>\>
+> **toSchema**(): [`ResourceSchema`](../interfaces/ResourceSchema.md)\<`TName`, `TFields`, `TRelationships`>>>
 
 Defined in: [resource/resource.ts:230](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/resource/resource.ts#L230)
 

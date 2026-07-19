@@ -25,7 +25,7 @@ runtime checks than the field type alone communicates.
 
 ### Constructor
 
-> **new EmailFieldBuilder**\<`TValue`>>>\>(`state?`): `EmailFieldBuilder`\<`TValue`>>>\>
+> **new EmailFieldBuilder**\<`TValue`>>>(`state?`): `EmailFieldBuilder`\<`TValue`>>>
 
 Defined in: [fields/email.ts:23](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/email.ts#L23)
 
@@ -62,7 +62,7 @@ Does not exist at runtime; used only for type inference.
 
 ### state
 
-> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>\>
+> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>
 
 Defined in: [fields/base.ts:177](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L177)
 
@@ -77,7 +77,7 @@ Exposed as protected so subclasses can access and extend state.
 
 ### default()
 
-> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `Exclude`\<`TValue`, `undefined`>>>\>, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `Exclude`\<`TValue`, `undefined`>>>, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:271](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L271)
 
@@ -102,7 +102,7 @@ undefined from TValue.
 
 ### description()
 
-> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:230](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L230)
 
@@ -126,7 +126,7 @@ Sets help text describing the field's purpose.
 
 ### getState()
 
-> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>\>
+> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>
 
 Defined in: [fields/base.ts:211](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L211)
 
@@ -147,7 +147,7 @@ internally to compose builders (e.g. `from(column).as(field)`).
 
 ### hidden()
 
-> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:290](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L290)
 
@@ -165,7 +165,7 @@ Hides the field from forms and tables.
 
 ### label()
 
-> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:225](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L225)
 
@@ -189,7 +189,7 @@ Sets the field's display label.
 
 ### max()
 
-> **max**(`length`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **max**(`length`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/email.ts:38](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/email.ts#L38)
 
@@ -209,7 +209,7 @@ Sets the maximum number of characters allowed.
 
 ### meta()
 
-> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:310](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L310)
 
@@ -233,7 +233,7 @@ Merges adapter-specific metadata into any existing `meta`.
 
 ### min()
 
-> **min**(`length`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **min**(`length`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/email.ts:33](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/email.ts#L33)
 
@@ -253,7 +253,7 @@ Sets the minimum number of characters allowed.
 
 ### nullable()
 
-> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue` \| `null`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue` \| `null`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:260](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L260)
 
@@ -271,7 +271,7 @@ Allows null (TValue | null); also sets required: false.
 
 ### optional()
 
-> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue` \| `undefined`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue` \| `undefined`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:252](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L252)
 
@@ -289,7 +289,7 @@ Marks the field optional (TValue | undefined); does not allow null.
 
 ### placeholder()
 
-> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:237](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L237)
 
@@ -313,7 +313,7 @@ Sets placeholder text for empty form inputs.
 
 ### readOnly()
 
-> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:295](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L295)
 
@@ -331,7 +331,7 @@ Makes the field display-only in forms.
 
 ### required()
 
-> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `NonNullable`\<`TValue`>>>\>, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `NonNullable`\<`TValue`>>>, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:244](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L244)
 
@@ -349,7 +349,7 @@ Marks the field required, narrowing TValue and forcing nullable: false.
 
 ### searchable()
 
-> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:280](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L280)
 
@@ -367,7 +367,7 @@ Marks the field searchable in list/table queries.
 
 ### sortable()
 
-> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:285](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L285)
 
@@ -413,7 +413,7 @@ If `name` is empty or whitespace-only.
 
 ### validation()
 
-> **validation**\<`TOutput`>>>\>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TOutput`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> **validation**\<`TOutput`>>>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TOutput`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:303](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L303)
 
@@ -471,7 +471,7 @@ builder type; used by `from(column).as(field)`.
 
 ### withState()
 
-> `protected` **withState**\<`TNextValue`>>>\>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>\>, `TNextValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>\>
+> `protected` **withState**\<`TNextValue`>>>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`EmailFieldBuilder`\<`TValue`>>>, `TNextValue`, [`EmailFieldSchema`](../interfaces/EmailFieldSchema.md)>>>
 
 Defined in: [fields/base.ts:191](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L191)
 
