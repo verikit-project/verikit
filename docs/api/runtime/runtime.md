@@ -10,6 +10,7 @@
 
 ## Interfaces
 
+- [ActionAvailabilityContext](interfaces/ActionAvailabilityContext.md)
 - [ActionConfirmation](interfaces/ActionConfirmation.md)
 - [ActionHooks](interfaces/ActionHooks.md)
 - [ActionIdentity](interfaces/ActionIdentity.md)

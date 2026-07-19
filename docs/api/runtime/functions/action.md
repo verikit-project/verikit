@@ -8,7 +8,7 @@
 
 > **action**\<`TName`\>(`name`): [`ActionBuilder`](../classes/ActionBuilder.md)\<`TName`\>
 
-Defined in: builders/action-builder.d.ts:59
+Defined in: builders/action-builder.d.ts:57
 
 Creates a runtime action builder.
 

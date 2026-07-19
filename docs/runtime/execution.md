@@ -27,7 +27,7 @@ const result = await runAction(publish, {
 
 `runAction()` performs these steps:
 
-1. Run the availability guard, if one is defined.
+1. Run the availability guard, if one is defined, with raw input.
 2. Validate action form input, if a form is defined.
 3. Throw if the action has no handler.
 4. Run the `before` hook, if defined.
@@ -50,7 +50,7 @@ type ActionRunRequest<TContext, TRecord> = {
 
 `record` is optional so actions can be global, collection-level, row-level, or detail-page commands.
 
-`input` contains raw action form values. Verikit validates it before the handler receives it.
+`input` contains raw action form values. Availability guards receive this raw input, then Verikit validates it before handlers and lifecycle hooks receive it.
 
 ## Result shape
 

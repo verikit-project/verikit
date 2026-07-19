@@ -1,4 +1,4 @@
-import type { ActionRunContext } from "../execution/action-context.js";
+import type { ActionAvailabilityContext } from "../execution/action-context.js";
 import type { ActionResultOptions } from "../execution/action-result.js";
 import type { ActionSchema } from "../schema/action-schema.js";
 import { schemaResultMessages } from "../schema/action-schema.js";
@@ -16,9 +16,7 @@ export interface ActionState<TContext, TRecord, TInput, TResult> {
   confirmation?: ActionConfirmation;
   form?: ActionFormMap;
   isAvailable?: (
-    run: Omit<ActionRunContext<TContext, TRecord, TInput>, "input"> & {
-      input?: TInput;
-    },
+    run: ActionAvailabilityContext<TContext, TRecord>,
   ) => ActionAvailabilityResult | Promise<ActionAvailabilityResult>;
   handler?: ActionHandler<TContext, TRecord, TInput, TResult>;
   result?: ActionResultOptions<TResult>;

@@ -8,14 +8,15 @@
 
 > **runAction**\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>(`action`, `request`): `Promise`\<[`ActionRunResult`](../type-aliases/ActionRunResult.md)\<`TResult`\>\>
 
-Defined in: execution/run-action.d.ts:13
+Defined in: execution/run-action.d.ts:14
 
 Runs an action, including availability checks, form validation,
 lifecycle hooks, and execution.
 
 Any error thrown by the `before` hook, action handler, or `after`
-hook causes the action to fail and invokes the `error` hook before
-returning an execution failure.
+hook causes the action to fail. The optional `error` hook is then
+invoked. Errors thrown by the `error` hook are ignored so they do
+not mask the original execution failure.
 
 ## Type Parameters
 

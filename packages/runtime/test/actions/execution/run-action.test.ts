@@ -23,6 +23,55 @@ test("runAction returns unavailable before validation or execution", async () =>
   assert.equal(executed, false);
 });
 
+test("availability receives raw input before form validation", async () => {
+  let seenInput: Record<string, unknown> | undefined;
+  let executed = false;
+
+  const promote = action("promote")
+    .form({ rank: number().required().min(1) })
+    .availableWhen(({ input }) => {
+      seenInput = input;
+      return input?.rank === "blocked"
+        ? { available: false, reason: "Blocked rank" }
+        : true;
+    })
+    .execute(() => {
+      executed = true;
+      return "promoted";
+    });
+
+  assert.deepEqual(
+    await runAction(promote, {
+      context: {},
+      input: { rank: "blocked" },
+    }),
+    {
+      success: false,
+      reason: "unavailable",
+      message: "Blocked rank",
+    },
+  );
+  assert.deepEqual(seenInput, { rank: "blocked" });
+  assert.equal(executed, false);
+});
+
+test("availability input is typed as raw while handler input is typed as validated", () => {
+  action("typed")
+    .form({ rank: number().required() })
+    .availableWhen(({ input }) => {
+      const rawInput: Record<string, unknown> | undefined = input;
+      // @ts-expect-error availability runs before validation, so input is not inferred form data.
+      const validatedInput: { rank: number } | undefined = input;
+
+      return rawInput !== validatedInput;
+    })
+    .execute(({ input }) => {
+      const validatedInput: { rank: number } = input;
+
+      return validatedInput.rank;
+    });
+});
+
 test("runAction validates optional form input before execution", async () => {
   const promote = action("promote")
     .form({ rank: number().required().min(1) })

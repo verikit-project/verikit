@@ -78,7 +78,7 @@ const archive = action("archive").confirmation({
 
 ## Availability
 
-Use `.availableWhen()` to hide or disable actions based on context, record, or partial input.
+Use `.availableWhen()` to hide or disable actions based on context, record, or raw input.
 
 ```ts
 const approve = action("approve")
@@ -94,7 +94,7 @@ const approve = action("approve")
   });
 ```
 
-Availability guards can return `boolean` or `{ available, reason }`.
+Availability guards run before form validation, so `input` is typed as `Record<string, unknown> | undefined`. They can return `boolean` or `{ available, reason }`.
 
 ## Schema output
 

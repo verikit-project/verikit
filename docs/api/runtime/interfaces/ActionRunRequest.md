@@ -6,7 +6,7 @@
 
 # Interface: ActionRunRequest\<TContext, TRecord\>
 
-Defined in: execution/action-context.d.ts:8
+Defined in: execution/action-context.d.ts:14
 
 Request passed to `runAction()`.
 
@@ -26,7 +26,7 @@ Request passed to `runAction()`.
 
 > **context**: `TContext`
 
-Defined in: execution/action-context.d.ts:9
+Defined in: execution/action-context.d.ts:15
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: execution/action-context.d.ts:9
 
 > `optional` **input?**: `Record`\<`string`, `unknown`\>
 
-Defined in: execution/action-context.d.ts:11
+Defined in: execution/action-context.d.ts:17
 
 ***
 
@@ -42,4 +42,4 @@ Defined in: execution/action-context.d.ts:11
 
 > `optional` **record?**: `TRecord`
 
-Defined in: execution/action-context.d.ts:10
+Defined in: execution/action-context.d.ts:16

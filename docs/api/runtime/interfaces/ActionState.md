@@ -48,7 +48,7 @@ Defined in: builders/action-builder.d.ts:12
 
 > `optional` **handler?**: [`ActionHandler`](../type-aliases/ActionHandler.md)\<`TContext`, `TRecord`, `TInput`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:16
+Defined in: builders/action-builder.d.ts:14
 
 ***
 
@@ -56,7 +56,7 @@ Defined in: builders/action-builder.d.ts:16
 
 > `optional` **hooks?**: [`ActionHooks`](ActionHooks.md)\<`TContext`, `TRecord`, `TInput`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:18
+Defined in: builders/action-builder.d.ts:16
 
 ***
 
@@ -70,7 +70,7 @@ Defined in: builders/action-builder.d.ts:13
 
 ##### run
 
-`Omit`\<[`ActionRunContext`](ActionRunContext.md)\<`TContext`, `TRecord`, `TInput`\>, `"input"`\> & `object`
+[`ActionAvailabilityContext`](ActionAvailabilityContext.md)\<`TContext`, `TRecord`\>
 
 #### Returns
 
@@ -90,4 +90,4 @@ Defined in: builders/action-builder.d.ts:10
 
 > `optional` **result?**: [`ActionResultOptions`](ActionResultOptions.md)\<`TResult`\>
 
-Defined in: builders/action-builder.d.ts:17
+Defined in: builders/action-builder.d.ts:15

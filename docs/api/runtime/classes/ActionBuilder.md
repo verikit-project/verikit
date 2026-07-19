@@ -6,7 +6,7 @@
 
 # Class: ActionBuilder\<TName, TForm, TContext, TRecord, TResult\>
 
-Defined in: builders/action-builder.d.ts:26
+Defined in: builders/action-builder.d.ts:24
 
 Immutable runtime action builder.
 
@@ -41,7 +41,7 @@ optional form input, execution, result metadata, and lifecycle hooks.
 
 > **new ActionBuilder**\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>(`name`, `state?`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:29
+Defined in: builders/action-builder.d.ts:27
 
 #### Parameters
 
@@ -63,7 +63,7 @@ Defined in: builders/action-builder.d.ts:29
 
 > `readonly` **name**: `TName`
 
-Defined in: builders/action-builder.d.ts:27
+Defined in: builders/action-builder.d.ts:25
 
 ## Methods
 
@@ -71,7 +71,7 @@ Defined in: builders/action-builder.d.ts:27
 
 > **availableWhen**\<`TNextContext`, `TNextRecord`\>(`isAvailable`): `ActionBuilder`\<`TName`, `TForm`, `TNextContext`, `TNextRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:42
+Defined in: builders/action-builder.d.ts:40
 
 Adds a runtime availability guard.
 
@@ -101,7 +101,7 @@ Adds a runtime availability guard.
 
 > **confirmation**(`confirmation`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:44
+Defined in: builders/action-builder.d.ts:42
 
 Requires confirmation before adapters execute the action.
 
@@ -121,7 +121,7 @@ Requires confirmation before adapters execute the action.
 
 > **description**(`description`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:34
+Defined in: builders/action-builder.d.ts:32
 
 Sets supporting UI copy.
 
@@ -141,7 +141,7 @@ Sets supporting UI copy.
 
 > **execute**\<`TNextResult`\>(`handler`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TNextResult`\>
 
-Defined in: builders/action-builder.d.ts:48
+Defined in: builders/action-builder.d.ts:46
 
 Attaches the function that performs the action.
 
@@ -167,7 +167,7 @@ Attaches the function that performs the action.
 
 > **form**\<`TNextForm`\>(`form`): `ActionBuilder`\<`TName`, `TNextForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:46
+Defined in: builders/action-builder.d.ts:44
 
 Attaches optional form fields that are validated before execution.
 
@@ -193,7 +193,7 @@ Attaches optional form fields that are validated before execution.
 
 > **getRuntime**(): [`ActionState`](../interfaces/ActionState.md)\<`TContext`, `TRecord`, [`InferActionForm`](../type-aliases/InferActionForm.md)\<`TForm`\>, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:56
+Defined in: builders/action-builder.d.ts:54
 
 **`Internal`**
 
@@ -209,7 +209,7 @@ Used by `runAction()`.
 
 > **hooks**(`hooks`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:52
+Defined in: builders/action-builder.d.ts:50
 
 Attaches lifecycle hooks around execution.
 
@@ -229,7 +229,7 @@ Attaches lifecycle hooks around execution.
 
 > **icon**(`icon`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:36
+Defined in: builders/action-builder.d.ts:34
 
 Sets an adapter-specific icon name.
 
@@ -249,7 +249,7 @@ Sets an adapter-specific icon name.
 
 > **label**(`label`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:32
+Defined in: builders/action-builder.d.ts:30
 
 Sets the display label.
 
@@ -269,7 +269,7 @@ Sets the display label.
 
 > **meta**(`meta`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:40
+Defined in: builders/action-builder.d.ts:38
 
 Merges adapter-specific presentation metadata.
 
@@ -289,7 +289,7 @@ Merges adapter-specific presentation metadata.
 
 > **result**(`result`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:50
+Defined in: builders/action-builder.d.ts:48
 
 Sets result presentation metadata.
 
@@ -309,7 +309,7 @@ Sets result presentation metadata.
 
 > **toSchema**(): [`ActionSchema`](../interfaces/ActionSchema.md)\<`TName`\>
 
-Defined in: builders/action-builder.d.ts:54
+Defined in: builders/action-builder.d.ts:52
 
 Finalizes the adapter-facing action schema.
 
@@ -323,7 +323,7 @@ Finalizes the adapter-facing action schema.
 
 > **variant**(`variant`): `ActionBuilder`\<`TName`, `TForm`, `TContext`, `TRecord`, `TResult`\>
 
-Defined in: builders/action-builder.d.ts:38
+Defined in: builders/action-builder.d.ts:36
 
 Sets the visual intent.
 

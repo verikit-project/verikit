@@ -31,7 +31,7 @@ export async function runAction<
         await runtime.isAvailable({
           context: request.context,
           record: request.record,
-          input: request.input as InferActionForm<TForm> | undefined,
+          input: request.input,
         }),
       )
     : { available: true };
