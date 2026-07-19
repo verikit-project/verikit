@@ -6,7 +6,7 @@
 
 # Type Alias: FieldBuilderState\<TSchema\>
 
-> **FieldBuilderState**\<`TSchema`> > > > \> = `Omit`\<`TSchema`, `"type"` \| `"name"`>>>
+> **FieldBuilderState**\<`TSchema`> > > > > > \> = `Omit`\<`TSchema`, `"type"` \| `"name"`>>>
 
 Defined in: [fields/base.ts:127](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L127)
 
