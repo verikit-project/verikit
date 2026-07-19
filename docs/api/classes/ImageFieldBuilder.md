@@ -25,7 +25,7 @@ Upload transport and storage are handled by adapters.
 
 ### Constructor
 
-> **new ImageFieldBuilder**\<`TValue`>>>(`state?`): `ImageFieldBuilder`\<`TValue`>>>
+> **new ImageFieldBuilder**\<`TValue`>(`state?`): `ImageFieldBuilder`\<`TValue`>
 
 Defined in: [fields/image.ts:25](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/image.ts#L25)
 
@@ -62,7 +62,7 @@ Does not exist at runtime; used only for type inference.
 
 ### state
 
-> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>
+> `protected` `readonly` **state**: [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>
 
 Defined in: [fields/base.ts:177](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L177)
 
@@ -77,7 +77,7 @@ Exposed as protected so subclasses can access and extend state.
 
 ### accept()
 
-> **accept**(`types`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **accept**(`types`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/image.ts:35](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/image.ts#L35)
 
@@ -97,7 +97,7 @@ readonly `string`[]
 
 ### default()
 
-> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `Exclude`\<`TValue`, `undefined`>>>, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **default**(`value`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `Exclude`\<`TValue`, `undefined`>, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:271](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L271)
 
@@ -122,7 +122,7 @@ undefined from TValue.
 
 ### description()
 
-> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **description**(`description`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:230](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L230)
 
@@ -146,7 +146,7 @@ Sets help text describing the field's purpose.
 
 ### getState()
 
-> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>>>
+> **getState**(): [`FieldBuilderState`](../type-aliases/FieldBuilderState.md)\<`TSchema`>
 
 Defined in: [fields/base.ts:211](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L211)
 
@@ -167,7 +167,7 @@ internally to compose builders (e.g. `from(column).as(field)`).
 
 ### hidden()
 
-> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **hidden**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:290](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L290)
 
@@ -185,7 +185,7 @@ Hides the field from forms and tables.
 
 ### label()
 
-> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **label**(`label`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:225](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L225)
 
@@ -209,7 +209,7 @@ Sets the field's display label.
 
 ### maxSize()
 
-> **maxSize**(`bytes`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **maxSize**(`bytes`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/image.ts:42](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/image.ts#L42)
 
@@ -229,7 +229,7 @@ Sets the maximum accepted upload size in bytes.
 
 ### meta()
 
-> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **meta**(`meta`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:310](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L310)
 
@@ -255,7 +255,7 @@ Merges adapter-specific metadata into any existing `meta`.
 
 #### Call Signature
 
-> **multiple**(`enabled`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `ToSingleFileValue`\<`TValue`>>>, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **multiple**(`enabled`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `ToSingleFileValue`\<`TValue`>, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/image.ts:49](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/image.ts#L49)
 
@@ -273,7 +273,7 @@ Restricts the field back to a single uploaded image.
 
 #### Call Signature
 
-> **multiple**(`enabled?`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `ToMultipleFileValue`\<`TValue`>>>, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **multiple**(`enabled?`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `ToMultipleFileValue`\<`TValue`>, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/image.ts:53](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/image.ts#L53)
 
@@ -293,7 +293,7 @@ Allows one or many uploaded images, widening the value to an array.
 
 ### nullable()
 
-> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue` \| `null`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **nullable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue` \| `null`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:260](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L260)
 
@@ -311,7 +311,7 @@ Allows null (TValue | null); also sets required: false.
 
 ### optional()
 
-> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue` \| `undefined`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **optional**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue` \| `undefined`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:252](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L252)
 
@@ -329,7 +329,7 @@ Marks the field optional (TValue | undefined); does not allow null.
 
 ### placeholder()
 
-> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **placeholder**(`placeholder`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:237](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L237)
 
@@ -353,7 +353,7 @@ Sets placeholder text for empty form inputs.
 
 ### readOnly()
 
-> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **readOnly**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:295](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L295)
 
@@ -371,7 +371,7 @@ Makes the field display-only in forms.
 
 ### required()
 
-> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `NonNullable`\<`TValue`>>>, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **required**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `NonNullable`\<`TValue`>, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:244](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L244)
 
@@ -389,7 +389,7 @@ Marks the field required, narrowing TValue and forcing nullable: false.
 
 ### searchable()
 
-> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **searchable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:280](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L280)
 
@@ -407,7 +407,7 @@ Marks the field searchable in list/table queries.
 
 ### sortable()
 
-> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **sortable**(): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:285](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L285)
 
@@ -453,7 +453,7 @@ If `name` is empty or whitespace-only.
 
 ### validation()
 
-> **validation**\<`TOutput`>>>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TOutput`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> **validation**\<`TOutput`>(`validation`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TOutput`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:303](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L303)
 
@@ -511,7 +511,7 @@ builder type; used by `from(column).as(field)`.
 
 ### withState()
 
-> `protected` **withState**\<`TNextValue`>>>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>>>, `TNextValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>>>
+> `protected` **withState**\<`TNextValue`>(`patch`): [`FieldBuilderWithValue`](../type-aliases/FieldBuilderWithValue.md)\<`ImageFieldBuilder`\<`TValue`>, `TNextValue`, [`ImageFieldSchema`](../interfaces/ImageFieldSchema.md)>
 
 Defined in: [fields/base.ts:191](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L191)
 

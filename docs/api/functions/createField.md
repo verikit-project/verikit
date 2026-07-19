@@ -6,7 +6,7 @@
 
 # Function: createField()
 
-> **createField**\<`TValue`, `TSchema`>>>(`fieldType`, `state?`): [`FieldBuilder`](../classes/FieldBuilder.md)\<`TValue`, `TSchema`>>>
+> **createField**\<`TValue`, `TSchema`>(`fieldType`, `state?`): [`FieldBuilder`](../classes/FieldBuilder.md)\<`TValue`, `TSchema`>
 
 Defined in: [fields/base.ts:342](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/fields/base.ts#L342)
 

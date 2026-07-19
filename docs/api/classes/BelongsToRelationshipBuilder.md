@@ -25,7 +25,7 @@ foreign key.
 
 ### Constructor
 
-> **new BelongsToRelationshipBuilder**\<`TResource`>>>(`target`, `state?`): `BelongsToRelationshipBuilder`\<`TResource`>>>
+> **new BelongsToRelationshipBuilder**\<`TResource`>(`target`, `state?`): `BelongsToRelationshipBuilder`\<`TResource`>
 
 Defined in: [relationships/belongs-to.ts:37](https://github.com/iamceeso/verikit/blob/b02d6adb19170825b6578c0db30e2917049e5aff/packages/core/src/relationships/belongs-to.ts#L37)
 
