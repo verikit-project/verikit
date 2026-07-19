@@ -87,8 +87,9 @@ export async function runAction<
   } catch (error) {
     try {
       await runtime.hooks?.error?.(run, error);
-    } catch (hookError) {
-      console.error("Action error hook failed:", hookError);
+    } catch {
+      // Ignore errors from the error hook so they don't
+      // mask the original execution failure.
     }
 
     return {
