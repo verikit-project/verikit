@@ -224,10 +224,10 @@ test("resource without relationships defaults to an empty relationships map", ()
 test("relationships are composed into the schema with names assigned from their key", () => {
   const author = defineResource("author", { fields: { name: text() } });
   const book = defineResource("book", {
-    fields: { title: text() },
-    relationships: {
-      author: belongsTo(() => author).via("authorId"),
-    },
+    fields: { title: text(), authorId: text() },
+    relationships: (field) => ({
+      author: belongsTo(() => author).via(field("authorId")),
+    }),
   });
 
   const schema = book.toSchema();

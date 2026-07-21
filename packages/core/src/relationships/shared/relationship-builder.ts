@@ -1,10 +1,16 @@
 import { InferResourceFields, Resource } from "../../resource/resource.js";
+import type { FieldReference } from "../../resource/resource.js";
+
+type AdapterForeignKeyReference = object;
+
+export type RelationshipForeignKey =
+  FieldReference<string> | AdapterForeignKeyReference;
 
 /** State shared by every relationship builder, one slot per fluent setter. */
 export interface RelationshipBuilderState {
   label?: string;
   inverse?: string;
-  foreignKey?: unknown;
+  foreignKey?: RelationshipForeignKey;
   displayField?: string;
 }
 
@@ -58,8 +64,15 @@ export abstract class RelationshipBuilder<
     return this.withState({ inverse: field } as Partial<TState>);
   }
 
-  /** Sets the foreign key column used to look up matching rows. */
-  via(foreignKey: unknown): this {
+  /**
+   * Sets the foreign key used to look up matching rows.
+   *
+   * Pass `resource.field("name")` or the field helper from
+   * `defineResource({ relationships: (field) => ... })` for compile-time
+   * checked resource field names. Adapter-specific column reference objects
+   * are also accepted.
+   */
+  via(foreignKey: RelationshipForeignKey): this {
     return this.withState({ foreignKey } as Partial<TState>);
   }
 

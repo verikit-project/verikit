@@ -12,6 +12,10 @@ const author = defineResource("author", {
   fields: { name: text() },
 });
 
+const book = defineResource("book", {
+  fields: { title: text(), authorId: text() },
+});
+
 test("belongsTo produces a relationship schema referencing the target resource", () => {
   const relationship = belongsTo(() => author);
 
@@ -36,7 +40,7 @@ test("belongsTo toSchema accepts a name for the relationship field", () => {
 
 test("belongsTo via() and displayField() are immutable and chainable", () => {
   const base = belongsTo(() => author);
-  const withForeignKey = base.via("authorId");
+  const withForeignKey = base.via(book.field("authorId"));
   const withDisplayField = withForeignKey.displayField("name");
 
   assert.equal(base.toSchema().foreignKey, undefined);
@@ -106,24 +110,36 @@ test("hasMany toSchema references the target resource and accepts a name", () =>
 });
 
 test("hasMany metadata methods are immutable and chainable", () => {
-  const base = hasMany(() => author);
+  const base = hasMany(() => book);
   const configured = base
     .label("Books")
     .inverse("writer")
-    .via("authorId")
-    .displayField("name");
+    .via(book.field("authorId"))
+    .displayField("title");
 
   assert.equal(base.toSchema().label, undefined);
   assert.deepEqual(configured.toSchema("books"), {
     type: "relationship",
     relationshipType: "hasMany",
     name: "books",
-    resource: "author",
+    resource: "book",
     label: "Books",
     inverse: "writer",
     foreignKey: "authorId",
-    displayField: "name",
+    displayField: "title",
   });
+});
+
+test("foreign key field references are compile-time checked", () => {
+  belongsTo(() => author).via(book.field("authorId"));
+
+  // eslint-disable-next-line no-constant-condition -- type-only check, never executed
+  if (false) {
+    // @ts-expect-error raw strings are not accepted as typed foreign keys.
+    belongsTo(() => author).via("authorId");
+    // @ts-expect-error field references must match the resource's fields.
+    belongsTo(() => author).via(book.field("missing"));
+  }
 });
 
 test("belongsToMany resolves its target lazily and exposes the resource name", () => {

@@ -35,6 +35,22 @@ export interface AnyRelationshipBuilder {
 /** Map of relationship names to their builders. */
 export type RelationshipMap = Record<string, AnyRelationshipBuilder>;
 
+declare const fieldReferenceBrand: unique symbol;
+
+/**
+ * Branded string reference to a resource field. It serializes as the field
+ * name, while preserving compile-time checks at `.via(...)` call sites.
+ */
+export type FieldReference<TName extends string = string> = TName & {
+  readonly [fieldReferenceBrand]: "field";
+};
+
+export type FieldReferenceFactory<TFields extends FieldMap> = <
+  TName extends keyof TFields & string,
+>(
+  name: TName,
+) => FieldReference<TName>;
+
 /** A titled group of layout children. */
 export interface SectionNode {
   type: "section";
@@ -123,7 +139,9 @@ export interface ResourceConfig<
 > {
   table?: TTable;
   fields: TFields;
-  relationships?: TRelationships;
+  relationships?:
+    | TRelationships
+    | ((field: FieldReferenceFactory<TFields>) => TRelationships);
   meta?: Record<string, unknown>;
 }
 
@@ -181,6 +199,26 @@ function cloneRelationshipMap<TRelationships extends RelationshipMap>(
   return { ...relationships };
 }
 
+function fieldReference<TName extends string>(
+  name: TName,
+): FieldReference<TName> {
+  return name as FieldReference<TName>;
+}
+
+function resolveRelationships<
+  TFields extends FieldMap,
+  TRelationships extends RelationshipMap,
+>(
+  relationships:
+    | TRelationships
+    | ((field: FieldReferenceFactory<TFields>) => TRelationships)
+    | undefined,
+): TRelationships {
+  return typeof relationships === "function"
+    ? relationships(fieldReference as FieldReferenceFactory<TFields>)
+    : ((relationships ?? {}) as TRelationships);
+}
+
 /**
  * Immutable resource definition.
  * Finalize with `.toSchema()` to produce a serializable resource schema.
@@ -219,7 +257,10 @@ export class Resource<
   ) {
     assertNonEmptyName("Resource", name);
 
-    const relationshipNames = new Set(Object.keys(config.relationships ?? {}));
+    const relationships = resolveRelationships<TFields, TRelationships>(
+      config.relationships,
+    );
+    const relationshipNames = new Set(Object.keys(relationships));
     const duplicateName = Object.keys(config.fields).find((fieldName) =>
       relationshipNames.has(fieldName),
     );
@@ -233,11 +274,16 @@ export class Resource<
     this.name = name;
     this.table = config.table;
     this.fields = cloneFieldMap(config.fields);
-    this.relationships = cloneRelationshipMap(
-      (config.relationships ?? {}) as TRelationships,
-    );
+    this.relationships = cloneRelationshipMap(relationships);
     this.meta = config.meta ? cloneValue(config.meta) : undefined;
     this.formFactory = formFactory;
+  }
+
+  /** Returns a compile-time checked reference to one of this resource's fields. */
+  field<TName extends keyof TFields & string>(
+    name: TName,
+  ): FieldReference<TName> {
+    return fieldReference(name);
   }
 
   /** Attaches a form layout factory, returning a new resource instance. */
