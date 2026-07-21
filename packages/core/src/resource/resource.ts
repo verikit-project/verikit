@@ -5,6 +5,7 @@ import type { BelongsToRelationshipBuilder } from "../relationships/belongs-to.j
 import type { BelongsToRelationshipSchema } from "../relationships/belongs-to.js";
 import type { HasManyRelationshipBuilder } from "../relationships/has-many.js";
 import type { HasManyRelationshipSchema } from "../relationships/has-many.js";
+import { cloneValue } from "../utils/clone.js";
 
 /** Map of field names to their builders. */
 export type FieldMap = Record<string, AnyFieldBuilder>;
@@ -164,6 +165,22 @@ export type InferResource<TResource> =
         InferResourceRelationships<TRelationships>
     : never;
 
+function assertNonEmptyName(kind: string, name: string): void {
+  if (name.trim().length === 0) {
+    throw new Error(`${kind} names must be non-empty strings.`);
+  }
+}
+
+function cloneFieldMap<TFields extends FieldMap>(fields: TFields): TFields {
+  return { ...fields };
+}
+
+function cloneRelationshipMap<TRelationships extends RelationshipMap>(
+  relationships: TRelationships,
+): TRelationships {
+  return { ...relationships };
+}
+
 /**
  * Immutable resource definition.
  * Finalize with `.toSchema()` to produce a serializable resource schema.
@@ -184,16 +201,24 @@ export class Resource<
   // do not appear in a contravariant position here; otherwise it would make
   // Resource invariant in those params and break inference for callers (e.g.
   // relationship builders) that accept `Resource` generically.
-  private formFactory?: (
+  private readonly formFactory?: (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
     builder: ResourceLayoutBuilder<any, any>,
   ) => SchemaNode[];
 
-  /** @throws {Error} If a field and relationship share the same name. */
+  /**
+   * @throws {Error} If the resource name is empty, or if a field and
+   * relationship share the same name.
+   */
   constructor(
     name: TName,
     config: ResourceConfig<TFields, TTable, TRelationships>,
+    formFactory?: (
+      builder: ResourceLayoutBuilder<TFields, TRelationships>,
+    ) => SchemaNode[],
   ) {
+    assertNonEmptyName("Resource", name);
+
     const relationshipNames = new Set(Object.keys(config.relationships ?? {}));
     const duplicateName = Object.keys(config.fields).find((fieldName) =>
       relationshipNames.has(fieldName),
@@ -207,19 +232,30 @@ export class Resource<
 
     this.name = name;
     this.table = config.table;
-    this.fields = config.fields;
-    this.relationships = (config.relationships ?? {}) as TRelationships;
-    this.meta = config.meta;
+    this.fields = cloneFieldMap(config.fields);
+    this.relationships = cloneRelationshipMap(
+      (config.relationships ?? {}) as TRelationships,
+    );
+    this.meta = config.meta ? cloneValue(config.meta) : undefined;
+    this.formFactory = formFactory;
   }
 
-  /** Attaches a form layout factory; returns `this` for chaining. */
+  /** Attaches a form layout factory, returning a new resource instance. */
   form(
     factory: (
       builder: ResourceLayoutBuilder<TFields, TRelationships>,
     ) => SchemaNode[],
   ): this {
-    this.formFactory = factory;
-    return this;
+    return new Resource(
+      this.name,
+      {
+        table: this.table,
+        fields: this.fields,
+        relationships: this.relationships,
+        meta: this.meta,
+      },
+      factory,
+    ) as this;
   }
 
   /**
@@ -250,7 +286,7 @@ export class Resource<
       tree: this.formFactory
         ? this.formFactory(new ResourceLayoutBuilder(fields, relationships))
         : Object.values(fields),
-      meta: this.meta,
+      meta: this.meta ? cloneValue(this.meta) : undefined,
     };
   }
 }
@@ -354,6 +390,10 @@ export class ResourceLayoutBuilder<
     columns: number,
     children: readonly LayoutChild<TFields, TRelationships>[],
   ): GridNode {
+    if (!Number.isInteger(columns) || columns < 1) {
+      throw new Error("Grid columns must be a positive integer.");
+    }
+
     return {
       type: "grid",
       columns,
@@ -398,6 +438,8 @@ export class ResourceLayoutBuilder<
     name: string,
     children: readonly LayoutChild<TFields, TRelationships>[],
   ): RepeaterNode {
+    assertNonEmptyName("Repeater", name);
+
     return {
       type: "repeater",
       name,
@@ -413,6 +455,8 @@ export class ResourceLayoutBuilder<
       input?: readonly LayoutChild<TFields, TRelationships>[];
     } = {},
   ): ActionNode {
+    assertNonEmptyName("Action", name);
+
     return {
       type: "action",
       name,

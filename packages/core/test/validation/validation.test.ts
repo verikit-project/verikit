@@ -265,6 +265,53 @@ test("attached validation failures surface as issues", () => {
   });
 });
 
+test("sync validation rejects promise-like parse validators", () => {
+  const schema = text()
+    .validation({
+      parse: () => ({
+        then() {},
+      }),
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [
+      {
+        path: [],
+        message:
+          "Async validators are not supported by validateField(); use validateFieldAsync() instead.",
+      },
+    ],
+  });
+});
+
+test("sync validation rejects promise-like standard schema validators", () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () =>
+          ({
+            then() {},
+          }) as unknown as Promise<{ value: string }>,
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [
+      {
+        path: [],
+        message:
+          "Async validators are not supported by validateField(); use validateFieldAsync() instead.",
+      },
+    ],
+  });
+});
+
 test("attached validation non-error throws surface as issues", () => {
   const schema = text()
     .validation({

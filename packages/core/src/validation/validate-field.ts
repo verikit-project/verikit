@@ -286,12 +286,19 @@ function describeError(error: unknown): string {
 function rejectAsyncValidator<TValue>(
   result: TValue,
 ): asserts result is Exclude<TValue, Promise<unknown>> {
-  if (!(result instanceof Promise)) {
+  if (
+    (typeof result !== "object" && typeof result !== "function") ||
+    result === null ||
+    !("then" in result) ||
+    typeof result.then !== "function"
+  ) {
     return;
   }
 
   // Prevent an unhandled rejection if the async validator later rejects.
-  void result.catch(() => {});
+  if ("catch" in result && typeof result.catch === "function") {
+    void result.catch(() => {});
+  }
 
   throw new Error(
     "Async validators are not supported by validateField(); use validateFieldAsync() instead.",

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { email, text } from "../../src/fields/index.js";
+import { email, text, type AnyFieldBuilder } from "../../src/fields/index.js";
 import {
   belongsTo,
   belongsToMany,
@@ -39,7 +39,7 @@ test("defineResource composes fields into a schema with default tree ordering", 
   assert.deepEqual(schema.tree, [schema.fields.name, schema.fields.email]);
 });
 
-test("resource preserves table and meta references", () => {
+test("resource preserves table reference and snapshots meta", () => {
   const table = { schema: "public", name: "users" };
   const meta = { icon: "user" };
 
@@ -52,14 +52,63 @@ test("resource preserves table and meta references", () => {
   assert.equal(resource.table, table);
 
   const schema = resource.toSchema();
-  assert.equal(schema.meta, meta);
+  assert.deepEqual(schema.meta, { icon: "user" });
+  assert.notEqual(schema.meta, meta);
 });
 
-test("form() returns the resource instance for chaining", () => {
+test("resource snapshots caller-owned fields, relationships, and meta", () => {
+  const author = defineResource("author", { fields: { name: text() } });
+  const fields: Record<string, AnyFieldBuilder> = { name: text() };
+  const relationships = { author: belongsTo(() => author) };
+  const meta = { icon: "user" };
+
+  const resource = defineResource("book", {
+    fields,
+    relationships,
+    meta,
+  });
+
+  fields.name = email();
+  relationships.author = belongsTo(() => author).label("Changed");
+  meta.icon = "changed";
+
+  const schema = resource.toSchema();
+
+  assert.equal(schema.fields.name.fieldType, "text");
+  assert.equal(schema.relationships.author.label, undefined);
+  assert.deepEqual(schema.meta, { icon: "user" });
+});
+
+test("resource schema snapshots meta on each toSchema call", () => {
+  const resource = defineResource("user", {
+    fields: { name: text() },
+    meta: { icon: "user" },
+  });
+
+  const schema = resource.toSchema();
+  schema.meta!.icon = "changed";
+
+  assert.deepEqual(resource.toSchema().meta, { icon: "user" });
+});
+
+test("form() returns a new resource instance for chaining", () => {
   const resource = defineResource("user", { fields: { name: text() } });
   const chained = resource.form((builder) => [builder.field("name")]);
 
-  assert.equal(chained, resource);
+  assert.notEqual(chained, resource);
+  assert.deepEqual(resource.toSchema().tree, [resource.toSchema().fields.name]);
+  assert.deepEqual(chained.toSchema().tree, [chained.toSchema().fields.name]);
+});
+
+test("resource names must be non-empty", () => {
+  assert.throws(
+    () => defineResource("", { fields: { name: text() } }),
+    /Resource names must be non-empty strings\./,
+  );
+  assert.throws(
+    () => defineResource("   ", { fields: { name: text() } }),
+    /Resource names must be non-empty strings\./,
+  );
 });
 
 test("form() overrides the default tree using section and grid layout helpers", () => {
@@ -122,6 +171,24 @@ test("section and grid accept nested schema nodes alongside field names", () => 
       ],
     },
   ]);
+});
+
+test("grid columns must be positive integers", () => {
+  const resource = defineResource("user", {
+    fields: { name: text() },
+  });
+
+  assert.throws(
+    () => resource.form((builder) => [builder.grid(0, ["name"])]).toSchema(),
+    /Grid columns must be a positive integer\./,
+  );
+  assert.throws(
+    () =>
+      resource
+        .form((builder) => [builder.grid(Number.NaN, ["name"])])
+        .toSchema(),
+    /Grid columns must be a positive integer\./,
+  );
 });
 
 test("layout builder throws for unknown runtime field names", () => {
@@ -392,4 +459,20 @@ test("action() builds an action node with optional label and resolved input", ()
       input: undefined,
     },
   ]);
+});
+
+test("repeater and action names must be non-empty", () => {
+  const resource = defineResource("invoice", {
+    fields: { amount: text() },
+  });
+
+  assert.throws(
+    () =>
+      resource.form((builder) => [builder.repeater("", ["amount"])]).toSchema(),
+    /Repeater names must be non-empty strings\./,
+  );
+  assert.throws(
+    () => resource.form((builder) => [builder.action("   ")]).toSchema(),
+    /Action names must be non-empty strings\./,
+  );
 });
