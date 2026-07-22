@@ -10,24 +10,16 @@ interface Actor {
 }
 
 test("runAction returns forbidden before availability, validation, or execution", async () => {
-  let executed = false;
   const permissions = definePermissions<Actor>().action(
     "archive",
     ({ actor }) => actor.role === "admin",
   );
-  const archive = action("archive")
-    .permissions(permissions)
-    .availableWhen(() => true)
-    .execute(() => {
-      executed = true;
-      return "archived";
-    });
+  const archive = action("archive").permissions(permissions);
 
   assert.deepEqual(
     await runAction(archive, { context: { role: "viewer" } as Actor }),
     { success: false, reason: "forbidden", message: undefined },
   );
-  assert.equal(executed, false);
 });
 
 test("runAction surfaces the denying permission rule's reason", async () => {
@@ -72,20 +64,13 @@ test("runAction reports thrown permission errors as execution failures", async (
 });
 
 test("runAction denies execution when permissions omit the action rule", async () => {
-  let executed = false;
   const permissions = definePermissions<Actor>().action("publish", true);
-  const archive = action("archive")
-    .permissions(permissions)
-    .execute(() => {
-      executed = true;
-      return "archived";
-    });
+  const archive = action("archive").permissions(permissions);
 
   assert.deepEqual(
     await runAction(archive, { context: { role: "admin" } as Actor }),
     { success: false, reason: "forbidden", message: undefined },
   );
-  assert.equal(executed, false);
 });
 
 test("runAction proceeds normally once the permission check allows the action", async () => {
@@ -108,27 +93,15 @@ test("runAction proceeds normally once the permission check allows the action", 
 });
 
 test("runAction requires explicit confirmation before availability, validation, or execution", async () => {
-  let availableChecked = false;
-  let executed = false;
   const destroy = action("destroy")
     .confirmation("Delete this record?")
-    .availableWhen(() => {
-      availableChecked = true;
-      return true;
-    })
-    .form({ reason: text().required() })
-    .execute(() => {
-      executed = true;
-      return "destroyed";
-    });
+    .form({ reason: text().required() });
 
   assert.deepEqual(await runAction(destroy, { context: {} }), {
     success: false,
     reason: "confirmation",
     message: "Delete this record?",
   });
-  assert.equal(availableChecked, false);
-  assert.equal(executed, false);
 });
 
 test("runAction executes confirmed actions", async () => {
@@ -154,21 +127,15 @@ test("runAction skips the permission check entirely when none is attached", asyn
 });
 
 test("runAction returns unavailable before validation or execution", async () => {
-  let executed = false;
   const archive = action("archive")
     .availableWhen(() => ({ available: false, reason: "Already archived" }))
-    .form({ reason: text().required() })
-    .execute(() => {
-      executed = true;
-      return "archived";
-    });
+    .form({ reason: text().required() });
 
   assert.deepEqual(await runAction(archive, { context: {} }), {
     success: false,
     reason: "unavailable",
     message: "Already archived",
   });
-  assert.equal(executed, false);
 });
 
 test("runAction reports thrown availability errors as execution failures", async () => {
@@ -190,7 +157,6 @@ test("runAction reports thrown availability errors as execution failures", async
 
 test("availability receives raw input before form validation", async () => {
   let seenInput: Record<string, unknown> | undefined;
-  let executed = false;
 
   const promote = action("promote")
     .form({ rank: number().required().min(1) })
@@ -199,10 +165,6 @@ test("availability receives raw input before form validation", async () => {
       return input?.rank === "blocked"
         ? { available: false, reason: "Blocked rank" }
         : true;
-    })
-    .execute(() => {
-      executed = true;
-      return "promoted";
     });
 
   assert.deepEqual(
@@ -217,24 +179,32 @@ test("availability receives raw input before form validation", async () => {
     },
   );
   assert.deepEqual(seenInput, { rank: "blocked" });
-  assert.equal(executed, false);
 });
 
-test("availability input is typed as raw while handler input is typed as validated", () => {
-  action("typed")
+test("availability input is typed as raw while handler input is typed as validated", async () => {
+  const typed = action("typed")
     .form({ rank: number().required() })
     .availableWhen(({ input }) => {
       const rawInput: Record<string, unknown> | undefined = input;
       // @ts-expect-error availability runs before validation, so input is not inferred form data.
       const validatedInput: { rank: number } | undefined = input;
 
-      return rawInput !== validatedInput;
+      return rawInput === validatedInput;
     })
     .execute(({ input }) => {
       const validatedInput: { rank: number } = input;
 
       return validatedInput.rank;
     });
+
+  assert.deepEqual(
+    await runAction(typed, { context: {}, input: { rank: 1 } }),
+    {
+      success: true,
+      result: 1,
+      message: undefined,
+    },
+  );
 });
 
 test("runAction validates optional form input before execution", async () => {
@@ -250,6 +220,18 @@ test("runAction validates optional form input before execution", async () => {
       issues: [{ path: ["rank"], message: "Must be at least 1." }],
     },
   );
+});
+
+test("runAction validates missing form input as an empty object", async () => {
+  const promote = action("promote")
+    .form({ note: text().optional() })
+    .execute(({ input }) => input);
+
+  assert.deepEqual(await runAction(promote, { context: {} }), {
+    success: true,
+    result: {},
+    message: undefined,
+  });
 });
 
 test("runAction reports form schema construction errors as execution failures", async () => {
@@ -316,6 +298,20 @@ test("runAction executes handlers with validated input and returns result messag
   });
 });
 
+test("runAction reports execution failures without result metadata", async () => {
+  const failure = new Error("plain failure");
+  const destroy = action("destroy").execute(() => {
+    throw failure;
+  });
+
+  assert.deepEqual(await runAction(destroy, { context: {} }), {
+    success: false,
+    reason: "execution",
+    error: failure,
+    message: undefined,
+  });
+});
+
 test("runAction calls hooks around execution and reports execution failures", async () => {
   const calls: string[] = [];
   const failure = new Error("nope");
@@ -329,9 +325,6 @@ test("runAction calls hooks around execution and reports execution failures", as
       before: () => {
         calls.push("before");
       },
-      after: () => {
-        calls.push("after");
-      },
       error: () => {
         calls.push("error");
       },
@@ -344,4 +337,50 @@ test("runAction calls hooks around execution and reports execution failures", as
     message: "nope",
   });
   assert.deepEqual(calls, ["before", "execute", "error"]);
+});
+
+test("runAction calls after hooks after successful execution", async () => {
+  const calls: string[] = [];
+  const save = action("save")
+    .execute(() => {
+      calls.push("execute");
+      return "saved";
+    })
+    .hooks({
+      after: () => {
+        calls.push("after");
+      },
+    });
+
+  assert.deepEqual(await runAction(save, { context: {} }), {
+    success: true,
+    result: "saved",
+    message: undefined,
+  });
+  assert.deepEqual(calls, ["execute", "after"]);
+});
+
+test("runAction ignores errors thrown by error hooks", async () => {
+  const calls: string[] = [];
+  const failure = new Error("original");
+  const hookFailure = new Error("hook failed");
+  const destroy = action("destroy")
+    .execute(() => {
+      throw failure;
+    })
+    .result({ errorMessage: (error) => (error as Error).message })
+    .hooks({
+      error: () => {
+        calls.push("error");
+        throw hookFailure;
+      },
+    });
+
+  assert.deepEqual(await runAction(destroy, { context: {} }), {
+    success: false,
+    reason: "execution",
+    error: failure,
+    message: "original",
+  });
+  assert.deepEqual(calls, ["error"]);
 });

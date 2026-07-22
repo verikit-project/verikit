@@ -62,6 +62,22 @@ test("action builder methods are immutable", () => {
   assert.equal(labelled.toSchema().label, "Archive");
 });
 
+test("action names must be non-empty", () => {
+  assert.throws(() => action("  "), /Action names must be non-empty strings\./);
+});
+
+test("function result messages stay runtime-only and are omitted from schemas", () => {
+  const publish = action("publish").result({
+    successMessage: (result: unknown) => `Published ${String(result)}`,
+    errorMessage: (error: unknown) => String(error),
+  });
+
+  assert.deepEqual(publish.toSchema().result, {
+    successMessage: undefined,
+    errorMessage: undefined,
+  });
+});
+
 test(".permissions() attaches a permissions definition without appearing in the adapter-facing schema", () => {
   const permissions = definePermissions().action("archive", false);
   const base = action("archive");
