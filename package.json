@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "docs:api": "pnpm build && typedoc --options typedoc.core.json && typedoc --options typedoc.runtime.json",
     "verify": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
   },
   "keywords": [
