@@ -658,6 +658,35 @@ test("validateResource returns the validated value map on success", () => {
   });
 });
 
+test("validateResource omits absent optional fields from the validated value map", () => {
+  const resource = defineResource("user", {
+    fields: {
+      name: text().required(),
+      age: number().optional(),
+    },
+  });
+  const { fields } = resource.toSchema();
+
+  assert.deepEqual(validateResource(fields, { name: "Ada" }), {
+    success: true,
+    value: { name: "Ada" },
+  });
+});
+
+test("validateResource includes defaults for absent fields", () => {
+  const resource = defineResource("user", {
+    fields: {
+      name: text().default("Anonymous"),
+    },
+  });
+  const { fields } = resource.toSchema();
+
+  assert.deepEqual(validateResource(fields, {}), {
+    success: true,
+    value: { name: "Anonymous" },
+  });
+});
+
 test("validateResourceAsync supports async validators across fields", async () => {
   const resource = defineResource("user", {
     fields: {
@@ -670,6 +699,29 @@ test("validateResourceAsync supports async validators across fields", async () =
           }),
         },
       }),
+    },
+  });
+  const { fields } = resource.toSchema();
+
+  assert.deepEqual(await validateResourceAsync(fields, { name: "  Ada  " }), {
+    success: true,
+    value: { name: "Ada" },
+  });
+});
+
+test("validateResourceAsync omits absent optional fields from the validated value map", async () => {
+  const resource = defineResource("user", {
+    fields: {
+      name: text().validation({
+        "~standard": {
+          version: 1,
+          vendor: "test",
+          validate: async (value: unknown) => ({
+            value: String(value).trim(),
+          }),
+        },
+      }),
+      age: number().optional(),
     },
   });
   const { fields } = resource.toSchema();

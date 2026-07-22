@@ -27,6 +27,18 @@ function aggregate(
     : { success: true, value: result };
 }
 
+function shouldValidateField(
+  name: string,
+  schema: FieldSchema,
+  values: Record<string, unknown>,
+): boolean {
+  return (
+    Object.hasOwn(values, name) ||
+    schema.required === true ||
+    schema.defaultValue !== undefined
+  );
+}
+
 /**
  * Validates values against a resource's field schemas.
  * Relationships are intentionally excluded because they describe schema
@@ -37,10 +49,9 @@ export function validateResource(
   values: Record<string, unknown>,
 ): ValidationResult<Record<string, unknown>> {
   return aggregate(
-    Object.entries(fields).map(([name, schema]) => [
-      name,
-      validateField(schema, values[name]),
-    ]),
+    Object.entries(fields)
+      .filter(([name, schema]) => shouldValidateField(name, schema, values))
+      .map(([name, schema]) => [name, validateField(schema, values[name])]),
   );
 }
 
@@ -50,12 +61,12 @@ export async function validateResourceAsync(
   values: Record<string, unknown>,
 ): Promise<ValidationResult<Record<string, unknown>>> {
   const entries = await Promise.all(
-    Object.entries(fields).map(
-      async ([name, schema]): Promise<[string, ValidationResult]> => [
+    Object.entries(fields)
+      .filter(([name, schema]) => shouldValidateField(name, schema, values))
+      .map(async ([name, schema]): Promise<[string, ValidationResult]> => [
         name,
         await validateFieldAsync(schema, values[name]),
-      ],
-    ),
+      ]),
   );
 
   return aggregate(entries);

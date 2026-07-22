@@ -9,6 +9,18 @@ function defaultDeniedMessage(field: string): string {
   return `You do not have permission to write to "${field}".`;
 }
 
+function shouldValidateField(
+  name: string,
+  schema: FieldSchema,
+  values: Record<string, unknown>,
+): boolean {
+  return (
+    Object.hasOwn(values, name) ||
+    schema.required === true ||
+    schema.defaultValue !== undefined
+  );
+}
+
 /**
  * Validates values against a resource's field schemas the same way
  * `validateResourceAsync` does, but first checks write access for each
@@ -27,8 +39,9 @@ export async function validateWritableFields<TActor, TRecord>(
   context: PermissionContext<TActor, TRecord>,
 ): Promise<ValidationResult<Record<string, unknown>>> {
   const entries = await Promise.all(
-    Object.entries(fields).map(
-      async ([name, schema]): Promise<[string, ValidationResult]> => {
+    Object.entries(fields)
+      .filter(([name, schema]) => shouldValidateField(name, schema, values))
+      .map(async ([name, schema]): Promise<[string, ValidationResult]> => {
         const access = await checkFieldAccess(
           permissions,
           name,
@@ -52,8 +65,7 @@ export async function validateWritableFields<TActor, TRecord>(
         }
 
         return [name, await validateFieldAsync(schema, values[name])];
-      },
-    ),
+      }),
   );
 
   const issues: ValidationIssue[] = [];

@@ -483,3 +483,42 @@ test("validateWritableFields runs normal field validation for writable fields", 
     { success: true, value: { title: "Hello" } },
   );
 });
+
+test("validateWritableFields omits absent optional fields without checking write access", async () => {
+  const permissions = definePermissions<Actor, Post>()
+    .field("title", {
+      write: true,
+    })
+    .field("subtitle", {
+      write: false,
+    });
+
+  assert.deepEqual(
+    await validateWritableFields(
+      {
+        title: text().required().toSchema("title"),
+        subtitle: text().optional().toSchema("subtitle"),
+      },
+      { title: "Hello" },
+      permissions,
+      { actor: { role: "editor" } },
+    ),
+    { success: true, value: { title: "Hello" } },
+  );
+});
+
+test("validateWritableFields preserves explicit undefined values", async () => {
+  const permissions = definePermissions<Actor, Post>().field("subtitle", {
+    write: true,
+  });
+
+  assert.deepEqual(
+    await validateWritableFields(
+      { subtitle: text().optional().toSchema("subtitle") },
+      { subtitle: undefined },
+      permissions,
+      { actor: { role: "editor" } },
+    ),
+    { success: true, value: { subtitle: undefined } },
+  );
+});
