@@ -19,6 +19,7 @@ const book = defineResource("book", {
 test("belongsTo produces a relationship schema referencing the target resource", () => {
   const relationship = belongsTo(() => author);
 
+  assert.equal(relationship.kind, "belongsTo");
   assert.equal(relationship.target(), author);
   assert.deepEqual(relationship.toSchema(), {
     type: "relationship",

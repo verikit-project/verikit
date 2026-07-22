@@ -34,6 +34,8 @@ export interface BelongsToRelationshipSchema {
 export class BelongsToRelationshipBuilder<
   TResource extends Resource = Resource,
 > extends RelationshipBuilder<TResource, RelationshipBuilderState> {
+  readonly kind = "belongsTo";
+
   constructor(target: () => TResource, state: RelationshipBuilderState = {}) {
     super(target, state);
   }
