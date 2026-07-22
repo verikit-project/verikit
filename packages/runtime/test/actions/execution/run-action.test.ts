@@ -85,6 +85,42 @@ test("runAction proceeds normally once the permission check allows the action", 
   );
 });
 
+test("runAction requires explicit confirmation before availability, validation, or execution", async () => {
+  let availableChecked = false;
+  let executed = false;
+  const destroy = action("destroy")
+    .confirmation("Delete this record?")
+    .availableWhen(() => {
+      availableChecked = true;
+      return true;
+    })
+    .form({ reason: text().required() })
+    .execute(() => {
+      executed = true;
+      return "destroyed";
+    });
+
+  assert.deepEqual(await runAction(destroy, { context: {} }), {
+    success: false,
+    reason: "confirmation",
+    message: "Delete this record?",
+  });
+  assert.equal(availableChecked, false);
+  assert.equal(executed, false);
+});
+
+test("runAction executes confirmed actions", async () => {
+  const destroy = action("destroy")
+    .confirmation({ message: "Delete this record?", confirmLabel: "Delete" })
+    .execute(() => "destroyed");
+
+  assert.deepEqual(await runAction(destroy, { context: {}, confirmed: true }), {
+    success: true,
+    result: "destroyed",
+    message: undefined,
+  });
+});
+
 test("runAction skips the permission check entirely when none is attached", async () => {
   const archive = action("archive").execute(() => "archived");
 

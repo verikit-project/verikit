@@ -24,4 +24,5 @@ export interface ActionRunRequest<TContext, TRecord> {
   context: TContext;
   record?: TRecord;
   input?: Record<string, unknown>;
+  confirmed?: boolean;
 }

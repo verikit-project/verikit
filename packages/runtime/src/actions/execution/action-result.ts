@@ -27,6 +27,11 @@ export type ActionRunFailure =
     }
   | {
       success: false;
+      reason: "confirmation";
+      message?: string;
+    }
+  | {
+      success: false;
       reason: "validation";
       issues: ValidationIssue[];
     }

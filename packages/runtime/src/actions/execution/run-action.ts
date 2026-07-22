@@ -42,6 +42,14 @@ export async function runAction<
     }
   }
 
+  if (runtime.confirmation && request.confirmed !== true) {
+    return {
+      success: false,
+      reason: "confirmation",
+      message: runtime.confirmation.message,
+    };
+  }
+
   const availability = runtime.isAvailable
     ? normalizeAvailability(
         await runtime.isAvailable({
