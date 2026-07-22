@@ -1,3 +1,4 @@
+export * from "./compiler/index.js";
 export * from "./fields/index.js";
 export * from "./permissions/index.js";
 export * from "./relationships/index.js";
