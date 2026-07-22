@@ -9,7 +9,10 @@ import {
   normalizePermissionResult,
   normalizePermissionRule,
   PermissionsBuilder,
+  resolveResourceSchema,
+  validateWritableFields,
 } from "../../src/permissions/index.js";
+import { belongsTo } from "../../src/relationships/index.js";
 import { text } from "../../src/fields/index.js";
 import { defineResource } from "../../src/resource/index.js";
 
@@ -336,4 +339,136 @@ test("a full permissions definition composes resource, field, and action rules i
   assert.deepEqual(await checkAction(permissions, "archive", viewer), {
     allowed: false,
   });
+});
+
+test("resolveResourceSchema hides unreadable fields and locks unwritable ones", async () => {
+  const post = defineResource("post", {
+    fields: {
+      title: text(),
+      salary: text(),
+    },
+  });
+  const permissions = definePermissions<Actor, Post>().field("salary", {
+    read: ({ actor }) => actor.role === "admin",
+    write: ({ actor }) => actor.role !== "viewer",
+  });
+
+  const resolved = await resolveResourceSchema(post.toSchema(), permissions, {
+    actor: { role: "editor" },
+  });
+
+  assert.equal(resolved.fields.title.hidden, undefined);
+  assert.equal(resolved.fields.title.readOnly, undefined);
+  assert.equal(resolved.fields.salary.hidden, true);
+  assert.equal(resolved.fields.salary.readOnly, undefined);
+});
+
+test("resolveResourceSchema never relaxes statically-set hidden/readOnly flags", async () => {
+  const post = defineResource("post", {
+    fields: {
+      internalNote: text().hidden().readOnly(),
+    },
+  });
+  const permissions = definePermissions<Actor, Post>().field("internalNote", {
+    read: true,
+    write: true,
+  });
+
+  const resolved = await resolveResourceSchema(post.toSchema(), permissions, {
+    actor: { role: "admin" },
+  });
+
+  assert.equal(resolved.fields.internalNote.hidden, true);
+  assert.equal(resolved.fields.internalNote.readOnly, true);
+});
+
+test("resolveResourceSchema updates matching field nodes inside the layout tree, and leaves relationships alone", async () => {
+  const author = defineResource("author", { fields: { name: text() } });
+  const post = defineResource("post", {
+    fields: { title: text(), salary: text() },
+    relationships: { author: belongsTo(() => author) },
+  }).form((f) => [f.section("Details", ["title", "salary", "author"])]);
+  const permissions = definePermissions<Actor, Post>().field("salary", {
+    read: false,
+  });
+
+  const resolved = await resolveResourceSchema(post.toSchema(), permissions, {
+    actor: { role: "viewer" },
+  });
+
+  const section = resolved.tree[0];
+  assert.ok(section?.type === "section");
+  const [title, salary, authorNode] = section.children;
+  assert.equal(title?.type === "field" ? title.hidden : undefined, undefined);
+  assert.equal(salary?.type === "field" ? salary.hidden : undefined, true);
+  assert.deepEqual(authorNode, resolved.relationships.author);
+});
+
+test("validateWritableFields reports a permission issue instead of running validation for unwritable fields", async () => {
+  const permissions = definePermissions<Actor, Post>().field("salary", {
+    write: false,
+  });
+
+  const result = await validateWritableFields(
+    { salary: text().required().toSchema("salary") },
+    { salary: undefined },
+    permissions,
+    { actor: { role: "viewer" } },
+  );
+
+  assert.deepEqual(result, {
+    success: false,
+    issues: [
+      {
+        path: ["salary"],
+        message: 'You do not have permission to write to "salary".',
+      },
+    ],
+  });
+});
+
+test("validateWritableFields surfaces the denying rule's custom reason", async () => {
+  const permissions = definePermissions<Actor, Post>().field("salary", {
+    write: () => ({ allowed: false, reason: "Only admins can edit salary." }),
+  });
+
+  const result = await validateWritableFields(
+    { salary: text().toSchema("salary") },
+    { salary: "100000" },
+    permissions,
+    { actor: { role: "editor" } },
+  );
+
+  assert.deepEqual(result, {
+    success: false,
+    issues: [{ path: ["salary"], message: "Only admins can edit salary." }],
+  });
+});
+
+test("validateWritableFields runs normal field validation for writable fields", async () => {
+  const permissions = definePermissions<Actor, Post>().field("title", {
+    write: true,
+  });
+
+  assert.deepEqual(
+    await validateWritableFields(
+      { title: text().required().toSchema("title") },
+      { title: undefined },
+      permissions,
+      { actor: { role: "editor" } },
+    ),
+    {
+      success: false,
+      issues: [{ path: ["title"], message: "This field is required." }],
+    },
+  );
+  assert.deepEqual(
+    await validateWritableFields(
+      { title: text().required().toSchema("title") },
+      { title: "Hello" },
+      permissions,
+      { actor: { role: "editor" } },
+    ),
+    { success: true, value: { title: "Hello" } },
+  );
 });

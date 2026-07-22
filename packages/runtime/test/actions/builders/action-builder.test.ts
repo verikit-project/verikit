@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { text } from "@verikit/core";
+import { definePermissions, text } from "@verikit/core";
 import { action } from "../../../src/actions/builders/index.js";
 
 test("action builder produces a schema for identity, presentation, confirmation, form, and result", () => {
@@ -60,4 +60,25 @@ test("action builder methods are immutable", () => {
 
   assert.equal(base.toSchema().label, undefined);
   assert.equal(labelled.toSchema().label, "Archive");
+});
+
+test(".permissions() attaches a permissions definition without appearing in the adapter-facing schema", () => {
+  const permissions = definePermissions().action("archive", false);
+  const base = action("archive");
+  const guarded = base.permissions(permissions);
+
+  assert.equal(base.getRuntime().permissions, undefined);
+  assert.equal(guarded.getRuntime().permissions, permissions);
+  assert.deepEqual(guarded.toSchema(), {
+    type: "action",
+    name: "archive",
+    label: undefined,
+    description: undefined,
+    icon: undefined,
+    variant: undefined,
+    confirmation: undefined,
+    form: undefined,
+    result: undefined,
+    meta: undefined,
+  });
 });

@@ -1,9 +1,82 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { number, text } from "@verikit/core";
+import { definePermissions, number, text } from "@verikit/core";
 import { action } from "../../../src/actions/builders/index.js";
 import { runAction } from "../../../src/actions/execution/index.js";
 import type { InferActionInput } from "../../../src/actions/types/index.js";
+
+interface Actor {
+  role: "admin" | "viewer";
+}
+
+test("runAction returns forbidden before availability, validation, or execution", async () => {
+  let executed = false;
+  const permissions = definePermissions<Actor>().action(
+    "archive",
+    ({ actor }) => actor.role === "admin",
+  );
+  const archive = action("archive")
+    .permissions(permissions)
+    .availableWhen(() => true)
+    .execute(() => {
+      executed = true;
+      return "archived";
+    });
+
+  assert.deepEqual(
+    await runAction(archive, { context: { role: "viewer" } as Actor }),
+    { success: false, reason: "forbidden", message: undefined },
+  );
+  assert.equal(executed, false);
+});
+
+test("runAction surfaces the denying permission rule's reason", async () => {
+  const permissions = definePermissions<Actor>().action("archive", () => ({
+    allowed: false,
+    reason: "Only admins may archive.",
+  }));
+  const archive = action("archive")
+    .permissions(permissions)
+    .execute(() => "archived");
+
+  assert.deepEqual(
+    await runAction(archive, { context: { role: "viewer" } as Actor }),
+    {
+      success: false,
+      reason: "forbidden",
+      message: "Only admins may archive.",
+    },
+  );
+});
+
+test("runAction proceeds normally once the permission check allows the action", async () => {
+  const permissions = definePermissions<Actor>().action(
+    "archive",
+    ({ actor }) => actor.role === "admin",
+  );
+  const archive = action("archive")
+    .permissions(permissions)
+    .execute(() => "archived");
+
+  assert.deepEqual(
+    await runAction(archive, { context: { role: "admin" } as Actor }),
+    {
+      success: true,
+      result: "archived",
+      message: undefined,
+    },
+  );
+});
+
+test("runAction skips the permission check entirely when none is attached", async () => {
+  const archive = action("archive").execute(() => "archived");
+
+  assert.deepEqual(await runAction(archive, { context: {} }), {
+    success: true,
+    result: "archived",
+    message: undefined,
+  });
+});
 
 test("runAction returns unavailable before validation or execution", async () => {
   let executed = false;

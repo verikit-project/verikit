@@ -17,6 +17,11 @@ export interface ActionRunSuccess<TResult> {
 export type ActionRunFailure =
   | {
       success: false;
+      reason: "forbidden";
+      message?: string;
+    }
+  | {
+      success: false;
       reason: "unavailable";
       message?: string;
     }

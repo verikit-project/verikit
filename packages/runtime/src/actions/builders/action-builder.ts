@@ -1,3 +1,4 @@
+import type { PermissionsBuilder } from "@verikit/core";
 import type { ActionAvailabilityContext } from "../execution/action-context.js";
 import type { ActionResultOptions } from "../execution/action-result.js";
 import type { ActionSchema } from "../schema/action-schema.js";
@@ -18,6 +19,7 @@ export interface ActionState<TContext, TRecord, TInput, TResult> {
   isAvailable?: (
     run: ActionAvailabilityContext<TContext, TRecord>,
   ) => ActionAvailabilityResult | Promise<ActionAvailabilityResult>;
+  permissions?: PermissionsBuilder<TContext, TRecord>;
   handler?: ActionHandler<TContext, TRecord, TInput, TResult>;
   result?: ActionResultOptions<TResult>;
   hooks?: ActionHooks<TContext, TRecord, TInput, TResult>;
@@ -26,8 +28,9 @@ export interface ActionState<TContext, TRecord, TInput, TResult> {
 /**
  * Immutable runtime action builder.
  *
- * The builder covers identity, presentation, availability, confirmation,
- * optional form input, execution, result metadata, and lifecycle hooks.
+ * The builder covers identity, presentation, availability, permissions,
+ * confirmation, optional form input, execution, result metadata, and
+ * lifecycle hooks.
  */
 export class ActionBuilder<
   TName extends string,
@@ -135,6 +138,25 @@ export class ActionBuilder<
     return new ActionBuilder(this.name, {
       ...this.state,
       isAvailable,
+    } as ActionState<
+      TNextContext,
+      TNextRecord,
+      InferActionForm<TForm>,
+      TResult
+    >);
+  }
+
+  /**
+   * Attaches a permissions definition; `runAction` denies execution with
+   * `reason: "forbidden"` when `checkAction(permissions, name, ...)` denies
+   * this action's name, checked before availability and form validation.
+   */
+  permissions<TNextContext = TContext, TNextRecord = TRecord>(
+    permissions: PermissionsBuilder<TNextContext, TNextRecord>,
+  ): ActionBuilder<TName, TForm, TNextContext, TNextRecord, TResult> {
+    return new ActionBuilder(this.name, {
+      ...this.state,
+      permissions,
     } as ActionState<
       TNextContext,
       TNextRecord,

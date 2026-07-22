@@ -1,4 +1,4 @@
-import { validateResourceAsync } from "@verikit/core";
+import { checkAction, validateResourceAsync } from "@verikit/core";
 import type { ActionBuilder } from "../builders/action-builder.js";
 import type { ActionFormMap, InferActionForm } from "../types/action-form.js";
 import { normalizeAvailability } from "../utils/availability.js";
@@ -7,8 +7,8 @@ import type { ActionRunRequest } from "./action-context.js";
 import type { ActionRunResult } from "./action-result.js";
 
 /**
- * Runs an action, including availability checks, form validation,
- * lifecycle hooks, and execution.
+ * Runs an action, including a permissions check, availability checks, form
+ * validation, lifecycle hooks, and execution.
  *
  * Any error thrown by the `before` hook, action handler, or `after`
  * hook causes the action to fail. The optional `error` hook is then
@@ -26,6 +26,22 @@ export async function runAction<
   request: ActionRunRequest<TContext, TRecord>,
 ): Promise<ActionRunResult<TResult>> {
   const runtime = action.getRuntime();
+
+  if (runtime.permissions) {
+    const permission = await checkAction(runtime.permissions, action.name, {
+      actor: request.context,
+      record: request.record,
+    });
+
+    if (!permission.allowed) {
+      return {
+        success: false,
+        reason: "forbidden",
+        message: permission.reason,
+      };
+    }
+  }
+
   const availability = runtime.isAvailable
     ? normalizeAvailability(
         await runtime.isAvailable({
