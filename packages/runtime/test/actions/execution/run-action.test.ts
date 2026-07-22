@@ -267,13 +267,14 @@ test("runAction reports missing handlers as execution failures", async () => {
   const result = await runAction(archive, { context: {} });
 
   assert.equal(result.success, false);
-  if (!result.success) {
-    assert.equal(result.reason, "execution");
+  if (!result.success && result.reason === "execution") {
     assert.ok(result.error instanceof Error);
     assert.equal(
       result.message,
       'Action "archive" cannot run without a handler.',
     );
+  } else {
+    assert.fail("Expected an execution failure.");
   }
   assert.deepEqual(calls, ["error"]);
 });
