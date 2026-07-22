@@ -14,12 +14,13 @@ export interface PermissionCheckResult {
 
 /**
  * Rules are opt-in: an operation, field, or action with no rule attached is
- * allowed by default. This keeps `PermissionsBuilder` additive — a resource
- * that declares no permissions behaves exactly as it did before this module
- * existed, and a resource that declares only some rules leaves everything
- * else open.
+ * allowed by default. This keeps `PermissionsBuilder` additive: a resource
+ * that declares no permissions behaves as it did before, and partial rules
+ * leave other checks open.
  */
-const ALLOWED_BY_DEFAULT: PermissionCheckResult = { allowed: true };
+function allowedByDefault(): PermissionCheckResult {
+  return { allowed: true };
+}
 
 /**
  * Checks whether the actor in `context` may perform a resource-level CRUD
@@ -33,7 +34,7 @@ export async function checkResourceOperation<TActor, TRecord>(
 ): Promise<PermissionCheckResult> {
   const rule = permissions.getRuntime().resource[operation];
   if (!rule) {
-    return ALLOWED_BY_DEFAULT;
+    return allowedByDefault();
   }
 
   return normalizePermissionResult(await rule(context));
@@ -55,7 +56,7 @@ export async function checkFieldAccess<TActor, TRecord>(
 ): Promise<PermissionCheckResult> {
   const rule = permissions.getRuntime().fields[field]?.[access];
   if (!rule) {
-    return ALLOWED_BY_DEFAULT;
+    return allowedByDefault();
   }
 
   return normalizePermissionResult(await rule(context));
@@ -73,7 +74,7 @@ export async function checkAction<TActor, TRecord>(
 ): Promise<PermissionCheckResult> {
   const rule = permissions.getRuntime().actions[action];
   if (!rule) {
-    return ALLOWED_BY_DEFAULT;
+    return allowedByDefault();
   }
 
   return normalizePermissionResult(await rule(context));

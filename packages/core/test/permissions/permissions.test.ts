@@ -5,10 +5,13 @@ import {
   checkFieldAccess,
   checkResourceOperation,
   definePermissions,
+  defineResourcePermissions,
   normalizePermissionResult,
   normalizePermissionRule,
   PermissionsBuilder,
 } from "../../src/permissions/index.js";
+import { text } from "../../src/fields/index.js";
+import { defineResource } from "../../src/resource/index.js";
 
 interface Actor {
   role: "admin" | "editor" | "viewer";
@@ -92,6 +95,20 @@ test("checkResourceOperation defaults to allowed when no rule is attached", asyn
     await checkResourceOperation(permissions, "delete", {
       actor: { role: "viewer" },
     }),
+    { allowed: true },
+  );
+});
+
+test("default allow results are fresh objects", async () => {
+  const permissions = definePermissions<Actor, Post>();
+  const result = await checkAction(permissions, "archive", {
+    actor: { role: "viewer" },
+  });
+
+  result.allowed = false;
+
+  assert.deepEqual(
+    await checkAction(permissions, "archive", { actor: { role: "viewer" } }),
     { allowed: true },
   );
 });
@@ -208,6 +225,86 @@ test("checkAction evaluates the rule registered for that action name", async () 
     await checkAction(permissions, "archive", { actor: { role: "viewer" } }),
     { allowed: false },
   );
+});
+
+test("getRuntime returns a defensive snapshot", async () => {
+  const permissions = definePermissions<Actor, Post>()
+    .can("delete", false)
+    .field("salary", { read: false })
+    .action("archive", false);
+  const runtime = permissions.getRuntime();
+
+  runtime.resource.delete = () => true;
+  runtime.fields.salary!.read = () => true;
+  runtime.actions.archive = () => true;
+
+  const viewer = { actor: { role: "viewer" } as Actor };
+
+  assert.deepEqual(
+    await checkResourceOperation(permissions, "delete", viewer),
+    { allowed: false },
+  );
+  assert.deepEqual(
+    await checkFieldAccess(permissions, "salary", "read", viewer),
+    {
+      allowed: false,
+    },
+  );
+  assert.deepEqual(await checkAction(permissions, "archive", viewer), {
+    allowed: false,
+  });
+});
+
+test("constrained permissions reject unknown field and action names", () => {
+  const permissions = definePermissions<Actor, Post, "title", "archive">({
+    fields: ["title"],
+    actions: ["archive"],
+  });
+
+  assert.doesNotThrow(() =>
+    permissions.field("title", { read: true }).action("archive", true),
+  );
+  assert.throws(
+    () => permissions.field("slaray" as "title", { read: false }),
+    /Unknown field "slaray"\./,
+  );
+  assert.throws(
+    () => permissions.action("arhcive" as "archive", false),
+    /Unknown action "arhcive"\./,
+  );
+});
+
+test("resource permissions infer and validate resource field names", () => {
+  const post = defineResource("post", {
+    fields: {
+      title: text(),
+      authorId: text(),
+    },
+  });
+  const permissions = defineResourcePermissions<
+    Actor,
+    Post,
+    typeof post,
+    "archive"
+  >(post, {
+    actions: ["archive"],
+  });
+
+  assert.doesNotThrow(() =>
+    permissions.field("title", { read: true }).action("archive", true),
+  );
+  assert.throws(
+    () => permissions.field("slaray" as "title", { read: false }),
+    /Unknown field "slaray"\./,
+  );
+
+  // eslint-disable-next-line no-constant-condition -- type-only check, never executed
+  if (false) {
+    // @ts-expect-error field names are inferred from the resource.
+    permissions.field("slaray", { read: false });
+    // @ts-expect-error action names are inferred from the provided action list.
+    permissions.action("arhcive", false);
+  }
 });
 
 test("a full permissions definition composes resource, field, and action rules independently", async () => {
