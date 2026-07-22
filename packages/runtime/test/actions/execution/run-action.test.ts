@@ -49,6 +49,23 @@ test("runAction surfaces the denying permission rule's reason", async () => {
   );
 });
 
+test("runAction denies execution when permissions omit the action rule", async () => {
+  let executed = false;
+  const permissions = definePermissions<Actor>().action("publish", true);
+  const archive = action("archive")
+    .permissions(permissions)
+    .execute(() => {
+      executed = true;
+      return "archived";
+    });
+
+  assert.deepEqual(
+    await runAction(archive, { context: { role: "admin" } as Actor }),
+    { success: false, reason: "forbidden", message: undefined },
+  );
+  assert.equal(executed, false);
+});
+
 test("runAction proceeds normally once the permission check allows the action", async () => {
   const permissions = definePermissions<Actor>().action(
     "archive",

@@ -91,28 +91,28 @@ test(".action() rejects an empty action name", () => {
   );
 });
 
-test("checkResourceOperation defaults to allowed when no rule is attached", async () => {
+test("checkResourceOperation defaults to denied when no rule is attached", async () => {
   const permissions = definePermissions<Actor, Post>();
 
   assert.deepEqual(
     await checkResourceOperation(permissions, "delete", {
       actor: { role: "viewer" },
     }),
-    { allowed: true },
+    { allowed: false },
   );
 });
 
-test("default allow results are fresh objects", async () => {
+test("default deny results are fresh objects", async () => {
   const permissions = definePermissions<Actor, Post>();
   const result = await checkAction(permissions, "archive", {
     actor: { role: "viewer" },
   });
 
-  result.allowed = false;
+  result.allowed = true;
 
   assert.deepEqual(
     await checkAction(permissions, "archive", { actor: { role: "viewer" } }),
-    { allowed: true },
+    { allowed: false },
   );
 });
 
@@ -166,7 +166,7 @@ test("checkResourceOperation awaits an async rule and preserves its reason", asy
   );
 });
 
-test("checkFieldAccess defaults to allowed for fields with no matching rule", async () => {
+test("checkFieldAccess defaults to denied for fields with no matching rule", async () => {
   const permissions = definePermissions<Actor, Post>().field("salary", {
     read: false,
   });
@@ -175,13 +175,13 @@ test("checkFieldAccess defaults to allowed for fields with no matching rule", as
     await checkFieldAccess(permissions, "salary", "write", {
       actor: { role: "viewer" },
     }),
-    { allowed: true },
+    { allowed: false },
   );
   assert.deepEqual(
     await checkFieldAccess(permissions, "title", "read", {
       actor: { role: "viewer" },
     }),
-    { allowed: true },
+    { allowed: false },
   );
 });
 
@@ -205,12 +205,12 @@ test("checkFieldAccess evaluates read and write rules independently", async () =
   );
 });
 
-test("checkAction defaults to allowed when no rule is attached", async () => {
+test("checkAction defaults to denied when no rule is attached", async () => {
   const permissions = definePermissions<Actor, Post>();
 
   assert.deepEqual(
     await checkAction(permissions, "archive", { actor: { role: "viewer" } }),
-    { allowed: true },
+    { allowed: false },
   );
 });
 
@@ -333,7 +333,7 @@ test("a full permissions definition composes resource, field, and action rules i
   assert.deepEqual(
     await checkFieldAccess(permissions, "salary", "write", viewer),
     {
-      allowed: true,
+      allowed: false,
     },
   );
   assert.deepEqual(await checkAction(permissions, "archive", viewer), {
@@ -348,10 +348,15 @@ test("resolveResourceSchema hides unreadable fields and locks unwritable ones", 
       salary: text(),
     },
   });
-  const permissions = definePermissions<Actor, Post>().field("salary", {
-    read: ({ actor }) => actor.role === "admin",
-    write: ({ actor }) => actor.role !== "viewer",
-  });
+  const permissions = definePermissions<Actor, Post>()
+    .field("title", {
+      read: true,
+      write: true,
+    })
+    .field("salary", {
+      read: ({ actor }) => actor.role === "admin",
+      write: ({ actor }) => actor.role !== "viewer",
+    });
 
   const resolved = await resolveResourceSchema(post.toSchema(), permissions, {
     actor: { role: "editor" },
@@ -388,9 +393,15 @@ test("resolveResourceSchema updates matching field nodes inside the layout tree,
     fields: { title: text(), salary: text() },
     relationships: { author: belongsTo(() => author) },
   }).form((f) => [f.section("Details", ["title", "salary", "author"])]);
-  const permissions = definePermissions<Actor, Post>().field("salary", {
-    read: false,
-  });
+  const permissions = definePermissions<Actor, Post>()
+    .field("title", {
+      read: true,
+      write: true,
+    })
+    .field("salary", {
+      read: false,
+      write: true,
+    });
 
   const resolved = await resolveResourceSchema(post.toSchema(), permissions, {
     actor: { role: "viewer" },
