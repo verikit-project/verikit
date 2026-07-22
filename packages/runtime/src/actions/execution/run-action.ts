@@ -26,79 +26,86 @@ export async function runAction<
   request: ActionRunRequest<TContext, TRecord>,
 ): Promise<ActionRunResult<TResult>> {
   const runtime = action.getRuntime();
-
-  if (runtime.permissions) {
-    const permission = await checkAction(runtime.permissions, action.name, {
-      actor: request.context,
-      record: request.record,
-    });
-
-    if (!permission.allowed) {
-      return {
-        success: false,
-        reason: "forbidden",
-        message: permission.reason,
-      };
-    }
-  }
-
-  if (runtime.confirmation && request.confirmed !== true) {
-    return {
-      success: false,
-      reason: "confirmation",
-      message: runtime.confirmation.message,
-    };
-  }
-
-  const availability = runtime.isAvailable
-    ? normalizeAvailability(
-        await runtime.isAvailable({
-          context: request.context,
-          record: request.record,
-          input: request.input,
-        }),
-      )
-    : { available: true };
-
-  if (!availability.available) {
-    return {
-      success: false,
-      reason: "unavailable",
-      message: availability.reason,
-    };
-  }
-
-  const inputResult = runtime.form
-    ? await validateResourceAsync(
-        Object.fromEntries(
-          Object.entries(runtime.form).map(([name, field]) => [
-            name,
-            field.toSchema(name),
-          ]),
-        ),
-        request.input ?? {},
-      )
-    : { success: true as const, value: {} };
-
-  if (!inputResult.success) {
-    return {
-      success: false,
-      reason: "validation",
-      issues: inputResult.issues,
-    };
-  }
-
-  if (!runtime.handler) {
-    throw new Error(`Action "${action.name}" cannot run without a handler.`);
-  }
-
-  const run = {
-    context: request.context,
-    record: request.record,
-    input: inputResult.value as InferActionForm<TForm>,
-  };
+  let run:
+    | {
+        context: TContext;
+        record: TRecord | undefined;
+        input: InferActionForm<TForm>;
+      }
+    | undefined;
 
   try {
+    if (runtime.permissions) {
+      const permission = await checkAction(runtime.permissions, action.name, {
+        actor: request.context,
+        record: request.record,
+      });
+
+      if (!permission.allowed) {
+        return {
+          success: false,
+          reason: "forbidden",
+          message: permission.reason,
+        };
+      }
+    }
+
+    if (runtime.confirmation && request.confirmed !== true) {
+      return {
+        success: false,
+        reason: "confirmation",
+        message: runtime.confirmation.message,
+      };
+    }
+
+    const availability = runtime.isAvailable
+      ? normalizeAvailability(
+          await runtime.isAvailable({
+            context: request.context,
+            record: request.record,
+            input: request.input,
+          }),
+        )
+      : { available: true };
+
+    if (!availability.available) {
+      return {
+        success: false,
+        reason: "unavailable",
+        message: availability.reason,
+      };
+    }
+
+    const inputResult = runtime.form
+      ? await validateResourceAsync(
+          Object.fromEntries(
+            Object.entries(runtime.form).map(([name, field]) => [
+              name,
+              field.toSchema(name),
+            ]),
+          ),
+          request.input ?? {},
+        )
+      : { success: true as const, value: {} };
+
+    if (!inputResult.success) {
+      return {
+        success: false,
+        reason: "validation",
+        issues: inputResult.issues,
+      };
+    }
+
+    run = {
+      context: request.context,
+      record: request.record,
+      input: inputResult.value as InferActionForm<TForm>,
+    };
+
+    if (!runtime.handler) {
+      throw new Error(`Action "${action.name}" cannot run without a handler.`);
+    }
+
     await runtime.hooks?.before?.(run);
     const result = await runtime.handler(run);
     await runtime.hooks?.after?.(run, result);
@@ -109,11 +116,13 @@ export async function runAction<
       message: messageFrom(runtime.result?.successMessage, result),
     };
   } catch (error) {
-    try {
-      await runtime.hooks?.error?.(run, error);
-    } catch {
-      // Ignore errors from the error hook so they don't
-      // mask the original execution failure.
+    if (run) {
+      try {
+        await runtime.hooks?.error?.(run, error);
+      } catch {
+        // Ignore errors from the error hook so they don't
+        // mask the original execution failure.
+      }
     }
 
     return {

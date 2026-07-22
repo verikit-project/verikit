@@ -49,6 +49,28 @@ test("runAction surfaces the denying permission rule's reason", async () => {
   );
 });
 
+test("runAction reports thrown permission errors as execution failures", async () => {
+  const failure = new Error("permission backend failed");
+  const archive = action("archive")
+    .permissions(
+      definePermissions<Actor>().action("archive", () => {
+        throw failure;
+      }),
+    )
+    .result({ errorMessage: (error) => (error as Error).message })
+    .execute(() => "archived");
+
+  assert.deepEqual(
+    await runAction(archive, { context: { role: "admin" } as Actor }),
+    {
+      success: false,
+      reason: "execution",
+      error: failure,
+      message: "permission backend failed",
+    },
+  );
+});
+
 test("runAction denies execution when permissions omit the action rule", async () => {
   let executed = false;
   const permissions = definePermissions<Actor>().action("publish", true);
@@ -149,6 +171,23 @@ test("runAction returns unavailable before validation or execution", async () =>
   assert.equal(executed, false);
 });
 
+test("runAction reports thrown availability errors as execution failures", async () => {
+  const failure = new Error("availability backend failed");
+  const archive = action("archive")
+    .availableWhen(() => {
+      throw failure;
+    })
+    .result({ errorMessage: (error) => (error as Error).message })
+    .execute(() => "archived");
+
+  assert.deepEqual(await runAction(archive, { context: {} }), {
+    success: false,
+    reason: "execution",
+    error: failure,
+    message: "availability backend failed",
+  });
+});
+
 test("availability receives raw input before form validation", async () => {
   let seenInput: Record<string, unknown> | undefined;
   let executed = false;
@@ -211,6 +250,50 @@ test("runAction validates optional form input before execution", async () => {
       issues: [{ path: ["rank"], message: "Must be at least 1." }],
     },
   );
+});
+
+test("runAction reports form schema construction errors as execution failures", async () => {
+  const failure = new Error("invalid form field");
+  const badField = {
+    toSchema: () => {
+      throw failure;
+    },
+  };
+  const archive = action("archive")
+    .form({ reason: badField as never })
+    .result({ errorMessage: (error) => (error as Error).message })
+    .execute(() => "archived");
+
+  assert.deepEqual(await runAction(archive, { context: {} }), {
+    success: false,
+    reason: "execution",
+    error: failure,
+    message: "invalid form field",
+  });
+});
+
+test("runAction reports missing handlers as execution failures", async () => {
+  const calls: string[] = [];
+  const archive = action("archive")
+    .result({ errorMessage: (error) => (error as Error).message })
+    .hooks({
+      error: () => {
+        calls.push("error");
+      },
+    });
+
+  const result = await runAction(archive, { context: {} });
+
+  assert.equal(result.success, false);
+  if (!result.success) {
+    assert.equal(result.reason, "execution");
+    assert.ok(result.error instanceof Error);
+    assert.equal(
+      result.message,
+      'Action "archive" cannot run without a handler.',
+    );
+  }
+  assert.deepEqual(calls, ["error"]);
 });
 
 test("runAction executes handlers with validated input and returns result messages", async () => {

@@ -121,7 +121,7 @@ function validateOption(
   value: unknown,
 ): ValidationIssue[] {
   if (!schema.options || schema.options.length === 0) {
-    return [];
+    return [issue("Select fields must define at least one option.")];
   }
 
   const isAllowed = schema.options.some((option) => option.value === value);

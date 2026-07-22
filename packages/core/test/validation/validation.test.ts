@@ -163,12 +163,17 @@ test("select fields restrict values to configured options", () => {
   });
 });
 
-test("select fields without configured options accept any value", () => {
+test("select fields without configured options fail validation", () => {
   const schema = select<string>().toSchema("breed");
 
   assert.deepEqual(validateField(schema, "anything"), {
-    success: true,
-    value: "anything",
+    success: false,
+    issues: [
+      {
+        path: [],
+        message: "Select fields must define at least one option.",
+      },
+    ],
   });
 });
 
