@@ -1,24 +1,13 @@
 import { FieldSchema } from "../fields/base.js";
 import { ValidationIssue, ValidationResult } from "../types/validation.js";
 import { validateFieldAsync } from "../validation/validate-field.js";
+import { shouldValidateField } from "../validation/validate-resource.js";
 import { checkFieldAccess } from "./evaluate-permissions.js";
 import { PermissionContext } from "./permission.js";
 import { PermissionsBuilder } from "./permissions-builder.js";
 
 function defaultDeniedMessage(field: string): string {
   return `You do not have permission to write to "${field}".`;
-}
-
-function shouldValidateField(
-  name: string,
-  schema: FieldSchema,
-  values: Record<string, unknown>,
-): boolean {
-  return (
-    Object.hasOwn(values, name) ||
-    schema.required === true ||
-    schema.defaultValue !== undefined
-  );
 }
 
 /**
