@@ -79,12 +79,13 @@ export async function resolveResourceSchema<TActor, TRecord>(
   context: PermissionContext<TActor, TRecord>,
 ): Promise<ResourceSchema> {
   const resolvedFields: Record<string, FieldSchema> = {};
+  const runtime = permissions.getRuntime();
 
   await Promise.all(
     Object.entries(schema.fields).map(async ([name, field]) => {
       const [read, write] = await Promise.all([
-        checkFieldAccess(permissions, name, "read", context),
-        checkFieldAccess(permissions, name, "write", context),
+        checkFieldAccess(runtime, name, "read", context),
+        checkFieldAccess(runtime, name, "write", context),
       ]);
 
       resolvedFields[name] = {
