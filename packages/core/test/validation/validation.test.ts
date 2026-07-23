@@ -101,6 +101,13 @@ test("number fields validate type, range, and step", () => {
   assert.deepEqual(validateField(schema, 4), { success: true, value: 4 });
 });
 
+test("number step validation uses zero as the default base without a minimum", () => {
+  const schema = number().step(2).toSchema("count");
+
+  assert.deepEqual(validateField(schema, 4), { success: true, value: 4 });
+  assert.equal(validateField(schema, 3).success, false);
+});
+
 test("number fields reject non-finite numbers before range/step checks", () => {
   const schema = number().toSchema("count");
 
@@ -273,9 +280,7 @@ test("attached validation failures surface as issues", () => {
 test("sync validation rejects promise-like parse validators", () => {
   const schema = text()
     .validation({
-      parse: () => ({
-        then() {},
-      }),
+      parse: () => Promise.resolve("ada"),
     })
     .toSchema("name");
 
@@ -297,10 +302,7 @@ test("sync validation rejects promise-like standard schema validators", () => {
       "~standard": {
         version: 1,
         vendor: "test",
-        validate: () =>
-          ({
-            then() {},
-          }) as unknown as Promise<{ value: string }>,
+        validate: () => Promise.resolve({ value: "ada" }),
       },
     })
     .toSchema("name");
@@ -362,6 +364,30 @@ test("standard schema issue paths drop segments that are not strings, numbers, o
   assert.deepEqual(validateField(schema, "ada"), {
     success: false,
     issues: [{ path: ["field"], message: "broken path" }],
+  });
+});
+
+test("standard schema issue paths include string and number key objects", () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () => ({
+          issues: [
+            {
+              message: "key path",
+              path: [{ key: "items" }, { key: 0 }],
+            },
+          ],
+        }),
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "ada"), {
+    success: false,
+    issues: [{ path: ["items", 0], message: "key path" }],
   });
 });
 
@@ -572,9 +598,7 @@ test("validateFieldAsync short-circuits on failed built-in checks without invoki
   const schema = text()
     .required()
     .validation({
-      parse: async () => {
-        throw new Error("should not run");
-      },
+      parse: assert.fail,
     })
     .toSchema("name");
 
