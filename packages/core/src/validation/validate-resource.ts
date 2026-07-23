@@ -27,7 +27,7 @@ function aggregate(
     : { success: true, value: result };
 }
 
-function shouldValidateField(
+export function shouldValidateField(
   name: string,
   schema: FieldSchema,
   values: Record<string, unknown>,
