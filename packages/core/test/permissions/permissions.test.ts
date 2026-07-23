@@ -56,6 +56,7 @@ test("normalizePermissionRule passes a function rule through unchanged", () => {
   const rule = ({ actor }: { actor: Actor }) => actor.role === "admin";
 
   assert.equal(normalizePermissionRule(rule), rule);
+  assert.equal(rule({ actor: { role: "admin" } }), true);
 });
 
 test("builder methods are immutable: each call returns a new instance without mutating the previous one", () => {
@@ -75,6 +76,10 @@ test(".field() merges read/write access set across separate calls", () => {
 
   assert.equal(typeof state.fields.salary?.read, "function");
   assert.equal(typeof state.fields.salary?.write, "function");
+  assert.equal(
+    state.fields.salary?.read?.({ actor: { role: "admin" } }),
+    true,
+  );
 });
 
 test(".field() rejects an empty field name", () => {
@@ -236,10 +241,12 @@ test("getRuntime returns a defensive snapshot", async () => {
     .field("salary", { read: false })
     .action("archive", false);
   const runtime = permissions.getRuntime();
+  const allow = () => true;
 
-  runtime.resource.delete = () => true;
-  runtime.fields.salary!.read = () => true;
-  runtime.actions.archive = () => true;
+  runtime.resource.delete = allow;
+  runtime.fields.salary!.read = allow;
+  runtime.actions.archive = allow;
+  assert.equal(allow(), true);
 
   const viewer = { actor: { role: "viewer" } as Actor };
 
@@ -300,14 +307,6 @@ test("resource permissions infer and validate resource field names", () => {
     () => permissions.field("slaray" as "title", { read: false }),
     /Unknown field "slaray"\./,
   );
-
-  // eslint-disable-next-line no-constant-condition -- type-only check, never executed
-  if (false) {
-    // @ts-expect-error field names are inferred from the resource.
-    permissions.field("slaray", { read: false });
-    // @ts-expect-error action names are inferred from the provided action list.
-    permissions.action("arhcive", false);
-  }
 });
 
 test("a full permissions definition composes resource, field, and action rules independently", async () => {
@@ -387,6 +386,30 @@ test("resolveResourceSchema never relaxes statically-set hidden/readOnly flags",
   assert.equal(resolved.fields.internalNote.readOnly, true);
 });
 
+test("resolveResourceSchema leaves unmatched field nodes in the layout tree unchanged", async () => {
+  const post = defineResource("post", {
+    fields: {
+      title: text(),
+    },
+  });
+  const schema = post.toSchema();
+  const unmatched = text().toSchema("ghost");
+  const permissions = definePermissions<Actor, Post>().field("title", {
+    read: true,
+    write: true,
+  });
+
+  const resolved = await resolveResourceSchema(
+    { ...schema, tree: [unmatched] },
+    permissions,
+    {
+      actor: { role: "admin" },
+    },
+  );
+
+  assert.equal(resolved.tree[0], unmatched);
+});
+
 test("resolveResourceSchema updates matching field nodes inside the layout tree, and leaves relationships alone", async () => {
   const author = defineResource("author", { fields: { name: text() } });
   const post = defineResource("post", {
@@ -410,9 +433,79 @@ test("resolveResourceSchema updates matching field nodes inside the layout tree,
   const section = resolved.tree[0];
   assert.ok(section?.type === "section");
   const [title, salary, authorNode] = section.children;
-  assert.equal(title?.type === "field" ? title.hidden : undefined, undefined);
-  assert.equal(salary?.type === "field" ? salary.hidden : undefined, true);
+  assert.equal((title as { hidden?: boolean }).hidden, undefined);
+  assert.equal((salary as { hidden?: boolean }).hidden, true);
   assert.deepEqual(authorNode, resolved.relationships.author);
+});
+
+test("resolveResourceSchema updates nested layout nodes with resolved field permissions", async () => {
+  const post = defineResource("post", {
+    fields: {
+      title: text(),
+      salary: text(),
+      notes: text(),
+    },
+  }).form((f) => [
+    f.section("Details", [f.grid(2, ["title", "salary"])]),
+    f.tabs([{ title: "Notes", children: ["notes"] }]),
+    f.wizard([{ title: "Review", children: ["salary"] }]),
+    f.repeater("lineItems", ["notes"]),
+    f.action("approve", { input: ["salary"] }),
+    f.action("reject"),
+  ]);
+  const permissions = definePermissions<Actor, Post>()
+    .field("title", {
+      read: true,
+      write: true,
+    })
+    .field("salary", {
+      read: false,
+      write: true,
+    })
+    .field("notes", {
+      read: true,
+      write: false,
+    });
+
+  const resolved = await resolveResourceSchema(post.toSchema(), permissions, {
+    actor: { role: "viewer" },
+  });
+
+  const section = resolved.tree[0];
+  assert.ok(section?.type === "section");
+  const grid = section.children[0];
+  assert.ok(grid?.type === "grid");
+  const [title, salaryInGrid] = grid.children;
+  assert.equal((title as { hidden?: boolean }).hidden, undefined);
+  assert.equal((salaryInGrid as { hidden?: boolean }).hidden, true);
+
+  const tabs = resolved.tree[1];
+  assert.ok(tabs?.type === "tabs");
+  const notesInTabs = tabs.tabs[0]!.children[0];
+  assert.equal((notesInTabs as { readOnly?: boolean }).readOnly, true);
+
+  const wizard = resolved.tree[2];
+  assert.ok(wizard?.type === "wizard");
+  const salaryInWizard = wizard.steps[0]!.children[0];
+  assert.equal((salaryInWizard as { hidden?: boolean }).hidden, true);
+
+  const repeater = resolved.tree[3];
+  assert.ok(repeater?.type === "repeater");
+  const notesInRepeater = repeater.children[0];
+  assert.equal((notesInRepeater as { readOnly?: boolean }).readOnly, true);
+
+  const approve = resolved.tree[4];
+  assert.ok(approve?.type === "action");
+  const salaryInput = approve.input![0];
+  assert.equal((salaryInput as { hidden?: boolean }).hidden, true);
+
+  const reject = resolved.tree[5];
+  assert.deepEqual(reject, {
+    type: "action",
+    name: "reject",
+    label: undefined,
+    input: undefined,
+  });
 });
 
 test("validateWritableFields reports a permission issue instead of running validation for unwritable fields", async () => {

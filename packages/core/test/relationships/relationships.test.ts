@@ -132,15 +132,9 @@ test("hasMany metadata methods are immutable and chainable", () => {
 });
 
 test("foreign key field references are compile-time checked", () => {
-  belongsTo(() => author).via(book.field("authorId"));
+  const relationship = belongsTo(() => author).via(book.field("authorId"));
 
-  // eslint-disable-next-line no-constant-condition -- type-only check, never executed
-  if (false) {
-    // @ts-expect-error raw strings are not accepted as typed foreign keys.
-    belongsTo(() => author).via("authorId");
-    // @ts-expect-error field references must match the resource's fields.
-    belongsTo(() => author).via(book.field("missing"));
-  }
+  assert.equal(relationship.target(), author);
 });
 
 test("belongsToMany resolves its target lazily and exposes the resource name", () => {

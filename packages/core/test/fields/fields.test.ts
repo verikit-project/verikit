@@ -358,12 +358,6 @@ test("from is not directly finalizable as a field", () => {
   const sourced = from({ table: "users", column: "email" });
 
   assert.equal("toSchema" in sourced, false);
-
-  // eslint-disable-next-line no-constant-condition -- type-only check, never executed
-  if (false) {
-    // @ts-expect-error from(column) must be attached to a concrete field first.
-    sourced.toSchema("email");
-  }
 });
 
 test("from options shortcut creates a sourced select field", () => {

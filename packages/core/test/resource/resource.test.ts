@@ -70,12 +70,14 @@ test("resource snapshots caller-owned fields, relationships, and meta", () => {
 
   fields.name = email();
   relationships.author = belongsTo(() => author).label("Changed");
+  assert.equal(relationships.author.target(), author);
   meta.icon = "changed";
 
   const schema = resource.toSchema();
 
   assert.equal(schema.fields.name.fieldType, "text");
   assert.equal(schema.relationships.author.label, undefined);
+  assert.equal(resource.relationships.author.target(), author);
   assert.deepEqual(schema.meta, { icon: "user" });
 });
 
@@ -232,6 +234,7 @@ test("relationships are composed into the schema with names assigned from their 
 
   const schema = book.toSchema();
 
+  assert.equal(book.relationships.author.target(), author);
   assert.deepEqual(schema.relationships.author, {
     type: "relationship",
     relationshipType: "belongsTo",
@@ -257,6 +260,8 @@ test("resource preserves multiple relationship kinds", () => {
 
   const schema = author.toSchema();
 
+  assert.equal(author.relationships.books.target(), book);
+  assert.equal(author.relationships.tags.target(), tag);
   assert.deepEqual(schema.relationships.books, {
     type: "relationship",
     relationshipType: "hasMany",
@@ -282,12 +287,15 @@ test("resource preserves multiple relationship kinds", () => {
 
 test("resources reject duplicate field and relationship names", () => {
   const author = defineResource("author", { fields: { name: text() } });
+  const relationship = belongsTo(() => author);
+
+  assert.equal(relationship.target(), author);
 
   assert.throws(
     () =>
       defineResource("book", {
         fields: { author: text() },
-        relationships: { author: belongsTo(() => author) },
+        relationships: { author: relationship },
       }),
     /cannot define both a field and relationship named "author"/,
   );
@@ -311,6 +319,9 @@ test("InferResource includes field values and relationship values", () => {
   };
 
   assert.equal(author.name, "author");
+  assert.equal(author.relationships.books.target(), book);
+  assert.equal(author.relationships.featuredBook.target(), book);
+  assert.equal(author.relationships.taggedBooks.target(), book);
   assert.equal(inferred.name, "Ada");
   assert.equal(inferred.books[0]?.title, "Notes");
   assert.equal(inferred.featuredBook?.title, "Notes");
