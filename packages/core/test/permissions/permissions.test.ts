@@ -76,10 +76,7 @@ test(".field() merges read/write access set across separate calls", () => {
 
   assert.equal(typeof state.fields.salary?.read, "function");
   assert.equal(typeof state.fields.salary?.write, "function");
-  assert.equal(
-    state.fields.salary?.read?.({ actor: { role: "admin" } }),
-    true,
-  );
+  assert.equal(state.fields.salary?.read?.({ actor: { role: "admin" } }), true);
 });
 
 test(".field() rejects an empty field name", () => {
