@@ -4,7 +4,7 @@ import {
   PermissionContext,
   ResourceOperation,
 } from "./permission.js";
-import { PermissionsBuilder } from "./permissions-builder.js";
+import { PermissionsBuilder, PermissionsState } from "./permissions-builder.js";
 
 /** Result of evaluating a single permission rule (or its default when unset). */
 export interface PermissionCheckResult {
@@ -20,17 +20,28 @@ function deniedByDefault(): PermissionCheckResult {
   return { allowed: false };
 }
 
+export type PermissionRuntimeSource<TActor, TRecord> =
+  PermissionsBuilder<TActor, TRecord> | PermissionsState<TActor, TRecord>;
+
+function resolvePermissionsRuntime<TActor, TRecord>(
+  permissions: PermissionRuntimeSource<TActor, TRecord>,
+): PermissionsState<TActor, TRecord> {
+  return permissions instanceof PermissionsBuilder
+    ? permissions.getRuntime()
+    : permissions;
+}
+
 /**
  * Checks whether the actor in `context` may perform a resource-level CRUD
  * operation. Resolves to `{ allowed: false }` if no rule was attached via
  * `.can()` for that operation.
  */
 export async function checkResourceOperation<TActor, TRecord>(
-  permissions: PermissionsBuilder<TActor, TRecord>,
+  permissions: PermissionRuntimeSource<TActor, TRecord>,
   operation: ResourceOperation,
   context: PermissionContext<TActor, TRecord>,
 ): Promise<PermissionCheckResult> {
-  const rule = permissions.getRuntime().resource[operation];
+  const rule = resolvePermissionsRuntime(permissions).resource[operation];
   if (!rule) {
     return deniedByDefault();
   }
@@ -47,12 +58,12 @@ export async function checkResourceOperation<TActor, TRecord>(
  * write access denied until its own rule is set (and vice versa).
  */
 export async function checkFieldAccess<TActor, TRecord>(
-  permissions: PermissionsBuilder<TActor, TRecord>,
+  permissions: PermissionRuntimeSource<TActor, TRecord>,
   field: string,
   access: FieldAccess,
   context: PermissionContext<TActor, TRecord>,
 ): Promise<PermissionCheckResult> {
-  const rule = permissions.getRuntime().fields[field]?.[access];
+  const rule = resolvePermissionsRuntime(permissions).fields[field]?.[access];
   if (!rule) {
     return deniedByDefault();
   }
@@ -66,11 +77,11 @@ export async function checkFieldAccess<TActor, TRecord>(
  * for that action name.
  */
 export async function checkAction<TActor, TRecord>(
-  permissions: PermissionsBuilder<TActor, TRecord>,
+  permissions: PermissionRuntimeSource<TActor, TRecord>,
   action: string,
   context: PermissionContext<TActor, TRecord>,
 ): Promise<PermissionCheckResult> {
-  const rule = permissions.getRuntime().actions[action];
+  const rule = resolvePermissionsRuntime(permissions).actions[action];
   if (!rule) {
     return deniedByDefault();
   }
