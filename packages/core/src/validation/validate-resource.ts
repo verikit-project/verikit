@@ -2,8 +2,13 @@ import { FieldSchema } from "../fields/base.js";
 import { validateField, validateFieldAsync } from "./validate-field.js";
 import { ValidationIssue, ValidationResult } from "../types/validation.js";
 
-/** Merges field validation results into a single resource validation result. */
-function aggregate(
+/**
+ * Merges per-field results (from `validateField`, `validateFieldAsync`, or
+ * any other function returning the same shape, e.g. `@verikit/runtime`'s
+ * `inferField`) into a single resource-level result, prefixing each field's
+ * issue paths with its name.
+ */
+export function aggregateFieldResults(
   entries: readonly [string, ValidationResult][],
 ): ValidationResult<Record<string, unknown>> {
   const issues: ValidationIssue[] = [];
@@ -48,7 +53,7 @@ export function validateResource(
   fields: Record<string, FieldSchema>,
   values: Record<string, unknown>,
 ): ValidationResult<Record<string, unknown>> {
-  return aggregate(
+  return aggregateFieldResults(
     Object.entries(fields)
       .filter(([name, schema]) => shouldValidateField(name, schema, values))
       .map(([name, schema]) => [name, validateField(schema, values[name])]),
@@ -69,5 +74,5 @@ export async function validateResourceAsync(
       ]),
   );
 
-  return aggregate(entries);
+  return aggregateFieldResults(entries);
 }
