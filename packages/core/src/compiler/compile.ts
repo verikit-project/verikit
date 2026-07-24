@@ -113,7 +113,9 @@ function checkRelationship(
 
   // belongsToMany foreign keys are frequently adapter-specific join
   // descriptors (e.g. `{ left, right }`) rather than a single field on
-  // either side, so only the join resource's existence is checked here.
+  // either side. Even string references are ambiguous without knowing whether
+  // they point at the owner, target, or join resource, so only the through
+  // resource's existence is checked here.
   if (
     relationship.relationshipType === "belongsToMany" &&
     relationship.through !== undefined &&

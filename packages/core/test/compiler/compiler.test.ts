@@ -138,6 +138,20 @@ test("compile reports unknown through resources for belongsToMany", () => {
   });
 });
 
+test("compile leaves string belongsToMany foreign keys to adapters", () => {
+  const tag = defineResource("tag", { fields: { label: text() } });
+  const post = defineResource("post", {
+    fields: { title: text() },
+    relationships: (field) => ({
+      tags: belongsToMany(() => tag).via(field("title")),
+    }),
+  });
+
+  const result = compile([post, tag]);
+
+  assert.equal(result.success, true);
+});
+
 test("compile skips foreign key validation for adapter-specific (non-string) foreign keys", () => {
   const tag = defineResource("tag", { fields: { label: text() } });
   const post = defineResource("post", {
