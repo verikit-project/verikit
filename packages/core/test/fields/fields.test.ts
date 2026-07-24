@@ -77,14 +77,55 @@ test("createField keeps the explicit fieldType authoritative", () => {
 });
 
 test("default values cannot be undefined", () => {
-  // @ts-expect-error undefined defaults contradict the narrowed return type.
-  createField<string | undefined>("text").default(undefined);
+  assert.throws(
+    () =>
+      createField<string | undefined>("text").default(
+        // @ts-expect-error undefined defaults contradict the narrowed return type.
+        undefined,
+      ),
+    /Default value cannot be undefined/,
+  );
 
   const schema = createField<string | undefined>("text")
     .default("ready")
     .toSchema("status");
 
   assert.equal(schema.defaultValue, "ready");
+});
+
+test("default values must satisfy existing field constraints", () => {
+  assert.throws(
+    () => text().max(5).default("too long"),
+    /Default value does not satisfy field constraints: Must be at most 5 characters\./,
+  );
+  assert.throws(
+    () => number().min(1).max(10).default(0),
+    /Default value does not satisfy field constraints: Must be at least 1\./,
+  );
+  assert.throws(
+    () =>
+      select<string>()
+        .options(["draft", "live"])
+        .default("archived" as "draft"),
+    /Default value does not satisfy field constraints: Must be one of the allowed options\./,
+  );
+  assert.throws(
+    () => text().default(null),
+    /Default value does not satisfy field constraints: This field cannot be null\./,
+  );
+});
+
+test("later field constraints must still accept an existing default value", () => {
+  assert.throws(
+    () => text().default("too long").max(5),
+    /Default value does not satisfy field constraints: Must be at most 5 characters\./,
+  );
+  assert.throws(
+    () => number().default(3).step(2),
+    /Default value does not satisfy field constraints: Must be a multiple of 2\./,
+  );
+
+  assert.equal(text().default("ok").max(5).toSchema("name").defaultValue, "ok");
 });
 
 test("getState returns pre-finalized state without exposing mutable internals", () => {

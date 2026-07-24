@@ -33,12 +33,7 @@ export async function validateWritableFields<TActor, TRecord>(
     Object.entries(fields)
       .filter(([name, schema]) => shouldValidateField(name, schema, values))
       .map(async ([name, schema]): Promise<[string, ValidationResult]> => {
-        const access = await checkFieldAccess(
-          runtime,
-          name,
-          "write",
-          context,
-        );
+        const access = await checkFieldAccess(runtime, name, "write", context);
 
         if (!access.allowed) {
           return [

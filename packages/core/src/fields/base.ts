@@ -155,6 +155,120 @@ function cloneBuilderState<TSchema extends FieldSchema>(
   ) as FieldBuilderState<TSchema>;
 }
 
+function fieldConstraintIssue(
+  state: FieldBuilderState<FieldSchema>,
+  value: unknown,
+): string | undefined {
+  const constraints = state as FieldBuilderState<FieldSchema> &
+    Record<string, unknown>;
+
+  if (value === undefined) {
+    return "Default value cannot be undefined.";
+  }
+
+  if (value === null) {
+    return state.nullable === true ? undefined : "This field cannot be null.";
+  }
+
+  switch (state.fieldType) {
+    case "text":
+    case "textarea":
+    case "email": {
+      if (typeof value !== "string") {
+        return "Must be a string.";
+      }
+      if (
+        typeof constraints.minLength === "number" &&
+        value.length < constraints.minLength
+      ) {
+        return `Must be at least ${constraints.minLength} characters.`;
+      }
+      if (
+        typeof constraints.maxLength === "number" &&
+        value.length > constraints.maxLength
+      ) {
+        return `Must be at most ${constraints.maxLength} characters.`;
+      }
+      return undefined;
+    }
+
+    case "number": {
+      if (typeof value !== "number") {
+        return "Must be a number.";
+      }
+      if (!Number.isFinite(value)) {
+        return "Must be a finite number.";
+      }
+      if (typeof constraints.min === "number" && value < constraints.min) {
+        return `Must be at least ${constraints.min}.`;
+      }
+      if (typeof constraints.max === "number" && value > constraints.max) {
+        return `Must be at most ${constraints.max}.`;
+      }
+      if (typeof constraints.step === "number") {
+        const base = typeof constraints.min === "number" ? constraints.min : 0;
+        const steps = (value - base) / constraints.step;
+        if (Math.abs(steps - Math.round(steps)) > 1e-9) {
+          return `Must be a multiple of ${constraints.step}.`;
+        }
+      }
+      return undefined;
+    }
+
+    case "boolean":
+      return typeof value === "boolean" ? undefined : "Must be a boolean.";
+
+    case "date":
+    case "datetime": {
+      if (!(value instanceof Date) && typeof value !== "string") {
+        return "Must be a valid date.";
+      }
+      const date = value instanceof Date ? value : new Date(value);
+      return Number.isNaN(date.getTime()) ? "Must be a valid date." : undefined;
+    }
+
+    case "select": {
+      if (
+        !Array.isArray(constraints.options) ||
+        constraints.options.length === 0
+      ) {
+        return "Select fields must define at least one option.";
+      }
+      return constraints.options.some(
+        (option) =>
+          typeof option === "object" &&
+          option !== null &&
+          "value" in option &&
+          option.value === value,
+      )
+        ? undefined
+        : "Must be one of the allowed options.";
+    }
+
+    case "file":
+    case "image":
+      return undefined;
+
+    default:
+      return undefined;
+  }
+}
+
+function assertDefaultSatisfiesConstraints(
+  state: FieldBuilderState<FieldSchema>,
+): void {
+  if (!Object.hasOwn(state, "defaultValue")) {
+    return;
+  }
+
+  const message = fieldConstraintIssue(state, state.defaultValue);
+  if (message) {
+    throw new Error(
+      `Default value does not satisfy field constraints: ${message}`,
+    );
+  }
+}
+
 /**
  * Immutable fluent builder for field schemas: each modifier method returns a
  * new builder with updated state and TValue narrowed/widened accordingly.
@@ -192,11 +306,14 @@ export class FieldBuilder<
     patch: Partial<TSchema>,
   ): FieldBuilderWithValue<this, TNextValue, TSchema> {
     const Builder = this.constructor as BuilderConstructor<this, TSchema>;
-
-    return new Builder({
+    const nextState = {
       ...this.state,
       ...patch,
-    } as FieldBuilderState<TSchema>) as unknown as FieldBuilderWithValue<
+    } as FieldBuilderState<TSchema>;
+
+    assertDefaultSatisfiesConstraints(nextState);
+
+    return new Builder(nextState) as unknown as FieldBuilderWithValue<
       this,
       TNextValue,
       TSchema

@@ -60,13 +60,11 @@ test("provided values take precedence over field defaults", () => {
   });
 });
 
-test("default values are still checked against field constraints", () => {
-  const schema = text().default("No").min(3).toSchema("name");
-
-  assert.deepEqual(validateField(schema, undefined), {
-    success: false,
-    issues: [{ path: [], message: "Must be at least 3 characters." }],
-  });
+test("default values are checked against field constraints when declared", () => {
+  assert.throws(
+    () => text().default("No").min(3),
+    /Default value does not satisfy field constraints: Must be at least 3 characters\./,
+  );
 });
 
 test("text/textarea/email enforce string type and length constraints", () => {
