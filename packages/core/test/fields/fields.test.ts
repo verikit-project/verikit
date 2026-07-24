@@ -104,6 +104,10 @@ test("default values must satisfy existing field constraints", () => {
     /Default value does not satisfy field constraints: Must be a string\./,
   );
   assert.throws(
+    () => email().default("not-an-email"),
+    /Default value does not satisfy field constraints: Must be a valid email address\./,
+  );
+  assert.throws(
     () => number().min(1).max(10).default(0),
     /Default value does not satisfy field constraints: Must be at least 1\./,
   );
@@ -159,6 +163,10 @@ test("later field constraints must still accept an existing default value", () =
   );
 
   assert.equal(text().default("ok").max(5).toSchema("name").defaultValue, "ok");
+  assert.equal(
+    email().default("ada@example.com").toSchema("email").defaultValue,
+    "ada@example.com",
+  );
   assert.equal(number().default(4).step(2).toSchema("count").defaultValue, 4);
   assert.equal(boolean().default(false).toSchema("active").defaultValue, false);
   assert.equal(
