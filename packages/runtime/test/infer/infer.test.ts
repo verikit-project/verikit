@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { boolean, date, number, select, text } from "@verikit/core";
+import {
+  boolean,
+  date,
+  file,
+  number,
+  select,
+  text,
+  type FieldSchema,
+} from "@verikit/core";
 import { inferField, inferResource } from "../../src/infer/index.js";
 
 test("inferField passes through values that already match the field type", () => {
@@ -15,6 +23,13 @@ test("inferField passes through values that already match the field type", () =>
   assert.deepEqual(inferField(boolean().toSchema("active"), true), {
     success: true,
     value: true,
+  });
+});
+
+test("inferField rejects values that cannot be inferred as strings", () => {
+  assert.deepEqual(inferField(text().toSchema("name"), 123), {
+    success: false,
+    issues: [{ path: [], message: "Cannot infer a string." }],
   });
 });
 
@@ -51,6 +66,10 @@ test("inferField coerces numeric strings and rejects unparsable ones", () => {
     success: false,
     issues: [{ path: [], message: "Cannot infer a number." }],
   });
+  assert.deepEqual(inferField(schema, {}), {
+    success: false,
+    issues: [{ path: [], message: "Cannot infer a number." }],
+  });
   assert.deepEqual(inferField(schema, Number.NaN), {
     success: false,
     issues: [{ path: [], message: "Cannot infer a number." }],
@@ -74,7 +93,15 @@ test("inferField coerces common boolean string and number shorthands", () => {
   }
   assert.deepEqual(inferField(schema, 1), { success: true, value: true });
   assert.deepEqual(inferField(schema, 0), { success: true, value: false });
+  assert.deepEqual(inferField(schema, 2), {
+    success: false,
+    issues: [{ path: [], message: "Cannot infer a boolean." }],
+  });
   assert.deepEqual(inferField(schema, "maybe"), {
+    success: false,
+    issues: [{ path: [], message: "Cannot infer a boolean." }],
+  });
+  assert.deepEqual(inferField(schema, {}), {
     success: false,
     issues: [{ path: [], message: "Cannot infer a boolean." }],
   });
@@ -102,6 +129,10 @@ test("inferField parses date strings and rejects invalid ones", () => {
     success: false,
     issues: [{ path: [], message: "Cannot infer a date." }],
   });
+  assert.deepEqual(inferField(schema, true), {
+    success: false,
+    issues: [{ path: [], message: "Cannot infer a date." }],
+  });
 });
 
 test("inferField resolves select values by exact or stringified match against configured options", () => {
@@ -114,6 +145,7 @@ test("inferField resolves select values by exact or stringified match against co
 
   assert.deepEqual(inferField(schema, 2), { success: true, value: 2 });
   assert.deepEqual(inferField(schema, "2"), { success: true, value: 2 });
+  assert.deepEqual(inferField(schema, "1"), { success: true, value: 1 });
   assert.deepEqual(inferField(schema, "3"), {
     success: false,
     issues: [
@@ -132,12 +164,20 @@ test("inferField passes values through unchanged for select fields with no confi
     success: true,
     value: "whatever",
   });
+  assert.deepEqual(inferField(select().options([]).toSchema("empty"), "open"), {
+    success: true,
+    value: "open",
+  });
 });
 
 test("inferField passes upload values through unchanged", () => {
   const schema = text().toSchema("avatar");
   const upload = { name: "a.png", type: "image/png", size: 10 };
 
+  assert.deepEqual(inferField(file().toSchema("attachment"), upload), {
+    success: true,
+    value: upload,
+  });
   assert.deepEqual(inferField({ ...schema, fieldType: "image" }, upload), {
     success: true,
     value: upload,
@@ -146,6 +186,19 @@ test("inferField passes upload values through unchanged", () => {
     inferField({ ...schema, fieldType: "image" }, "stored/path.png"),
     { success: true, value: "stored/path.png" },
   );
+});
+
+test("inferField passes unrecognized field types through unchanged", () => {
+  const schema: FieldSchema = {
+    type: "field",
+    name: "custom",
+    fieldType: "custom" as FieldSchema["fieldType"],
+  };
+
+  assert.deepEqual(inferField(schema, { adapter: true }), {
+    success: true,
+    value: { adapter: true },
+  });
 });
 
 test("inferResource coerces only the fields that would be validated", () => {

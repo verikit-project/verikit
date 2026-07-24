@@ -9,6 +9,7 @@ import {
   file,
   FileFieldBuilder,
   from,
+  type FieldSchema,
   image,
   number,
   NumberFieldBuilder,
@@ -99,8 +100,28 @@ test("default values must satisfy existing field constraints", () => {
     /Default value does not satisfy field constraints: Must be at most 5 characters\./,
   );
   assert.throws(
+    () => text().default(123 as unknown as string),
+    /Default value does not satisfy field constraints: Must be a string\./,
+  );
+  assert.throws(
     () => number().min(1).max(10).default(0),
     /Default value does not satisfy field constraints: Must be at least 1\./,
+  );
+  assert.throws(
+    () => number().max(10).default(11),
+    /Default value does not satisfy field constraints: Must be at most 10\./,
+  );
+  assert.throws(
+    () => number().default(Number.POSITIVE_INFINITY),
+    /Default value does not satisfy field constraints: Must be a finite number\./,
+  );
+  assert.throws(
+    () => number().default("5" as unknown as number),
+    /Default value does not satisfy field constraints: Must be a number\./,
+  );
+  assert.throws(
+    () => select<string>().default("draft"),
+    /Default value does not satisfy field constraints: Select fields must define at least one option\./,
   );
   assert.throws(
     () =>
@@ -112,6 +133,18 @@ test("default values must satisfy existing field constraints", () => {
   assert.throws(
     () => text().default(null),
     /Default value does not satisfy field constraints: This field cannot be null\./,
+  );
+  assert.throws(
+    () => date().default("not-a-date"),
+    /Default value does not satisfy field constraints: Must be a valid date\./,
+  );
+  assert.throws(
+    () => date().default(0 as unknown as Date),
+    /Default value does not satisfy field constraints: Must be a valid date\./,
+  );
+  assert.throws(
+    () => boolean().default("true" as unknown as boolean),
+    /Default value does not satisfy field constraints: Must be a boolean\./,
   );
 });
 
@@ -126,6 +159,22 @@ test("later field constraints must still accept an existing default value", () =
   );
 
   assert.equal(text().default("ok").max(5).toSchema("name").defaultValue, "ok");
+  assert.equal(number().default(4).step(2).toSchema("count").defaultValue, 4);
+  assert.equal(boolean().default(false).toSchema("active").defaultValue, false);
+  assert.equal(
+    date().default("2026-07-24").toSchema("startsOn").defaultValue,
+    "2026-07-24",
+  );
+  assert.equal(
+    file().default("uploads/report.pdf").toSchema("report").defaultValue,
+    "uploads/report.pdf",
+  );
+  assert.deepEqual(
+    createField<unknown>("custom" as FieldSchema["fieldType"])
+      .default({ adapter: true })
+      .toSchema("custom").defaultValue,
+    { adapter: true },
+  );
 });
 
 test("getState returns pre-finalized state without exposing mutable internals", () => {
