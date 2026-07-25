@@ -34,6 +34,7 @@
     "dist"
   ],
   "dependencies": {
+    "@tanstack/react-form": "^1.33.2",
     "@verikit/core": "workspace:*",
     "@verikit/runtime": "workspace:*"
   },
