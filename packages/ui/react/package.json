@@ -1,0 +1,49 @@
+{
+  "name": "@verikit/react",
+  "version": "0.8.1",
+  "description": "React UI bindings for Verikit resource workflows.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "keywords": [
+    "typescript",
+    "resource",
+    "schema",
+    "resource-model",
+    "metadata",
+    "builder",
+    "validation",
+    "framework"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
+  "license": "MIT",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "build": "pnpm clean && tsc -b",
+    "prepack": "pnpm build",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@verikit/core": "workspace:*",
+    "@verikit/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.2",
+    "react": "^19.2.0",
+    "typescript": "^6.0.3"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  }
+}
