@@ -25,9 +25,16 @@ test("react package exposes its public entrypoint", async () => {
     "defaultFieldRegistry",
     "fieldAriaProps",
     "fieldId",
+    "firstFieldError",
     "getFieldComponent",
     "getValueAtPath",
+    "inferAndValidateResource",
     "pathKey",
+    "resolveVerikitFields",
+    "submitVerikitActionForm",
+    "submitVerikitResourceForm",
+    "useVerikitForm",
+    "validationIssuesToFieldErrors",
   ]);
   assert.equal(
     module.cn("text-sm", false, ["font-medium"]),
