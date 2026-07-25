@@ -35,7 +35,7 @@ export interface UseVerikitFormResult<TResult = unknown> {
   getFieldProps: (name: string) => VerikitFieldComponentProps;
 }
 
-function isResource(value: VerikitFormSource): value is Resource {
+export function isResource(value: VerikitFormSource): value is Resource {
   return typeof (value as Resource).toSchema === "function";
 }
 

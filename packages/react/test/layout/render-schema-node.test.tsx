@@ -17,6 +17,7 @@ import {
   pathKey,
   RenderSchemaNode,
   RenderSchemaTree,
+  setValueAtPath,
 } from "../../src/layout/index.js";
 
 type AnyElement = ReactElement<Record<string, unknown>>;
@@ -42,6 +43,25 @@ test("getValueAtPath resolves nested paths and pathKey joins them", () => {
   assert.equal(getValueAtPath(undefined, ["a"]), undefined);
   assert.equal(pathKey(["a", 1, "c"]), "a.1.c");
   assert.equal(pathKey([]), "");
+});
+
+test("setValueAtPath clones containers along the path without mutating the source", () => {
+  const source = { a: { b: [{ c: 1 }, { c: 2 }] } };
+
+  const updated = setValueAtPath(
+    source,
+    ["a", "b", 1, "c"],
+    9,
+  ) as typeof source;
+  assert.equal(updated.a.b[1]?.c, 9);
+  assert.equal(source.a.b[1]?.c, 2);
+  assert.notEqual(updated, source);
+  assert.equal(updated.a.b[0], source.a.b[0]);
+
+  assert.deepEqual(setValueAtPath(undefined, ["items", 0, "name"], "x"), {
+    items: [{ name: "x" }],
+  });
+  assert.deepEqual(setValueAtPath({ a: 1 }, [], { b: 2 }), { b: 2 });
 });
 
 test("field nodes read nested values via path and forward change/blur paths", () => {

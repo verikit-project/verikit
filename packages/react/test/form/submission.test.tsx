@@ -5,6 +5,7 @@ import { action } from "@verikit/runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   firstFieldError,
+  firstFieldErrors,
   inferAndValidateResource,
   resolveVerikitFields,
   submitVerikitActionForm,
@@ -35,6 +36,12 @@ test("validation issues map to field errors", () => {
   });
   assert.equal(firstFieldError(errors, "email"), "Invalid email");
   assert.equal(firstFieldError(errors, "missing"), undefined);
+  assert.deepEqual(firstFieldErrors(errors), {
+    "0": "Indexed issue",
+    $form: "Form issue",
+    email: "Invalid email",
+  });
+  assert.deepEqual(firstFieldErrors({}), {});
 });
 
 test("resource submission infers, validates, maps errors, and calls onSubmit", async () => {

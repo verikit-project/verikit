@@ -80,6 +80,15 @@ export function firstFieldError(
   return fieldErrors[name]?.[0];
 }
 
+/** Collapses each key's error list down to its first message. */
+export function firstFieldErrors(
+  fieldErrors: VerikitFieldErrors,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(fieldErrors).map(([key, messages]) => [key, messages[0]]),
+  );
+}
+
 export async function inferAndValidateResource(
   fields: VerikitFormFields,
   values: VerikitFormValues,
