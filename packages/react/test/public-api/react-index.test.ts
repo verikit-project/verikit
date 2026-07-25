@@ -16,6 +16,8 @@ test("react package exposes its public entrypoint", async () => {
     "ImageField",
     "NumberField",
     "RenderField",
+    "RenderSchemaNode",
+    "RenderSchemaTree",
     "SelectField",
     "TextField",
     "TextareaField",
@@ -24,6 +26,8 @@ test("react package exposes its public entrypoint", async () => {
     "fieldAriaProps",
     "fieldId",
     "getFieldComponent",
+    "getValueAtPath",
+    "pathKey",
   ]);
   assert.equal(
     module.cn("text-sm", false, ["font-medium"]),
