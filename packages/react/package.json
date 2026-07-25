@@ -73,7 +73,9 @@
   "devDependencies": {
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.3",
     "react": "^19.2.0",
+    "react-dom": "^19.2.8",
     "typescript": "^6.0.3"
   },
   "peerDependencies": {

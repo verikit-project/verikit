@@ -1,3 +1,4 @@
+export { FieldShell, fieldAriaProps, fieldId } from "./field-shell.js";
 export {
   defaultFieldRegistry,
   getFieldComponent,

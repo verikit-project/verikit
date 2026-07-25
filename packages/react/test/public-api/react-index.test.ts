@@ -11,6 +11,7 @@ test("react package exposes its public entrypoint", async () => {
     "DateField",
     "DateTimeField",
     "EmailField",
+    "FieldShell",
     "FileField",
     "ImageField",
     "NumberField",
@@ -20,6 +21,8 @@ test("react package exposes its public entrypoint", async () => {
     "TextareaField",
     "cn",
     "defaultFieldRegistry",
+    "fieldAriaProps",
+    "fieldId",
     "getFieldComponent",
   ]);
   assert.equal(
