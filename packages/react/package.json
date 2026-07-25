@@ -36,9 +36,18 @@
     }
   },
   "imports": {
-    "#components/*": "./src/components/*.tsx",
-    "#hooks/*": "./src/hooks/*.ts",
-    "#lib/*": "./src/lib/*.ts"
+    "#components/*": {
+      "types": "./src/components/*.tsx",
+      "default": "./dist/components/*.js"
+    },
+    "#hooks/*": {
+      "types": "./src/hooks/*.ts",
+      "default": "./dist/hooks/*.js"
+    },
+    "#lib/*": {
+      "types": "./src/lib/*.ts",
+      "default": "./dist/lib/*.js"
+    }
   },
   "scripts": {
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
@@ -51,6 +60,7 @@
     "dist"
   ],
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@tanstack/react-form": "^1.33.2",
     "@verikit/core": "workspace:*",
     "@verikit/runtime": "workspace:*",
