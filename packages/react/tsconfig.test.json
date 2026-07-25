@@ -11,6 +11,6 @@
     "rootDir": ".",
     "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo"
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
   "exclude": ["dist", ".test-dist", "node_modules"]
 }

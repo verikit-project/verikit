@@ -12,14 +12,14 @@
     "jsx": "react-jsx",
     "types": ["node", "react"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["dist", "node_modules"],
   "references": [
     {
-      "path": "../../core"
+      "path": "../core"
     },
     {
-      "path": "../../runtime"
+      "path": "../runtime"
     }
   ]
 }

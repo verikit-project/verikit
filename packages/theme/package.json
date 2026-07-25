@@ -1,0 +1,37 @@
+{
+  "name": "@verikit/theme",
+  "version": "0.8.1",
+  "description": "Shared Tailwind CSS and shadcn theme tokens for Verikit UI packages.",
+  "type": "module",
+  "keywords": [
+    "typescript",
+    "resource",
+    "schema",
+    "resource-model",
+    "metadata",
+    "builder",
+    "validation",
+    "framework",
+    "tailwindcss",
+    "shadcn"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
+  "license": "MIT",
+  "exports": {
+    "./globals.css": "./globals.css",
+    "./tokens.css": "./tokens.css",
+    "./tailwind.css": "./tailwind.css"
+  },
+  "files": [
+    "globals.css",
+    "tokens.css",
+    "tailwind.css"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
+  "dependencies": {
+    "shadcn": "^4.14.1",
+    "tailwindcss": "^4.3.3"
+  }
+}
