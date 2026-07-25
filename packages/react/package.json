@@ -26,10 +26,6 @@
       "types": "./dist/components/*.d.ts",
       "default": "./dist/components/*.js"
     },
-    "./hooks/*": {
-      "types": "./dist/hooks/*.d.ts",
-      "default": "./dist/hooks/*.js"
-    },
     "./lib/*": {
       "types": "./dist/lib/*.d.ts",
       "default": "./dist/lib/*.js"
@@ -39,10 +35,6 @@
     "#components/*": {
       "types": "./src/components/*.tsx",
       "default": "./dist/components/*.js"
-    },
-    "#hooks/*": {
-      "types": "./src/hooks/*.ts",
-      "default": "./dist/hooks/*.js"
     },
     "#lib/*": {
       "types": "./src/lib/*.ts",
