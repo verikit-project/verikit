@@ -4,8 +4,10 @@ import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { cn } from "#lib/utils";
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react";
 
+/** shadcn-compatible select root built on Base UI. */
 const Select = SelectPrimitive.Root;
 
+/** Groups related select items. */
 function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   return (
     <SelectPrimitive.Group
@@ -16,6 +18,7 @@ function SelectGroup({ className, ...props }: SelectPrimitive.Group.Props) {
   );
 }
 
+/** Displays the current select value or placeholder. */
 function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
@@ -26,6 +29,7 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   );
 }
 
+/** Opens the select popup and displays the current value. */
 function SelectTrigger({
   className,
   size = "default",
@@ -54,6 +58,7 @@ function SelectTrigger({
   );
 }
 
+/** Renders the select popup content. */
 function SelectContent({
   className,
   children,
@@ -96,6 +101,7 @@ function SelectContent({
   );
 }
 
+/** Renders a label inside a select group. */
 function SelectLabel({
   className,
   ...props
@@ -109,6 +115,7 @@ function SelectLabel({
   );
 }
 
+/** Renders a selectable item. */
 function SelectItem({
   className,
   children,
@@ -137,6 +144,7 @@ function SelectItem({
   );
 }
 
+/** Renders a visual separator between select items. */
 function SelectSeparator({
   className,
   ...props
@@ -150,6 +158,7 @@ function SelectSeparator({
   );
 }
 
+/** Renders the scroll-up affordance for overflowing select content. */
 function SelectScrollUpButton({
   className,
   ...props
@@ -168,6 +177,7 @@ function SelectScrollUpButton({
   );
 }
 
+/** Renders the scroll-down affordance for overflowing select content. */
 function SelectScrollDownButton({
   className,
   ...props

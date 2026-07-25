@@ -13,48 +13,74 @@ import {
   type ActionRunResult,
 } from "@verikit/runtime";
 
+/** Plain form values keyed by Verikit field name. */
 export type VerikitFormValues = Record<string, unknown>;
+
+/** Validation messages keyed by field name or form-level key. */
 export type VerikitFieldErrors = Record<string, string[]>;
+
+/** Verikit field schema map keyed by field name. */
 export type VerikitFormFields = Record<string, FieldSchema>;
 
+/** Failed inference or validation result with issues mapped to fields. */
 export interface VerikitValidationFailure {
+  /** Marks the result as failed. */
   success: false;
+  /** Stage that produced the failure. */
   reason: "inference" | "validation";
+  /** Validation issues returned by Verikit. */
   issues: ValidationIssue[];
+  /** Issues grouped by field key for UI rendering. */
   fieldErrors: VerikitFieldErrors;
 }
 
+/** Successful resource form submission result. */
 export interface VerikitResourceSubmitSuccess<TResult = unknown> {
+  /** Marks the result as successful. */
   success: true;
+  /** Inferred and validated values. */
   value: VerikitFormValues;
+  /** Value returned by the submit callback. */
   result: TResult;
+  /** Empty field error map for successful submissions. */
   fieldErrors: VerikitFieldErrors;
 }
 
+/** Result returned when submitting a resource-backed form. */
 export type VerikitResourceSubmitResult<TResult = unknown> =
   VerikitResourceSubmitSuccess<TResult> | VerikitValidationFailure;
 
+/** Result returned when submitting an action-backed form. */
 export type VerikitActionSubmitResult<TResult = unknown> =
   | (ActionRunResult<TResult> & { fieldErrors: VerikitFieldErrors })
   | VerikitValidationFailure;
 
+/** Options for inferring, validating, and optionally submitting a resource form. */
 export interface SubmitVerikitResourceFormOptions<TResult = unknown> {
+  /** Field schema map used for inference and validation. */
   fields: VerikitFormFields;
+  /** Raw form values to submit. */
   values: VerikitFormValues;
+  /** Optional callback invoked with inferred and validated values. */
   onSubmit?: (values: VerikitFormValues) => TResult | Promise<TResult>;
 }
 
+/** Options for inferring values and running a Verikit action. */
 export interface SubmitVerikitActionFormOptions<
   TForm extends ActionFormMap = ActionFormMap,
   TContext = unknown,
   TRecord = unknown,
   TResult = unknown,
 > {
+  /** Action whose runtime form and handler should be used. */
   action: ActionBuilder<string, TForm, TContext, TRecord, TResult>;
+  /** Action request without input; inferred values are supplied as input. */
   request: Omit<ActionRunRequest<TContext, TRecord>, "input">;
+  /** Raw form values to infer before running the action. */
   values: VerikitFormValues;
 }
 
+/** Groups validation issues by their first path segment for field rendering. */
 export function validationIssuesToFieldErrors(
   issues: readonly ValidationIssue[],
 ): VerikitFieldErrors {
@@ -73,6 +99,7 @@ export function validationIssuesToFieldErrors(
   return errors;
 }
 
+/** Returns the first error message for a field, if present. */
 export function firstFieldError(
   fieldErrors: VerikitFieldErrors,
   name: string,
@@ -89,6 +116,7 @@ export function firstFieldErrors(
   );
 }
 
+/** Infers raw values and validates the inferred resource values. */
 export async function inferAndValidateResource(
   fields: VerikitFormFields,
   values: VerikitFormValues,
@@ -102,6 +130,7 @@ export async function inferAndValidateResource(
   return validateResourceAsync(fields, inferred.value);
 }
 
+/** Infers, validates, and submits a resource-backed form. */
 export async function submitVerikitResourceForm<TResult = undefined>({
   fields,
   values,
@@ -139,6 +168,7 @@ export async function submitVerikitResourceForm<TResult = undefined>({
   };
 }
 
+/** Infers action input values and runs the action with mapped field errors. */
 export async function submitVerikitActionForm<
   TForm extends ActionFormMap = ActionFormMap,
   TContext = unknown,

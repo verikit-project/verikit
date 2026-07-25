@@ -89,22 +89,27 @@ function commonReadOnly(field: FieldSchema, readOnly?: boolean): boolean {
   return readOnly === true || field.readOnly === true;
 }
 
+/** Renders a text input field. */
 export function TextField(props: VerikitFieldComponentProps) {
   return <InputField {...props} type="text" />;
 }
 
+/** Renders an email input field. */
 export function EmailField(props: VerikitFieldComponentProps) {
   return <InputField {...props} type="email" />;
 }
 
+/** Renders a numeric input field. */
 export function NumberField(props: VerikitFieldComponentProps) {
   return <InputField {...props} type="number" />;
 }
 
+/** Renders a date input field. */
 export function DateField(props: VerikitFieldComponentProps) {
   return <InputField {...props} type="date" />;
 }
 
+/** Renders a date-time input field. */
 export function DateTimeField(props: VerikitFieldComponentProps) {
   return <InputField {...props} type="datetime-local" />;
 }
@@ -158,6 +163,7 @@ function InputField({
   );
 }
 
+/** Renders a textarea field. */
 export function TextareaField({
   field,
   id,
@@ -193,6 +199,7 @@ export function TextareaField({
   );
 }
 
+/** Renders a select field from schema options. */
 export function SelectField({
   field,
   id,
@@ -244,6 +251,7 @@ export function SelectField({
   );
 }
 
+/** Renders a boolean field as a checkbox. */
 export function BooleanField({
   field,
   id,
@@ -279,10 +287,12 @@ export function BooleanField({
   );
 }
 
+/** Renders a file upload field. */
 export function FileField(props: VerikitFieldComponentProps) {
   return <UploadField {...props} accept={undefined} />;
 }
 
+/** Renders an image upload field. */
 export function ImageField(props: VerikitFieldComponentProps) {
   return <UploadField {...props} accept="image/*" />;
 }

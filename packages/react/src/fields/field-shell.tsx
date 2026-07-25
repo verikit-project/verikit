@@ -3,14 +3,21 @@ import type { ReactNode } from "react";
 import { Label } from "#components/label";
 import { cn } from "#lib/utils";
 
+/** Props for the shared field wrapper used by Verikit inputs. */
 export interface FieldShellProps {
+  /** Schema metadata for the rendered field. */
   field: FieldSchema;
+  /** Id assigned to the concrete input control. */
   id: string;
+  /** Error content rendered below the input. */
   error?: ReactNode;
+  /** Class name applied to the shell container. */
   className?: string;
+  /** Input control rendered inside the shell. */
   children: ReactNode;
 }
 
+/** Renders a label, description, error message, and field control wrapper. */
 export function FieldShell({
   field,
   id,
@@ -48,6 +55,7 @@ export function FieldShell({
   );
 }
 
+/** Builds ARIA props that connect a field with its description and error. */
 export function fieldAriaProps(
   field: FieldSchema,
   id: string,
@@ -71,6 +79,7 @@ export function fieldAriaProps(
   };
 }
 
+/** Returns the explicit id or derives a stable id from the field name. */
 export function fieldId(field: FieldSchema, id?: string): string {
   return id ?? `verikit-field-${field.name}`;
 }

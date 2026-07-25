@@ -1,5 +1,7 @@
+/** Path to a value inside a schema tree form. */
 export type SchemaPath = readonly (string | number)[];
 
+/** Reads a nested value by schema path. */
 export function getValueAtPath(source: unknown, path: SchemaPath): unknown {
   return path.reduce<unknown>((value, key) => {
     if (value === null || value === undefined) {
@@ -10,6 +12,7 @@ export function getValueAtPath(source: unknown, path: SchemaPath): unknown {
   }, source);
 }
 
+/** Converts a schema path into the dot-separated key used by form state. */
 export function pathKey(path: SchemaPath): string {
   return path.join(".");
 }

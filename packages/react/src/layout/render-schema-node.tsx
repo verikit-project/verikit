@@ -262,6 +262,7 @@ function renderActionNode(
   );
 }
 
+/** Renders one Verikit schema node using the built-in React layout components. */
 export function RenderSchemaNode(props: RenderSchemaNodeProps): ReactNode {
   const { node } = props;
   const path = props.path ?? [];
@@ -286,6 +287,7 @@ export function RenderSchemaNode(props: RenderSchemaNodeProps): ReactNode {
   }
 }
 
+/** Renders a list of Verikit schema nodes. */
 export function RenderSchemaTree({
   nodes,
   ...rest

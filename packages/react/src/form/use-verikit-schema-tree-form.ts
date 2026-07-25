@@ -13,14 +13,20 @@ import {
   type VerikitResourceSubmitResult,
 } from "./submission.js";
 
+/** Source accepted by the schema tree form hook. */
 export type VerikitSchemaTreeSource = Resource | ResourceSchema;
 
+/** Options for creating a schema tree form hook instance. */
 export interface UseVerikitSchemaTreeFormOptions<TResult = unknown> {
+  /** Resource builder or schema containing the tree to render. */
   resource: VerikitSchemaTreeSource;
+  /** Initial values passed to TanStack Form. */
   defaultValues?: VerikitFormValues;
+  /** Callback invoked after successful inference and validation. */
   onSubmit?: (values: VerikitFormValues) => TResult | Promise<TResult>;
 }
 
+/** Props from the schema tree hook that can be spread onto the tree renderer. */
 export type VerikitSchemaTreeRenderProps = Pick<
   SchemaRenderProps,
   | "values"
@@ -31,19 +37,29 @@ export type VerikitSchemaTreeRenderProps = Pick<
   | "onRepeaterRemove"
 >;
 
+/** State and helpers returned by {@link useVerikitSchemaTreeForm}. */
 export interface UseVerikitSchemaTreeFormResult<TResult = unknown> {
+  /** Underlying TanStack Form API instance. */
   form: AnyFormApi;
+  /** Resolved schema tree nodes. */
   tree: SchemaNode[];
+  /** Current field error messages keyed by schema path. */
   fieldErrors: VerikitFieldErrors;
+  /** Replaces the current field error map. */
   setFieldErrors: (errors: VerikitFieldErrors) => void;
+  /** Clears all field errors. */
   clearFieldErrors: () => void;
+  /** Infers and validates values without calling the submit callback. */
   validate: (
     values?: VerikitFormValues,
   ) => Promise<VerikitResourceSubmitResult<undefined>>;
+  /** Infers, validates, and submits values. */
   submit: (
     values?: VerikitFormValues,
   ) => Promise<VerikitResourceSubmitResult<TResult | undefined>>;
+  /** Returns the first error message for a schema path. */
   getFieldError: (path: SchemaPath) => string | undefined;
+  /** Renderer props for wiring a schema tree to the hook state. */
   treeProps: VerikitSchemaTreeRenderProps;
 }
 
@@ -51,6 +67,7 @@ function resolveVerikitTree(source: VerikitSchemaTreeSource): SchemaNode[] {
   return isResource(source) ? source.toSchema().tree : source.tree;
 }
 
+/** Creates a TanStack-backed form for a Verikit schema tree. */
 export function useVerikitSchemaTreeForm<TResult = unknown>({
   resource,
   defaultValues = {},

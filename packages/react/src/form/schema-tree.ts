@@ -19,9 +19,13 @@ import type {
   VerikitResourceSubmitResult,
 } from "./submission.js";
 
+/** Options for inferring, validating, and submitting schema tree form values. */
 export interface SubmitVerikitSchemaTreeFormOptions<TResult = unknown> {
+  /** Schema nodes that describe the rendered form tree. */
   tree: readonly SchemaNode[];
+  /** Raw form values keyed by schema path. */
   values: VerikitFormValues;
+  /** Optional callback invoked with inferred and validated values. */
   onSubmit?: (values: VerikitFormValues) => TResult | Promise<TResult>;
 }
 
@@ -141,6 +145,7 @@ function applySuccessfulResults(
   );
 }
 
+/** Infers, validates, and submits values for fields nested in a schema tree. */
 export async function submitVerikitSchemaTreeForm<TResult = undefined>({
   tree,
   values,
@@ -194,6 +199,7 @@ export async function submitVerikitSchemaTreeForm<TResult = undefined>({
   };
 }
 
+/** Infers and validates schema tree values without calling a submit callback. */
 export async function inferAndValidateSchemaTree(
   tree: readonly SchemaNode[],
   values: VerikitFormValues,

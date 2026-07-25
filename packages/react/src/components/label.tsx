@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { cn } from "#lib/utils";
 
+/** shadcn-compatible label component. */
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
     <label

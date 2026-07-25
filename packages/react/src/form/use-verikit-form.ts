@@ -11,30 +11,46 @@ import {
   type VerikitResourceSubmitResult,
 } from "./submission.js";
 
+/** Source accepted by the flat Verikit form hook. */
 export type VerikitFormSource = VerikitFormFields | Resource | ResourceSchema;
 
+/** Options for creating a flat Verikit form hook instance. */
 export interface UseVerikitFormOptions<TResult = unknown> {
+  /** Fields, resource builder, or resource schema backing the form. */
   fields: VerikitFormSource;
+  /** Initial values passed to TanStack Form. */
   defaultValues?: VerikitFormValues;
+  /** Callback invoked after successful inference and validation. */
   onSubmit?: (values: VerikitFormValues) => TResult | Promise<TResult>;
 }
 
+/** State and helpers returned by {@link useVerikitForm}. */
 export interface UseVerikitFormResult<TResult = unknown> {
+  /** Underlying TanStack Form API instance. */
   form: AnyFormApi;
+  /** Resolved field schema map. */
   fields: VerikitFormFields;
+  /** Current field error messages. */
   fieldErrors: VerikitFieldErrors;
+  /** Replaces the current field error map. */
   setFieldErrors: (errors: VerikitFieldErrors) => void;
+  /** Clears all field errors. */
   clearFieldErrors: () => void;
+  /** Infers and validates values without calling the submit callback. */
   validate: (
     values?: VerikitFormValues,
   ) => Promise<VerikitResourceSubmitResult<undefined>>;
+  /** Infers, validates, and submits values. */
   submit: (
     values?: VerikitFormValues,
   ) => Promise<VerikitResourceSubmitResult<TResult | undefined>>;
+  /** Returns the first error message for a field name. */
   getFieldError: (name: string) => string | undefined;
+  /** Builds props for rendering a field with the registry components. */
   getFieldProps: (name: string) => VerikitFieldComponentProps;
 }
 
+/** Returns true when a source is a resource builder. */
 export function isResource(value: VerikitFormSource): value is Resource {
   return typeof (value as Resource).toSchema === "function";
 }
@@ -43,6 +59,7 @@ function isResourceSchema(value: VerikitFormSource): value is ResourceSchema {
   return (value as ResourceSchema).type === "resource";
 }
 
+/** Resolves any supported form source into a field schema map. */
 export function resolveVerikitFields(
   source: VerikitFormSource,
 ): VerikitFormFields {
@@ -57,6 +74,7 @@ export function resolveVerikitFields(
   return source;
 }
 
+/** Creates a TanStack-backed form for a flat Verikit resource schema. */
 export function useVerikitForm<TResult = unknown>({
   fields: fieldSource,
   defaultValues = {},
