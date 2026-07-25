@@ -16,6 +16,7 @@ export {
   TextareaField,
   TextField,
 } from "./inputs.js";
+export type { FieldShellProps } from "./field-shell.js";
 export type { RenderFieldProps } from "./registry.js";
 export type {
   VerikitFieldComponent,

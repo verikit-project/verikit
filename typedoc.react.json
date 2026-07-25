@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["packages/react/src/index.ts"],
+  "out": "docs/api/react",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "react",
+  "readme": "none"
+}
