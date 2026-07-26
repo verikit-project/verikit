@@ -7,6 +7,7 @@ import {
   type FieldNode,
   type SchemaNode,
 } from "@verikit/core";
+import { action } from "@verikit/runtime";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   inferAndValidateSchemaTree,
@@ -261,6 +262,28 @@ test("useVerikitSchemaTreeForm wires TanStack form state to a nested schema tree
     },
   });
   assert.equal(submittedValues.length, 2);
+});
+
+test("useVerikitSchemaTreeForm passes runtime actions through tree props", () => {
+  const publish = action("publish").form({ note: text().required() });
+  const resourceWithAction = defineResource("Article", {
+    fields: {
+      title: text().required(),
+    },
+  }).form((f) => [f.field("title"), f.action("publish")]);
+  let captured: ReturnType<typeof useVerikitSchemaTreeForm> | undefined;
+
+  function Probe() {
+    captured = useVerikitSchemaTreeForm({
+      resource: resourceWithAction,
+      actions: { publish },
+    });
+    return null;
+  }
+
+  renderToStaticMarkup(<Probe />);
+  assert.ok(captured);
+  assert.equal(captured.treeProps.actions?.publish, publish);
 });
 
 test("useVerikitSchemaTreeForm's repeater handlers start a fresh array when no rows exist yet", () => {

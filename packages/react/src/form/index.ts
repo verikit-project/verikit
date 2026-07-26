@@ -9,6 +9,7 @@ export {
 export { resolveVerikitFields, useVerikitForm } from "./use-verikit-form.js";
 export {
   inferAndValidateSchemaTree,
+  submitVerikitSchemaTreeActionForm,
   submitVerikitSchemaTreeForm,
 } from "./schema-tree.js";
 export { useVerikitSchemaTreeForm } from "./use-verikit-schema-tree-form.js";
@@ -28,7 +29,10 @@ export type {
   UseVerikitFormResult,
   VerikitFormSource,
 } from "./use-verikit-form.js";
-export type { SubmitVerikitSchemaTreeFormOptions } from "./schema-tree.js";
+export type {
+  SubmitVerikitSchemaTreeActionFormOptions,
+  SubmitVerikitSchemaTreeFormOptions,
+} from "./schema-tree.js";
 export type {
   UseVerikitSchemaTreeFormOptions,
   UseVerikitSchemaTreeFormResult,

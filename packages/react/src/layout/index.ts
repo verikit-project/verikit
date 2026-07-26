@@ -4,5 +4,7 @@ export { RenderSchemaNode, RenderSchemaTree } from "./render-schema-node.js";
 export type {
   RenderSchemaNodeProps,
   RenderSchemaTreeProps,
+  SchemaActionRegistry,
+  SchemaActionSource,
   SchemaRenderProps,
 } from "./types.js";

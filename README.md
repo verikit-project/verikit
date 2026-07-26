@@ -10,11 +10,14 @@ Verikit is a TypeScript toolkit for defining reusable resource schemas.
 
 - `@verikit/core`
 - `@verikit/runtime`
+- `@verikit/react`
+- `@verikit/theme`
 
 ## Install
 
 ```sh
-pnpm add @verikit/core
+pnpm add @verikit/core @verikit/runtime
+pnpm add @verikit/react @verikit/theme
 ```
 
 ## Development

@@ -2,7 +2,10 @@ import { useCallback, useMemo, useState } from "react";
 import { useForm, type AnyFormApi } from "@tanstack/react-form";
 import type { Resource, ResourceSchema, SchemaNode } from "@verikit/core";
 import { pathKey, type SchemaPath } from "../layout/path.js";
-import type { SchemaRenderProps } from "../layout/types.js";
+import type {
+  SchemaActionRegistry,
+  SchemaRenderProps,
+} from "../layout/types.js";
 import { isResource } from "./use-verikit-form.js";
 import { submitVerikitSchemaTreeForm } from "./schema-tree.js";
 import {
@@ -20,6 +23,8 @@ export type VerikitSchemaTreeSource = Resource | ResourceSchema;
 export interface UseVerikitSchemaTreeFormOptions<TResult = unknown> {
   /** Resource builder or schema containing the tree to render. */
   resource: VerikitSchemaTreeSource;
+  /** Runtime actions whose forms should render for matching action nodes. */
+  actions?: SchemaActionRegistry;
   /** Initial values passed to TanStack Form. */
   defaultValues?: VerikitFormValues;
   /** Callback invoked after successful inference and validation. */
@@ -31,6 +36,7 @@ export type VerikitSchemaTreeRenderProps = Pick<
   SchemaRenderProps,
   | "values"
   | "errors"
+  | "actions"
   | "onFieldChange"
   | "onFieldBlur"
   | "onRepeaterAdd"
@@ -70,6 +76,7 @@ function resolveVerikitTree(source: VerikitSchemaTreeSource): SchemaNode[] {
 /** Creates a TanStack-backed form for a Verikit schema tree. */
 export function useVerikitSchemaTreeForm<TResult = unknown>({
   resource,
+  actions,
   defaultValues = {},
   onSubmit,
 }: UseVerikitSchemaTreeFormOptions<TResult>): UseVerikitSchemaTreeFormResult<TResult> {
@@ -168,6 +175,7 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
     treeProps: {
       values: form.state.values,
       errors,
+      actions,
       onFieldChange,
       onFieldBlur,
       onRepeaterAdd,

@@ -36,6 +36,7 @@ test("react package exposes its public entrypoint", async () => {
     "setValueAtPath",
     "submitVerikitActionForm",
     "submitVerikitResourceForm",
+    "submitVerikitSchemaTreeActionForm",
     "submitVerikitSchemaTreeForm",
     "useVerikitForm",
     "useVerikitSchemaTreeForm",

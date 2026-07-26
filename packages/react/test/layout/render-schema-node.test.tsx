@@ -10,6 +10,8 @@ import type {
   TabsNode,
   WizardNode,
 } from "@verikit/core";
+import { text } from "@verikit/core";
+import { action } from "@verikit/runtime";
 import { isValidElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
@@ -337,6 +339,68 @@ test("action nodes render their input fields and report the click", () => {
   assert.equal(childrenOf(asElement(button))[0], "Publish now");
   (asElement(button).props.onClick as () => void)();
   assert.deepEqual(clicks, [["publish", ["post", "publish"]]]);
+});
+
+test("action nodes can render runtime action forms by name", () => {
+  const node: ActionNode = {
+    type: "action",
+    name: "publish",
+    label: "Layout label",
+    input: [{ type: "field", name: "layoutOnly", fieldType: "text" }],
+  };
+  const publish = action("publish").label("Runtime label").form({
+    note: text(),
+  });
+  const element = asElement(
+    RenderSchemaNode({
+      node,
+      values: { publish: { note: "Ready" } },
+      actions: { publish },
+    }),
+  );
+  const [tree, button] = childrenOf(element);
+  const treeElement = asElement(tree);
+
+  assert.deepEqual(treeElement.props.path, ["publish"]);
+  assert.deepEqual(treeElement.props.nodes, [
+    { type: "field", name: "note", fieldType: "text" },
+  ]);
+  assert.equal(childrenOf(asElement(button))[0], "Layout label");
+});
+
+test("action nodes use runtime labels when no layout label is set", () => {
+  const node: ActionNode = { type: "action", name: "archive" };
+  const archive = action("archive").label("Archive record");
+  const element = asElement(
+    RenderSchemaNode({ node, values: {}, actions: { archive } }),
+  );
+  const [, button] = childrenOf(element);
+
+  assert.equal(childrenOf(asElement(button))[0], "Archive record");
+});
+
+test("action nodes can render serialized runtime action schemas", () => {
+  const node: ActionNode = { type: "action", name: "schedule" };
+  const element = asElement(
+    RenderSchemaNode({
+      node,
+      values: { schedule: { note: "Later" } },
+      actions: {
+        schedule: {
+          type: "action",
+          name: "schedule",
+          label: "Schedule",
+          form: { note: text().toSchema("note") },
+        },
+      },
+    }),
+  );
+  const [tree, button] = childrenOf(element);
+
+  assert.deepEqual(asElement(tree).props.nodes, [
+    { type: "field", name: "note", fieldType: "text" },
+  ]);
+  assert.equal(childrenOf(asElement(button))[0], "Schedule");
 });
 
 test("action nodes fall back to their name as the label with no input", () => {

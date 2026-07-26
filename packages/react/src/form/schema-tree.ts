@@ -6,14 +6,21 @@ import {
   type ValidationIssue,
   type ValidationResult,
 } from "@verikit/core";
-import { inferField } from "@verikit/runtime";
+import {
+  inferField,
+  type ActionBuilder,
+  type ActionFormMap,
+  type ActionRunRequest,
+} from "@verikit/runtime";
 import {
   getValueAtPath,
   pathKey,
   setValueAtPath,
   type SchemaPath,
 } from "../layout/path.js";
-import type {
+import {
+  submitVerikitActionForm,
+  type VerikitActionSubmitResult,
   VerikitFieldErrors,
   VerikitFormValues,
   VerikitResourceSubmitResult,
@@ -27,6 +34,24 @@ export interface SubmitVerikitSchemaTreeFormOptions<TResult = unknown> {
   values: VerikitFormValues;
   /** Optional callback invoked with inferred and validated values. */
   onSubmit?: (values: VerikitFormValues) => TResult | Promise<TResult>;
+}
+
+/** Options for submitting an action form from schema tree values. */
+export interface SubmitVerikitSchemaTreeActionFormOptions<
+  TName extends string = string,
+  TForm extends ActionFormMap = ActionFormMap,
+  TContext = unknown,
+  TRecord = unknown,
+  TResult = unknown,
+> {
+  /** Runtime action whose form should infer, validate, and execute. */
+  action: ActionBuilder<TName, TForm, TContext, TRecord, TResult>;
+  /** Action request without input; inferred tree values are supplied as input. */
+  request: Omit<ActionRunRequest<TContext, TRecord>, "input">;
+  /** Schema tree form values containing the action input at `path`. */
+  values: VerikitFormValues;
+  /** Path to the action input values. Defaults to the action name. */
+  path?: SchemaPath;
 }
 
 interface TreeFieldEntry {
@@ -209,4 +234,35 @@ export async function inferAndValidateSchemaTree(
   return result.success
     ? { success: true, value: result.value }
     : { success: false, issues: result.issues };
+}
+
+/** Extracts nested action input values from a schema tree and runs the action. */
+export async function submitVerikitSchemaTreeActionForm<
+  TName extends string = string,
+  TForm extends ActionFormMap = ActionFormMap,
+  TContext = unknown,
+  TRecord = unknown,
+  TResult = unknown,
+>({
+  action,
+  request,
+  values,
+  path = [action.name],
+}: SubmitVerikitSchemaTreeActionFormOptions<
+  TName,
+  TForm,
+  TContext,
+  TRecord,
+  TResult
+>): Promise<VerikitActionSubmitResult<TResult>> {
+  const actionValues = getValueAtPath(values, path);
+
+  return submitVerikitActionForm({
+    action,
+    request,
+    values:
+      typeof actionValues === "object" && actionValues !== null
+        ? (actionValues as VerikitFormValues)
+        : {},
+  });
 }

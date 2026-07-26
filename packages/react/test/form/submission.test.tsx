@@ -10,6 +10,7 @@ import {
   resolveVerikitFields,
   submitVerikitActionForm,
   submitVerikitResourceForm,
+  submitVerikitSchemaTreeActionForm,
   useVerikitForm,
   validationIssuesToFieldErrors,
   type VerikitFormFields,
@@ -139,6 +140,45 @@ test("action submission infers action form input before runAction", async () => 
   assert.equal(noForm.success, true);
   assert.equal(noForm.result, "pong");
   assert.deepEqual(noForm.fieldErrors, {});
+});
+
+test("schema tree action submission extracts nested action input values", async () => {
+  const publish = action("publish")
+    .form({
+      note: text().required(),
+      priority: number().required(),
+    })
+    .execute(({ input }) => `${input.note}:${input.priority}`);
+
+  const success = await submitVerikitSchemaTreeActionForm({
+    action: publish,
+    request: { context: {} },
+    values: { publish: { note: "Ready", priority: "2" } },
+  });
+  assert.equal(success.success, true);
+  assert.equal(success.result, "Ready:2");
+
+  const validation = await submitVerikitSchemaTreeActionForm({
+    action: publish,
+    request: { context: {} },
+    values: { modal: { note: "", priority: "2" } },
+    path: ["modal"],
+  });
+  assert.equal(validation.success, false);
+  assert.equal(validation.reason, "validation");
+  assert.deepEqual(Object.keys(validation.fieldErrors), ["note"]);
+
+  const missingPath = await submitVerikitSchemaTreeActionForm({
+    action: publish,
+    request: { context: {} },
+    values: {},
+  });
+  assert.equal(missingPath.success, false);
+  assert.equal(missingPath.reason, "validation");
+  assert.deepEqual(Object.keys(missingPath.fieldErrors).sort(), [
+    "note",
+    "priority",
+  ]);
 });
 
 test("resolveVerikitFields accepts maps, resource schemas, and resources", () => {

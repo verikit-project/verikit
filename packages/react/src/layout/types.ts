@@ -1,7 +1,19 @@
 import type { RelationshipNode, SchemaNode } from "@verikit/core";
+import type { ActionSchema } from "@verikit/runtime";
 import type { ReactNode } from "react";
 import type { VerikitFieldRegistry } from "../fields/index.js";
 import type { SchemaPath } from "./path.js";
+
+/** Runtime action builder or serialized action schema used by schema renderers. */
+export type SchemaActionSource =
+  | ActionSchema
+  | {
+      readonly name: string;
+      toSchema(): ActionSchema;
+    };
+
+/** Runtime actions keyed by action node name. */
+export type SchemaActionRegistry = Partial<Record<string, SchemaActionSource>>;
 
 /** Shared props used while rendering Verikit schema nodes. */
 export interface SchemaRenderProps {
@@ -17,6 +29,8 @@ export interface SchemaRenderProps {
   readOnly?: boolean;
   /** Optional field renderer overrides. */
   registry?: Partial<VerikitFieldRegistry>;
+  /** Runtime actions whose forms should render for matching action nodes. */
+  actions?: SchemaActionRegistry;
   /** Active tab index for tab nodes. */
   activeTab?: number;
   /** Called when a tab node changes active tab. */

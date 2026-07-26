@@ -8,12 +8,45 @@ import type {
   TabsNode,
   WizardNode,
 } from "@verikit/core";
+import type { ActionSchema } from "@verikit/runtime";
 import type { ReactElement, ReactNode } from "react";
 import { Button } from "#components/button";
 import { cn } from "#lib/utils";
 import { RenderField } from "../fields/index.js";
 import { getValueAtPath, pathKey, type SchemaPath } from "./path.js";
 import type { RenderSchemaNodeProps, RenderSchemaTreeProps } from "./types.js";
+
+function actionSchemaFor(
+  node: ActionNode,
+  props: RenderSchemaNodeProps,
+): ActionSchema | undefined {
+  const source = props.actions?.[node.name];
+
+  if (!source) {
+    return undefined;
+  }
+
+  return "toSchema" in source ? source.toSchema() : source;
+}
+
+function actionInputNodes(
+  node: ActionNode,
+  props: RenderSchemaNodeProps,
+): SchemaNode[] | undefined {
+  const actionSchema = actionSchemaFor(node, props);
+
+  if (actionSchema?.form) {
+    return Object.entries(actionSchema.form).map(
+      ([name, field]): FieldNode => ({
+        ...field,
+        type: "field",
+        name,
+      }),
+    );
+  }
+
+  return node.input;
+}
 
 function schemaNodeKey(node: SchemaNode, index: number): string {
   return "name" in node && typeof node.name === "string"
@@ -241,13 +274,15 @@ function renderActionNode(
   path: SchemaPath,
 ): ReactElement {
   const actionPath = [...path, node.name];
+  const actionSchema = actionSchemaFor(node, props);
+  const input = actionInputNodes(node, props);
 
   return (
     <div className={cn("grid gap-4", props.className)}>
-      {node.input ? (
+      {input ? (
         <RenderSchemaTree
           {...schemaRenderProps(props)}
-          nodes={node.input}
+          nodes={input}
           path={actionPath}
         />
       ) : null}
@@ -256,7 +291,7 @@ function renderActionNode(
         className="justify-self-start"
         onClick={() => props.onAction?.(node.name, actionPath)}
       >
-        {node.label ?? node.name}
+        {node.label ?? actionSchema?.label ?? node.name}
       </Button>
     </div>
   );
