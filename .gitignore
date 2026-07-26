@@ -97,4 +97,6 @@ Thumbs.db
 
 
 # Documentation caches
+docs/api/
 docs/.cache/
+docs/
