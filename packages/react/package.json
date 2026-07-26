@@ -16,6 +16,9 @@
   ],
   "author": "Chidi E <hi@ceeso.dev>",
   "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
@@ -71,6 +74,6 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "react": ">=18.0.0"
+    "react": "^19.0.0"
   }
 }

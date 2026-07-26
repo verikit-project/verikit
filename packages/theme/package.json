@@ -17,6 +17,9 @@
   ],
   "author": "Chidi E <hi@ceeso.dev>",
   "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
   "exports": {
     "./globals.css": "./globals.css",
     "./tokens.css": "./tokens.css",

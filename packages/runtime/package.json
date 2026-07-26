@@ -16,6 +16,9 @@
   ],
   "author": "Chidi E <hi@ceeso.dev>",
   "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {

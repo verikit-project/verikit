@@ -22,6 +22,8 @@ pnpm add @verikit/react @verikit/theme
 
 ## Development
 
+Requires Node.js 24 and pnpm 11.
+
 ```sh
 pnpm install
 pnpm test
