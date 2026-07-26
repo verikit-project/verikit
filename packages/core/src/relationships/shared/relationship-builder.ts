@@ -1,7 +1,7 @@
 import { InferResourceFields, Resource } from "../../resource/resource.js";
 import type { FieldReference } from "../../resource/resource.js";
 
-type AdapterForeignKeyReference = object;
+export type AdapterForeignKeyReference = object;
 
 export type RelationshipForeignKey =
   FieldReference<string> | AdapterForeignKeyReference;

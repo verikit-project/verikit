@@ -30,7 +30,7 @@ export interface BelongsToManyRelationshipSchema {
 }
 
 /** State for belongs-to-many builders: the shared shape plus the join resource name. */
-interface BelongsToManyRelationshipBuilderState extends RelationshipBuilderState {
+export interface BelongsToManyRelationshipBuilderState extends RelationshipBuilderState {
   through?: string;
 }
 

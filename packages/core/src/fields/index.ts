@@ -7,5 +7,6 @@ export * from "./from.js";
 export * from "./image.js";
 export * from "./number.js";
 export * from "./select.js";
+export * from "./shared/file-constraints.js";
 export * from "./text.js";
 export * from "./textarea.js";

@@ -154,7 +154,7 @@ export type InferResourceFields<TResource> =
     : never;
 
 /** Maps a relationship builder to its inferred value type. */
-type InferRelationship<TRelationship> =
+export type InferRelationship<TRelationship> =
   TRelationship extends BelongsToRelationshipBuilder<infer TResource>
     ? InferResource<TResource> | null
     : TRelationship extends HasManyRelationshipBuilder<infer TResource>
@@ -164,7 +164,7 @@ type InferRelationship<TRelationship> =
         : never;
 
 /** Maps relationship builders to their inferred value types. */
-type InferResourceRelationships<TRelationships extends RelationshipMap> =
+export type InferResourceRelationships<TRelationships extends RelationshipMap> =
   string extends keyof TRelationships
     ? Record<never, never>
     : {
@@ -338,7 +338,7 @@ export class Resource<
 }
 
 /** A layout child: a field/relationship name to resolve, or a literal node. */
-type LayoutChild<
+export type LayoutChild<
   TFields extends FieldMap,
   TRelationships extends RelationshipMap,
 > = (keyof TFields & string) | (keyof TRelationships & string) | SchemaNode;
