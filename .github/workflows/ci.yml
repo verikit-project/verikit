@@ -8,6 +8,14 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
+        react-version: [18, 19]
+
+    name: Node ${{ matrix.node-version }} / React ${{ matrix.react-version }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -15,15 +23,19 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm run format:check
+      - name: Install React ${{ matrix.react-version }} compatibility deps
+        if: matrix.react-version == 18
+        run: pnpm --filter @verikit/react add --save-dev --no-lockfile react@18 react-dom@18 @types/react@18 @types/react-dom@18
 
-      - run: pnpm run lint
+      - run: pnpm format:check
 
-      - run: pnpm run typecheck
+      - run: pnpm lint
 
-      - run: pnpm test
+      - run: pnpm typecheck
+
+      - run: pnpm test:coverage
