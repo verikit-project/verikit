@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm, type AnyFormApi } from "@tanstack/react-form";
 import type { Resource, ResourceSchema, SchemaNode } from "@verikit/core";
 import { pathKey, type SchemaPath } from "../layout/path.js";
@@ -41,6 +41,7 @@ export type VerikitSchemaTreeRenderProps = Pick<
   | "onFieldBlur"
   | "onRepeaterAdd"
   | "onRepeaterRemove"
+  | "getRepeaterRowKey"
 >;
 
 /** State and helpers returned by {@link useVerikitSchemaTreeForm}. */
@@ -82,6 +83,12 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
 }: UseVerikitSchemaTreeFormOptions<TResult>): UseVerikitSchemaTreeFormResult<TResult> {
   const tree = useMemo(() => resolveVerikitTree(resource), [resource]);
   const [fieldErrors, setFieldErrors] = useState<VerikitFieldErrors>({});
+  // Stable per-row ids for repeater rows, keyed by the repeater's own path.
+  // Grown lazily (per index, as `getRepeaterRowKey` is called during render)
+  // to cover rows that arrived some other way than `onRepeaterAdd` (e.g.
+  // pre-populated `defaultValues`); shrunk explicitly by `onRepeaterRemove`,
+  // which is the only place that knows which index was actually removed.
+  const repeaterRowKeysRef = useRef<Map<string, string[]>>(new Map());
   const form = useForm({
     defaultValues,
     onSubmit: async ({ value }) => {
@@ -128,10 +135,16 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
     (path: SchemaPath, value: unknown) => {
       form.setFieldValue(pathKey(path), value);
       const key = pathKey(path);
-      const { [key]: _removed, ...remaining } = fieldErrors;
-      setFieldErrors(remaining);
+      // Functional update: two `onFieldChange` calls in the same tick (e.g.
+      // rapid edits to different fields before a re-render) would otherwise
+      // both close over the same stale `fieldErrors` snapshot, so the second
+      // call's `setFieldErrors` would silently undo the first call's removal.
+      setFieldErrors((current) => {
+        const { [key]: _removed, ...remaining } = current;
+        return remaining;
+      });
     },
-    [fieldErrors, form],
+    [form],
   );
 
   const onFieldBlur = useCallback(
@@ -157,8 +170,30 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
           ? current.filter((_, itemIndex) => itemIndex !== index)
           : current,
       );
+      // Splices the same index out of the cached ids so a row's id always
+      // tracks that row, not whatever now sits at its old position.
+      repeaterRowKeysRef.current.get(pathKey(path))?.splice(index, 1);
     },
     [form],
+  );
+
+  const getRepeaterRowKey = useCallback(
+    (path: SchemaPath, index: number): string => {
+      const key = pathKey(path);
+      let ids = repeaterRowKeysRef.current.get(key);
+
+      if (!ids) {
+        ids = [];
+        repeaterRowKeysRef.current.set(key, ids);
+      }
+
+      while (ids.length <= index) {
+        ids.push(crypto.randomUUID());
+      }
+
+      return ids[index] as string;
+    },
+    [],
   );
 
   const errors = useMemo(() => firstFieldErrors(fieldErrors), [fieldErrors]);
@@ -180,6 +215,7 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
       onFieldBlur,
       onRepeaterAdd,
       onRepeaterRemove,
+      getRepeaterRowKey,
     },
   };
 }

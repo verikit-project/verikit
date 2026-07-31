@@ -14,6 +14,7 @@ import {
 } from "@verikit/runtime";
 import {
   getValueAtPath,
+  hasValueAtPath,
   pathKey,
   setValueAtPath,
   type SchemaPath,
@@ -107,9 +108,16 @@ function shouldValidateTreeField(
 ): boolean {
   const key = String(path[path.length - 1]);
 
-  return shouldValidateField(key, field, {
-    [key]: getValueAtPath(values, path),
-  });
+  // An object literal with a computed key always creates that key, even when
+  // the value is `undefined` — so `{ [key]: getValueAtPath(...) }` would
+  // report every field as "present" regardless of whether `values` actually
+  // has an entry there. Only include the key when it's genuinely present, so
+  // `shouldValidateField`'s `Object.hasOwn` check reflects reality.
+  const wrapper = hasValueAtPath(values, path)
+    ? { [key]: getValueAtPath(values, path) }
+    : {};
+
+  return shouldValidateField(key, field, wrapper);
 }
 
 function relevantTreeFields(

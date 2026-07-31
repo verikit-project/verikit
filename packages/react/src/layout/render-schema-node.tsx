@@ -223,6 +223,15 @@ function renderWizardNode(
   );
 }
 
+/**
+ * Renders a repeater's rows keyed by `getRepeaterRowKey` (when the caller
+ * supplies one, as `useVerikitSchemaTreeForm` does) instead of array index.
+ * Index-based keys make React reuse a removed row's DOM (and any focus or
+ * uncontrolled state inside it) for whatever row happens to shift into its
+ * position afterward. Falls back to `index` when no key source is given, so
+ * a caller wiring this tree up manually without the hook keeps the previous
+ * (imperfect, but no worse than before) behavior.
+ */
 function renderRepeaterNode(
   node: RepeaterNode,
   props: RenderSchemaNodeProps,
@@ -236,7 +245,7 @@ function renderRepeaterNode(
     <div className={cn("grid gap-4", props.className)}>
       {rows.map((_, index) => (
         <div
-          key={index}
+          key={props.getRepeaterRowKey?.(repeaterPath, index) ?? index}
           className="grid gap-3 rounded-lg border border-border p-3"
         >
           <RenderSchemaTree

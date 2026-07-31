@@ -115,6 +115,29 @@ test("submitVerikitSchemaTreeForm treats an empty repeater as having no rows to 
   assert.deepEqual((result.success && result.value.items) ?? [], []);
 });
 
+test("submitVerikitSchemaTreeForm skips a truly absent optional field instead of validating it as undefined", async () => {
+  // `shouldValidateTreeField` used to build `{ [key]: getValueAtPath(...) }`
+  // unconditionally — an object literal with a computed key always creates
+  // that key, even when the value is `undefined`, so every optional field
+  // looked "present" and its custom validator ran against `undefined`.
+  const nickname = text()
+    .optional()
+    .validation({
+      parse: (value: unknown) => {
+        if (typeof value !== "string") {
+          throw new Error("Custom validator ran against a non-string value.");
+        }
+        return value;
+      },
+    })
+    .toSchema("nickname");
+  const tree: SchemaNode[] = [nickname];
+
+  const result = await submitVerikitSchemaTreeForm({ tree, values: {} });
+
+  assert.equal(result.success, true);
+});
+
 test("submitVerikitSchemaTreeForm validates every repeater row and every tab/step, not just the first", async () => {
   const result = await submitVerikitSchemaTreeForm({
     tree: richTree,
@@ -305,4 +328,41 @@ test("useVerikitSchemaTreeForm's repeater handlers start a fresh array when no r
 
   captured.treeProps.onRepeaterAdd?.(["items"]);
   assert.deepEqual(captured.form.getFieldValue("items"), [{}]);
+});
+
+test("getRepeaterRowKey keeps each row's id stable across a middle removal", () => {
+  let captured: ReturnType<typeof useVerikitSchemaTreeForm> | undefined;
+
+  function Probe() {
+    captured = useVerikitSchemaTreeForm({
+      resource: orderResource,
+      defaultValues: { items: [{}, {}, {}] },
+    });
+    return null;
+  }
+
+  renderToStaticMarkup(<Probe />);
+  assert.ok(captured);
+
+  const keyAt = (index: number) =>
+    captured!.treeProps.getRepeaterRowKey?.(["items"], index);
+
+  const key0 = keyAt(0);
+  const key1 = keyAt(1);
+  const key2 = keyAt(2);
+
+  assert.ok(key0);
+  assert.ok(key1);
+  assert.ok(key2);
+  assert.notEqual(key0, key1);
+  assert.notEqual(key1, key2);
+
+  // Remove the middle row: what was row 2 shifts down to index 1.
+  captured.treeProps.onRepeaterRemove?.(["items"], 1);
+  assert.deepEqual(captured.form.getFieldValue("items"), [{}, {}]);
+
+  // An index-based key would report `key1` (the removed row's old id) for
+  // this position; the shifted row must keep carrying its own id instead.
+  assert.equal(keyAt(0), key0);
+  assert.equal(keyAt(1), key2);
 });

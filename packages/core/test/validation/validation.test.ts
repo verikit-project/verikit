@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   boolean,
   date,
+  datetime,
   email,
   FieldSchema,
   file,
@@ -140,6 +141,39 @@ test("date fields accept Date instances and parseable strings", () => {
   assert.deepEqual(validateField(schema, parsed), {
     success: true,
     value: parsed,
+  });
+});
+
+test("date fields enforce min/max range constraints", () => {
+  const schema = date().min("2020-01-01").max("2020-12-31").toSchema("startsOn");
+
+  assert.equal(validateField(schema, "2019-12-31").success, false);
+  assert.equal(validateField(schema, "2021-01-01").success, false);
+  assert.deepEqual(validateField(schema, "2020-06-15"), {
+    success: true,
+    value: "2020-06-15",
+  });
+});
+
+test("datetime fields enforce min/max range constraints against Date instances", () => {
+  const schema = datetime()
+    .min(new Date("2020-01-01T00:00:00.000Z"))
+    .max(new Date("2020-01-02T00:00:00.000Z"))
+    .toSchema("publishedAt");
+
+  assert.equal(
+    validateField(schema, new Date("2019-12-31T23:59:59.000Z")).success,
+    false,
+  );
+  assert.equal(
+    validateField(schema, new Date("2020-01-02T00:00:01.000Z")).success,
+    false,
+  );
+
+  const within = new Date("2020-01-01T12:00:00.000Z");
+  assert.deepEqual(validateField(schema, within), {
+    success: true,
+    value: within,
   });
 });
 

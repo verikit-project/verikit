@@ -328,6 +328,23 @@ test("date fields produce date and datetime schemas", () => {
   );
 });
 
+test("date and datetime fields support min/max range constraints", () => {
+  const dateSchema = date()
+    .label("Starts on")
+    .min("2020-01-01")
+    .max("2020-12-31")
+    .toSchema("startsOn");
+  const datetimeSchema = datetime()
+    .min(new Date("2020-01-01T00:00:00.000Z"))
+    .max(new Date("2020-01-02T00:00:00.000Z"))
+    .toSchema("publishedAt");
+
+  assert.equal(dateSchema.min, "2020-01-01");
+  assert.equal(dateSchema.max, "2020-12-31");
+  assert.deepEqual(datetimeSchema.min, new Date("2020-01-01T00:00:00.000Z"));
+  assert.deepEqual(datetimeSchema.max, new Date("2020-01-02T00:00:00.000Z"));
+});
+
 test("file and image fields expose upload constraints through builder methods", () => {
   const fileSchema = file()
     .accept(["application/pdf"])
@@ -575,6 +592,8 @@ test("field constraints reject invalid values and ranges", () => {
   assert.throws(() => number().min(Number.NaN), /min/);
   assert.throws(() => number().min(10).max(5), /min/);
   assert.throws(() => number().step(0), /step/);
+  assert.throws(() => date().min("not-a-date"), /valid date/);
+  assert.throws(() => date().max("2020-01-01").min("2020-06-01"), /later/);
   assert.throws(() => file().accept([""]), /non-empty/);
   assert.throws(() => image().maxSize(-1), /maxSize/);
 });
@@ -640,4 +659,24 @@ test("createField remains available for custom core field construction", () => {
   assert.equal(schema.fieldType, "text");
   assert.equal(schema.label, "Custom");
   assert.equal(schema.nullable, true);
+});
+
+test("shared field-constraint helpers are reachable from the public fields barrel", async () => {
+  // These live alongside `withAccept`/`withMaxSize`/`withMultiple` (already
+  // exported here) but were previously only importable via their deep
+  // `shared/*.js` paths — an asymmetry in the barrel, not an intentional
+  // internal/public split.
+  const barrel: Record<string, unknown> = await import(
+    "../../src/fields/index.js"
+  );
+
+  for (const name of [
+    "withMinLength",
+    "withMaxLength",
+    "normalizeOptions",
+    "withMinDate",
+    "withMaxDate",
+  ]) {
+    assert.equal(typeof barrel[name], "function", `${name} should be exported`);
+  }
 });

@@ -1,16 +1,21 @@
-import { FieldBuilder, FieldSchema } from "./base.js";
+import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
+import {
+  DateRangeConstraints,
+  withMaxDate,
+  withMinDate,
+} from "./shared/date-constraints.js";
 
 /**
  * Schema describing a date-only field.
  */
-export interface DateFieldSchema extends FieldSchema {
+export interface DateFieldSchema extends DateRangeConstraints {
   fieldType: "date";
 }
 
 /**
  * Schema describing a date-and-time field.
  */
-export interface DateTimeFieldSchema extends FieldSchema {
+export interface DateTimeFieldSchema extends DateRangeConstraints {
   fieldType: "datetime";
 }
 
@@ -27,6 +32,16 @@ export class DateFieldBuilder<
   ) {
     super(state);
   }
+
+  /** Sets the earliest allowed date. */
+  min(value: Date | string): FieldBuilderWithValue<this, TValue, DateFieldSchema> {
+    return this.withState(withMinDate(this.state, value));
+  }
+
+  /** Sets the latest allowed date. */
+  max(value: Date | string): FieldBuilderWithValue<this, TValue, DateFieldSchema> {
+    return this.withState(withMaxDate(this.state, value));
+  }
 }
 
 /**
@@ -41,6 +56,20 @@ export class DateTimeFieldBuilder<
     },
   ) {
     super(state);
+  }
+
+  /** Sets the earliest allowed date-time. */
+  min(
+    value: Date | string,
+  ): FieldBuilderWithValue<this, TValue, DateTimeFieldSchema> {
+    return this.withState(withMinDate(this.state, value));
+  }
+
+  /** Sets the latest allowed date-time. */
+  max(
+    value: Date | string,
+  ): FieldBuilderWithValue<this, TValue, DateTimeFieldSchema> {
+    return this.withState(withMaxDate(this.state, value));
   }
 }
 

@@ -77,6 +77,35 @@ function validateNumber(schema: FieldSchema, value: number): ValidationIssue[] {
   return found;
 }
 
+function validateDateRange(schema: FieldSchema, date: Date): ValidationIssue[] {
+  const constraints = schemaConstraints(schema);
+  const found: ValidationIssue[] = [];
+
+  if (
+    typeof constraints.min === "string" ||
+    constraints.min instanceof Date
+  ) {
+    const min =
+      constraints.min instanceof Date ? constraints.min : new Date(constraints.min);
+    if (date.getTime() < min.getTime()) {
+      found.push(issue(`Must be on or after ${min.toISOString()}.`));
+    }
+  }
+
+  if (
+    typeof constraints.max === "string" ||
+    constraints.max instanceof Date
+  ) {
+    const max =
+      constraints.max instanceof Date ? constraints.max : new Date(constraints.max);
+    if (date.getTime() > max.getTime()) {
+      found.push(issue(`Must be on or before ${max.toISOString()}.`));
+    }
+  }
+
+  return found;
+}
+
 function validateOption(
   schema: FieldSchema,
   value: unknown,
@@ -209,7 +238,7 @@ export function validateBuiltInFieldConstraints(
       const date = value instanceof Date ? value : new Date(value);
       return Number.isNaN(date.getTime())
         ? [issue("Must be a valid date.")]
-        : [];
+        : validateDateRange(schema, date);
     }
 
     case "select":

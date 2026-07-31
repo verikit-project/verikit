@@ -308,6 +308,44 @@ test("repeater renders one block per array item and reports add/remove", () => {
   assert.deepEqual(added, [["tags"]]);
 });
 
+test("repeater rows use getRepeaterRowKey when supplied, falling back to index otherwise", () => {
+  const node: RepeaterNode = {
+    type: "repeater",
+    name: "tags",
+    children: [],
+  };
+  const values = { tags: [{ label: "a" }, { label: "b" }] };
+
+  const withoutKeySource = asElement(RenderSchemaNode({ node, values }));
+  const [defaultRows] = childrenOf(withoutKeySource) as [AnyElement[], unknown];
+  assert.deepEqual(
+    defaultRows.map((row) => row.key),
+    ["0", "1"],
+  );
+
+  const seen: Array<[readonly unknown[], number]> = [];
+  const withKeySource = asElement(
+    RenderSchemaNode({
+      node,
+      values,
+      getRepeaterRowKey: (path, index) => {
+        seen.push([path, index]);
+        return `row-${index}`;
+      },
+    }),
+  );
+  const [keyedRows] = childrenOf(withKeySource) as [AnyElement[], unknown];
+
+  assert.deepEqual(
+    keyedRows.map((row) => row.key),
+    ["row-0", "row-1"],
+  );
+  assert.deepEqual(seen, [
+    [["tags"], 0],
+    [["tags"], 1],
+  ]);
+});
+
 test("repeater with no array value renders only the add control", () => {
   const node: RepeaterNode = { type: "repeater", name: "tags", children: [] };
   const element = asElement(RenderSchemaNode({ node, values: {} }));
