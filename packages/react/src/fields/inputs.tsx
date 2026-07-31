@@ -207,8 +207,10 @@ export function SelectField({
   value,
   error,
   disabled,
+  readOnly,
   className,
   inputClassName,
+  onBlur,
   onValueChange,
 }: VerikitFieldComponentProps) {
   const inputId = fieldId(field, id);
@@ -223,6 +225,7 @@ export function SelectField({
         name={name ?? field.name}
         value={textValue(value)}
         disabled={commonDisabled(field, disabled)}
+        readOnly={commonReadOnly(field, readOnly)}
         onValueChange={(nextValue: string | null) => {
           if (nextValue === null) {
             onValueChange?.(null);
@@ -235,6 +238,7 @@ export function SelectField({
         <SelectTrigger
           id={inputId}
           className={cn("w-full", inputClassName)}
+          onBlur={onBlur}
           {...fieldAriaProps(field, inputId, error)}
         >
           <SelectValue placeholder={field.placeholder ?? "Select..."} />

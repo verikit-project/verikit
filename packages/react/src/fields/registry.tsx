@@ -48,11 +48,21 @@ export interface RenderFieldProps extends VerikitFieldComponentProps {
   registry?: Partial<VerikitFieldRegistry>;
 }
 
-/** Renders a Verikit field with the matching component from the active registry. */
+/**
+ * Renders a Verikit field with the matching component from the active
+ * registry. Renders nothing when the field is `hidden` — `resolveResourceSchema`
+ * sets this both for schema-authored hidden fields and for fields the actor
+ * lacks read access to, so a merely-`disabled` input would leak the label
+ * and current value of a field the actor isn't allowed to see.
+ */
 export function RenderField({
   registry,
   ...props
-}: RenderFieldProps): ReactElement {
+}: RenderFieldProps): ReactElement | null {
+  if (props.field.hidden) {
+    return null;
+  }
+
   const Component = getFieldComponent(props.field.fieldType, registry);
 
   return <Component {...props} />;

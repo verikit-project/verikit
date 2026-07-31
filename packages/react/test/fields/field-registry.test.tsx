@@ -216,6 +216,7 @@ test("textarea and date fields render specialized input shapes", () => {
 
 test("select field maps string values back to option values", () => {
   const changes: unknown[] = [];
+  const blurs: unknown[] = [];
   const shell = asElement(
     SelectField({
       field: field({
@@ -227,7 +228,9 @@ test("select field maps string values back to option values", () => {
         placeholder: "Pick status",
       }),
       inputClassName: "w-72",
+      onBlur: () => blurs.push("blur"),
       onValueChange: (value) => changes.push(value),
+      readOnly: true,
       value: 1,
     }),
   );
@@ -235,6 +238,7 @@ test("select field maps string values back to option values", () => {
   const select = asElement(childrenOf(output)[1]);
 
   assert.equal(select.props.value, "1");
+  assert.equal(select.props.readOnly, true);
   (select.props.onValueChange as (value: string | null) => void)("1");
   (select.props.onValueChange as (value: string | null) => void)("missing");
   (select.props.onValueChange as (value: string | null) => void)(null);
@@ -242,6 +246,24 @@ test("select field maps string values back to option values", () => {
 
   const trigger = asElement(childrenOf(select)[0]);
   assert.match(String(trigger.props.className), /w-72/);
+  (trigger.props.onBlur as () => void)();
+  assert.deepEqual(blurs, ["blur"]);
+});
+
+test("select field disables interaction when the field itself is read-only", () => {
+  const shell = asElement(
+    SelectField({
+      field: field({
+        fieldType: "select",
+        options: [{ label: "Draft", value: "draft" }],
+        readOnly: true,
+      }),
+      value: "draft",
+    }),
+  );
+  const select = asElement(childrenOf(invoke(shell))[1]);
+
+  assert.equal(select.props.readOnly, true);
 });
 
 test("boolean and upload fields wire shadcn controls", () => {
@@ -321,6 +343,19 @@ test("render field uses registry overrides", () => {
   const html = renderToStaticMarkup(rendered);
 
   assert.equal(html, "<span>Custom</span>");
+});
+
+test("render field renders nothing for a hidden field, regardless of value", () => {
+  // `resolveResourceSchema` marks a field `hidden` both for schema-authored
+  // hidden fields and for fields the actor lacks read access to. Either way
+  // the label and current value must never reach the DOM — a merely
+  // `disabled` input would still leak them.
+  const rendered = RenderField({
+    field: field({ fieldType: "text", hidden: true, label: "Salary" }),
+    value: "confidential",
+  });
+
+  assert.equal(rendered, null);
 });
 
 test("shadcn primitives render through field components", () => {
