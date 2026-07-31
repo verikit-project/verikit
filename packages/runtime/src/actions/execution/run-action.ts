@@ -7,8 +7,13 @@ import type { ActionRunRequest } from "./action-context.js";
 import type { ActionRunResult } from "./action-result.js";
 
 /**
- * Runs an action, including a permissions check, availability checks, form
- * validation, lifecycle hooks, and execution.
+ * Runs an action, in order: a permissions check, an availability check, a
+ * confirmation gate, form validation, lifecycle hooks, and execution.
+ *
+ * Availability is checked before confirmation so an unavailable action
+ * reports `reason: "unavailable"` even when it also declares
+ * `.confirmation()` — otherwise a caller would be asked to confirm an
+ * action that can't actually run.
  *
  * Any error thrown by the `before` hook, action handler, or `after`
  * hook causes the action to fail. The optional `error` hook is then
@@ -50,14 +55,6 @@ export async function runAction<
       }
     }
 
-    if (runtime.confirmation && request.confirmed !== true) {
-      return {
-        success: false,
-        reason: "confirmation",
-        message: runtime.confirmation.message,
-      };
-    }
-
     const availability = runtime.isAvailable
       ? normalizeAvailability(
           await runtime.isAvailable({
@@ -73,6 +70,14 @@ export async function runAction<
         success: false,
         reason: "unavailable",
         message: availability.reason,
+      };
+    }
+
+    if (runtime.confirmation && request.confirmed !== true) {
+      return {
+        success: false,
+        reason: "confirmation",
+        message: runtime.confirmation.message,
       };
     }
 

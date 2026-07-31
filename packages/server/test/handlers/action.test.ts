@@ -171,7 +171,13 @@ test("handleAction denies an action with no resource-level rule once the resourc
   const publish = action("publish").execute(() => "published");
 
   const response = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], {}, { role: "admin" }, permissions),
+    ctxFor(
+      createInMemoryAdapter(),
+      [publish],
+      {},
+      { role: "admin" },
+      permissions,
+    ),
     "publish",
   );
   assert.equal(response.status, 403);
@@ -185,13 +191,25 @@ test("handleAction enforces a resource-level .action() rule independent of the a
   const publish = action("publish").execute(() => "published");
 
   const denied = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], {}, { role: "viewer" }, permissions),
+    ctxFor(
+      createInMemoryAdapter(),
+      [publish],
+      {},
+      { role: "viewer" },
+      permissions,
+    ),
     "publish",
   );
   assert.equal(denied.status, 403);
 
   const allowed = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], {}, { role: "admin" }, permissions),
+    ctxFor(
+      createInMemoryAdapter(),
+      [publish],
+      {},
+      { role: "admin" },
+      permissions,
+    ),
     "publish",
   );
   assert.equal(allowed.status, 200);

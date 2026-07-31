@@ -92,7 +92,7 @@ test("runAction proceeds normally once the permission check allows the action", 
   );
 });
 
-test("runAction requires explicit confirmation before availability, validation, or execution", async () => {
+test("runAction requires explicit confirmation before validation or execution", async () => {
   const destroy = action("destroy")
     .confirmation("Delete this record?")
     .form({ reason: text().required() });
@@ -101,6 +101,22 @@ test("runAction requires explicit confirmation before availability, validation, 
     success: false,
     reason: "confirmation",
     message: "Delete this record?",
+  });
+});
+
+test("runAction reports unavailable rather than confirmation-required for an unavailable action that also needs confirmation", async () => {
+  // Availability is checked before the confirmation gate: asking a caller to
+  // confirm an action that can't actually run would hide the real reason it
+  // fails.
+  const destroy = action("destroy")
+    .availableWhen(() => ({ available: false, reason: "Already deleted" }))
+    .confirmation("Delete this record?")
+    .execute(() => "destroyed");
+
+  assert.deepEqual(await runAction(destroy, { context: {} }), {
+    success: false,
+    reason: "unavailable",
+    message: "Already deleted",
   });
 });
 

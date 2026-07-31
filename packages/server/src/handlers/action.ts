@@ -94,7 +94,11 @@ export async function handleAction(
     confirmed: body.confirmed,
   });
 
-  if (!result.success && result.reason === "forbidden" && record !== undefined) {
+  if (
+    !result.success &&
+    result.reason === "forbidden" &&
+    record !== undefined
+  ) {
     return notFoundResponse(`Record "${body.recordId}" not found.`);
   }
 
