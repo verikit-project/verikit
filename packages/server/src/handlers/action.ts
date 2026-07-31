@@ -4,8 +4,10 @@ import { parseJsonObjectBody } from "../http/parse-request.js";
 import {
   dataResponse,
   errorResponse,
+  forbiddenResponse,
   notFoundResponse,
 } from "../http/responses.js";
+import { maybeCheckAction } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
 
 interface ActionRequestBody {
@@ -67,6 +69,15 @@ export async function handleAction(
     if (!record) {
       return notFoundResponse(`Record "${body.recordId}" not found.`);
     }
+  }
+
+  const permission = await maybeCheckAction(entry.config.permissions, name, {
+    actor,
+    record,
+  });
+
+  if (!permission.allowed) {
+    return forbiddenResponse(permission.message);
   }
 
   const result = await runAction(actionBuilder, {

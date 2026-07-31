@@ -1,4 +1,5 @@
 import {
+  checkAction,
   checkFieldAccess,
   checkResourceOperation,
   validateResourceAsync,
@@ -31,6 +32,26 @@ export async function maybeCheckResourceOperation<TActor, TRecord>(
   }
 
   const result = await checkResourceOperation(permissions, operation, context);
+  return { allowed: result.allowed, message: result.reason };
+}
+
+/**
+ * Runs `checkAction` only when `permissions` is configured for the resource;
+ * unguarded (always allowed) otherwise. Mirrors `maybeCheckResourceOperation`
+ * so a named action gets the same resource-level gate as CRUD operations,
+ * independent of any permissions the action itself may declare via
+ * `.permissions()`.
+ */
+export async function maybeCheckAction<TActor, TRecord>(
+  permissions: PermissionsBuilder<TActor, TRecord> | undefined,
+  action: string,
+  context: PermissionContext<TActor, TRecord>,
+): Promise<PermissionCheckOutcome> {
+  if (!permissions) {
+    return { allowed: true };
+  }
+
+  const result = await checkAction(permissions, action, context);
   return { allowed: result.allowed, message: result.reason };
 }
 

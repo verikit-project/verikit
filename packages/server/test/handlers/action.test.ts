@@ -24,9 +24,10 @@ function ctxFor(
   actions: AnyAction[],
   body: unknown,
   actor: Actor = { role: "viewer" },
+  permissions?: ReturnType<typeof definePermissions<Actor>>,
 ) {
   const [entry] = buildRouteTable(
-    [{ resource: createPostResource(), adapter, actions }],
+    [{ resource: createPostResource(), adapter, actions, permissions }],
     "",
   );
   const request = new Request("https://x/post/actions/publish", {
@@ -123,6 +124,41 @@ test("handleAction maps a forbidden ActionRunResult to 403", async () => {
     "publish",
   );
   assert.equal(response.status, 403);
+});
+
+test("handleAction denies an action with no resource-level rule once the resource has permissions configured", async () => {
+  // Fails closed like `checkResourceOperation`: attaching a permissions
+  // builder to the resource gates every action, even ones the builder
+  // never mentions via `.action()` and even though the action itself
+  // declares no `.permissions()` of its own.
+  const permissions = definePermissions<Actor>().can("read", () => true);
+  const publish = action("publish").execute(() => "published");
+
+  const response = await handleAction(
+    ctxFor(createInMemoryAdapter(), [publish], {}, { role: "admin" }, permissions),
+    "publish",
+  );
+  assert.equal(response.status, 403);
+});
+
+test("handleAction enforces a resource-level .action() rule independent of the action's own .permissions()", async () => {
+  const permissions = definePermissions<Actor>().action(
+    "publish",
+    ({ actor }) => actor.role === "admin",
+  );
+  const publish = action("publish").execute(() => "published");
+
+  const denied = await handleAction(
+    ctxFor(createInMemoryAdapter(), [publish], {}, { role: "viewer" }, permissions),
+    "publish",
+  );
+  assert.equal(denied.status, 403);
+
+  const allowed = await handleAction(
+    ctxFor(createInMemoryAdapter(), [publish], {}, { role: "admin" }, permissions),
+    "publish",
+  );
+  assert.equal(allowed.status, 200);
 });
 
 test("handleAction maps a confirmation-required ActionRunResult to 409", async () => {
