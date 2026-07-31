@@ -94,6 +94,35 @@ test("handleList redacts fields the actor cannot read from every record", async 
   assert.deepEqual(Object.keys(body.data[1]), ["id", "title", "published"]);
 });
 
+test("handleList applies a sort field that's part of the resource's schema", async () => {
+  const ctx = ctxFor(
+    createInMemoryAdapter(samplePosts),
+    "https://x/post?sort=title&order=desc",
+  );
+  const body = await (await handleList(ctx)).json();
+
+  assert.deepEqual(
+    body.data.map((post: Post) => post.id),
+    ["2", "1"],
+  );
+});
+
+test("handleList drops a sort field that isn't part of the resource's schema", async () => {
+  // `sort` reaches the adapter verbatim, so an unrecognized (or injection-like)
+  // field name must never get there — a naive adapter building a raw
+  // `ORDER BY <field>` would have no other defense against it.
+  const ctx = ctxFor(
+    createInMemoryAdapter(samplePosts),
+    "https://x/post?sort=id%3B+drop+table+posts--",
+  );
+  const body = await (await handleList(ctx)).json();
+
+  assert.deepEqual(
+    body.data.map((post: Post) => post.id),
+    ["1", "2"],
+  );
+});
+
 test("handleList with a smaller defaultPageSize serves the search route", async () => {
   const manyPosts = Array.from({ length: 15 }, (_, index) => ({
     id: String(index),

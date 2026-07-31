@@ -8,6 +8,7 @@ import { handleFind } from "./handlers/find.js";
 import { handleList } from "./handlers/list.js";
 import { handleUpdate } from "./handlers/update.js";
 import {
+  errorResponse,
   methodNotAllowedResponse,
   notFoundResponse,
 } from "./http/responses.js";
@@ -76,21 +77,32 @@ export function createServer<TActor = unknown>(
     const ctx = { entry: resolved.entry, actor, request, url };
     const { action } = resolved.resolution;
 
-    switch (action.kind) {
-      case "list":
-        return handleList(ctx);
-      case "search":
-        return handleList(ctx, { defaultPageSize: DEFAULT_SEARCH_PAGE_SIZE });
-      case "create":
-        return handleCreate(ctx);
-      case "find":
-        return handleFind(ctx, action.id);
-      case "update":
-        return handleUpdate(ctx, action.id);
-      case "delete":
-        return handleDelete(ctx, action.id);
-      case "action":
-        return handleAction(ctx, action.name);
+    try {
+      switch (action.kind) {
+        case "list":
+          return await handleList(ctx);
+        case "search":
+          return await handleList(ctx, {
+            defaultPageSize: DEFAULT_SEARCH_PAGE_SIZE,
+          });
+        case "create":
+          return await handleCreate(ctx);
+        case "find":
+          return await handleFind(ctx, action.id);
+        case "update":
+          return await handleUpdate(ctx, action.id);
+        case "delete":
+          return await handleDelete(ctx, action.id);
+        case "action":
+          return await handleAction(ctx, action.name);
+      }
+    } catch {
+      // Adapter (or other handler) exceptions shouldn't surface as an
+      // unhandled rejection or a raw error to the caller — map them to the
+      // package's own JSON error envelope. The underlying error is
+      // intentionally not included in the response; it may carry storage
+      // internals a client shouldn't see.
+      return errorResponse(500, "Internal server error.");
     }
   };
 }

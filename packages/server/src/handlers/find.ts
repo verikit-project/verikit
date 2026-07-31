@@ -1,8 +1,4 @@
-import {
-  dataResponse,
-  forbiddenResponse,
-  notFoundResponse,
-} from "../http/responses.js";
+import { dataResponse, notFoundResponse } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
   redactFields,
@@ -29,8 +25,11 @@ export async function handleFind(
     { actor, record },
   );
 
+  // A denied actor gets the same 404 as a missing record: returning 403 here
+  // would let them distinguish "doesn't exist" from "exists but I can't read
+  // it" (an existence oracle) for a record we've already confirmed is real.
   if (!permission.allowed) {
-    return forbiddenResponse(permission.message);
+    return notFoundResponse();
   }
 
   const hidden = await unreadableFieldNames(

@@ -45,7 +45,7 @@ test("handleFind returns 404 for a missing record", async () => {
   assert.equal(response.status, 404);
 });
 
-test("handleFind returns 403 when the actor lacks read access to the record", async () => {
+test("handleFind returns 404 (not 403) when the actor lacks read access, so existence isn't leaked", async () => {
   const permissions = definePermissions<Actor>().can(
     "read",
     ({ actor }) => actor.role === "admin",
@@ -53,7 +53,7 @@ test("handleFind returns 403 when the actor lacks read access to the record", as
   const ctx = ctxFor(createInMemoryAdapter([post]), permissions);
 
   const response = await handleFind(ctx, "1");
-  assert.equal(response.status, 403);
+  assert.equal(response.status, 404);
 });
 
 test("handleFind redacts fields the actor cannot read", async () => {

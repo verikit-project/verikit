@@ -58,10 +58,12 @@ export function resolveResourceAction(
     return { status: "method-not-allowed" };
   }
 
-  if (remaining.length === 1 && remaining[0] === "search") {
-    return method === "GET"
-      ? { status: "matched", action: { kind: "search" } }
-      : { status: "method-not-allowed" };
+  // Only intercepts GET: a record literally named "search" must still be
+  // reachable via PATCH/DELETE by falling through to the id branch below,
+  // the same way a record named "actions" already falls through (that
+  // collision only checks a 2-segment shape, so it never intercepts here).
+  if (remaining.length === 1 && remaining[0] === "search" && method === "GET") {
+    return { status: "matched", action: { kind: "search" } };
   }
 
   if (remaining.length === 1) {

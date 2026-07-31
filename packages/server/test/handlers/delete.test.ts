@@ -47,7 +47,7 @@ test("handleDelete returns 404 for a missing record", async () => {
   assert.equal(response.status, 404);
 });
 
-test("handleDelete returns 403 when the actor lacks record-level delete access, without deleting", async () => {
+test("handleDelete returns 404 (not 403) when the actor lacks delete access, without deleting, so existence isn't leaked", async () => {
   const permissions = definePermissions<Actor>().can(
     "delete",
     ({ actor }) => actor.role === "admin",
@@ -56,6 +56,6 @@ test("handleDelete returns 403 when the actor lacks record-level delete access, 
 
   const response = await handleDelete(ctxFor(adapter, permissions), "1");
 
-  assert.equal(response.status, 403);
+  assert.equal(response.status, 404);
   assert.equal(adapter.records.length, 1);
 });

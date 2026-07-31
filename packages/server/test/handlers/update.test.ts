@@ -70,7 +70,7 @@ test("handleUpdate returns 400 with issues when a submitted field fails its own 
   assert.ok(body.error.issues.length > 0);
 });
 
-test("handleUpdate returns 403 when the actor lacks record-level update access", async () => {
+test("handleUpdate returns 404 (not 403) when the actor lacks update access, so existence isn't leaked", async () => {
   const permissions = definePermissions<Actor>().can(
     "update",
     ({ actor }) => actor.role === "admin",
@@ -82,5 +82,5 @@ test("handleUpdate returns 403 when the actor lacks record-level update access",
   );
 
   const response = await handleUpdate(ctx, "1");
-  assert.equal(response.status, 403);
+  assert.equal(response.status, 404);
 });

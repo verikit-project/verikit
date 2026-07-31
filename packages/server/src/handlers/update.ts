@@ -2,7 +2,6 @@ import { parseJsonObjectBody } from "../http/parse-request.js";
 import {
   dataResponse,
   errorResponse,
-  forbiddenResponse,
   notFoundResponse,
 } from "../http/responses.js";
 import {
@@ -30,8 +29,12 @@ export async function handleUpdate(
     { actor, record: existing },
   );
 
+  // A denied actor gets the same 404 as a missing record: returning 403 here
+  // would let them distinguish "doesn't exist" from "exists but I can't
+  // update it" (an existence oracle) for a record we've already confirmed is
+  // real.
   if (!permission.allowed) {
-    return forbiddenResponse(permission.message);
+    return notFoundResponse();
   }
 
   const body = await parseJsonObjectBody(request);

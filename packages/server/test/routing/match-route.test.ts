@@ -84,6 +84,20 @@ test("resolveResourceAction reports not-found for shapes of 3+ segments", () => 
   );
 });
 
+test('resolveResourceAction treats a lone "search" segment as an id for non-GET methods', () => {
+  // The `/search` shape only intercepts GET; a record literally keyed
+  // "search" must still be reachable by PATCH/DELETE, the same way a record
+  // keyed "actions" falls through to the id branch below.
+  assert.deepEqual(resolveResourceAction(["search"], "PATCH"), {
+    status: "matched",
+    action: { kind: "update", id: "search" },
+  });
+  assert.deepEqual(resolveResourceAction(["search"], "DELETE"), {
+    status: "matched",
+    action: { kind: "delete", id: "search" },
+  });
+});
+
 test('resolveResourceAction treats a lone "actions" segment as an id, not the actions shape', () => {
   // Ids are opaque strings, so a record literally keyed "actions" is valid;
   // the two-segment actions shape only kicks in with a name after it.

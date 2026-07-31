@@ -126,6 +126,42 @@ test("handleAction maps a forbidden ActionRunResult to 403", async () => {
   assert.equal(response.status, 403);
 });
 
+test("handleAction returns 404 (not 403) when the action's own permissions deny access to a resolved record, so existence isn't leaked", async () => {
+  const permissions = definePermissions<Actor>().action(
+    "publish",
+    ({ actor }) => actor.role === "admin",
+  );
+  const publish = action("publish")
+    .permissions(permissions)
+    .execute(() => "ok");
+
+  const response = await handleAction(
+    ctxFor(createInMemoryAdapter([post]), [publish], { recordId: "1" }),
+    "publish",
+  );
+  assert.equal(response.status, 404);
+});
+
+test("handleAction returns 404 (not 403) when a resource-level rule denies access to a resolved record, so existence isn't leaked", async () => {
+  const permissions = definePermissions<Actor>().action(
+    "publish",
+    ({ actor }) => actor.role === "admin",
+  );
+  const publish = action("publish").execute(() => "ok");
+
+  const response = await handleAction(
+    ctxFor(
+      createInMemoryAdapter([post]),
+      [publish],
+      { recordId: "1" },
+      { role: "viewer" },
+      permissions,
+    ),
+    "publish",
+  );
+  assert.equal(response.status, 404);
+});
+
 test("handleAction denies an action with no resource-level rule once the resource has permissions configured", async () => {
   // Fails closed like `checkResourceOperation`: attaching a permissions
   // builder to the resource gates every action, even ones the builder

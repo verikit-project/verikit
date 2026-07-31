@@ -24,7 +24,17 @@ export async function handleList(
     return forbiddenResponse(permission.message);
   }
 
-  const params = parseListParams(url, options);
+  const { sort, ...rest } = parseListParams(url, options);
+
+  // `sort.field` is caller-controlled and reaches the adapter verbatim.
+  // Dropping anything outside the resource's own field names keeps an
+  // adapter that builds a raw `ORDER BY <field>` (or similar) from having to
+  // defend against arbitrary identifiers itself.
+  const params = {
+    ...rest,
+    ...(sort && Object.hasOwn(entry.fields, sort.field) && { sort }),
+  };
+
   const result = await entry.config.adapter.list(params);
   const hidden = await unreadableFieldNames(
     entry.fields,

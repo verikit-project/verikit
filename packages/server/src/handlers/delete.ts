@@ -1,8 +1,4 @@
-import {
-  forbiddenResponse,
-  noContentResponse,
-  notFoundResponse,
-} from "../http/responses.js";
+import { noContentResponse, notFoundResponse } from "../http/responses.js";
 import { maybeCheckResourceOperation } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
 
@@ -25,8 +21,12 @@ export async function handleDelete(
     { actor, record: existing },
   );
 
+  // A denied actor gets the same 404 as a missing record: returning 403 here
+  // would let them distinguish "doesn't exist" from "exists but I can't
+  // delete it" (an existence oracle) for a record we've already confirmed is
+  // real.
   if (!permission.allowed) {
-    return forbiddenResponse(permission.message);
+    return notFoundResponse();
   }
 
   await entry.config.adapter.delete(id);

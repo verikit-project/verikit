@@ -129,7 +129,9 @@ test("createServer derives the actor from the context hook and applies permissio
   const asViewer = await handler(
     new Request("https://x/post/1", { method: "DELETE" }),
   );
-  assert.equal(asViewer.status, 403);
+  // 404, not 403 — a denied actor can't distinguish "doesn't exist" from
+  // "exists but I can't delete it" (an existence oracle).
+  assert.equal(asViewer.status, 404);
 
   const asAdmin = await handler(
     new Request("https://x/post/1", {
@@ -138,6 +140,27 @@ test("createServer derives the actor from the context hook and applies permissio
     }),
   );
   assert.equal(asAdmin.status, 204);
+});
+
+test("createServer maps an adapter exception to a 500 JSON error envelope", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const throwingAdapter = {
+    ...adapter,
+    find(): Promise<Post | undefined> {
+      throw new Error("connection reset");
+    },
+  };
+  const handler = createServer({
+    resources: [{ resource: createPostResource(), adapter: throwingAdapter }],
+  });
+
+  const response = await handler(new Request("https://x/post/1"));
+  const body = await response.json();
+
+  assert.equal(response.status, 500);
+  assert.equal(typeof body.error.message, "string");
+  // The underlying error message shouldn't leak to the client.
+  assert.doesNotMatch(body.error.message, /connection reset/);
 });
 
 test("createServer throws at construction time on a duplicate resource route", () => {
