@@ -312,6 +312,22 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/server:
+    dependencies:
+      '@verikit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verikit/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/theme:
     dependencies:
       shadcn:
