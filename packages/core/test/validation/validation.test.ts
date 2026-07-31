@@ -145,7 +145,10 @@ test("date fields accept Date instances and parseable strings", () => {
 });
 
 test("date fields enforce min/max range constraints", () => {
-  const schema = date().min("2020-01-01").max("2020-12-31").toSchema("startsOn");
+  const schema = date()
+    .min("2020-01-01")
+    .max("2020-12-31")
+    .toSchema("startsOn");
 
   assert.equal(validateField(schema, "2019-12-31").success, false);
   assert.equal(validateField(schema, "2021-01-01").success, false);

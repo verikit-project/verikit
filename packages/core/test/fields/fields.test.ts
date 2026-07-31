@@ -666,9 +666,8 @@ test("shared field-constraint helpers are reachable from the public fields barre
   // exported here) but were previously only importable via their deep
   // `shared/*.js` paths — an asymmetry in the barrel, not an intentional
   // internal/public split.
-  const barrel: Record<string, unknown> = await import(
-    "../../src/fields/index.js"
-  );
+  const barrel: Record<string, unknown> =
+    await import("../../src/fields/index.js");
 
   for (const name of [
     "withMinLength",

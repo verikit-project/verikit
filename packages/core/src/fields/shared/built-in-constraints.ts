@@ -81,23 +81,21 @@ function validateDateRange(schema: FieldSchema, date: Date): ValidationIssue[] {
   const constraints = schemaConstraints(schema);
   const found: ValidationIssue[] = [];
 
-  if (
-    typeof constraints.min === "string" ||
-    constraints.min instanceof Date
-  ) {
+  if (typeof constraints.min === "string" || constraints.min instanceof Date) {
     const min =
-      constraints.min instanceof Date ? constraints.min : new Date(constraints.min);
+      constraints.min instanceof Date
+        ? constraints.min
+        : new Date(constraints.min);
     if (date.getTime() < min.getTime()) {
       found.push(issue(`Must be on or after ${min.toISOString()}.`));
     }
   }
 
-  if (
-    typeof constraints.max === "string" ||
-    constraints.max instanceof Date
-  ) {
+  if (typeof constraints.max === "string" || constraints.max instanceof Date) {
     const max =
-      constraints.max instanceof Date ? constraints.max : new Date(constraints.max);
+      constraints.max instanceof Date
+        ? constraints.max
+        : new Date(constraints.max);
     if (date.getTime() > max.getTime()) {
       found.push(issue(`Must be on or before ${max.toISOString()}.`));
     }

@@ -34,12 +34,16 @@ export class DateFieldBuilder<
   }
 
   /** Sets the earliest allowed date. */
-  min(value: Date | string): FieldBuilderWithValue<this, TValue, DateFieldSchema> {
+  min(
+    value: Date | string,
+  ): FieldBuilderWithValue<this, TValue, DateFieldSchema> {
     return this.withState(withMinDate(this.state, value));
   }
 
   /** Sets the latest allowed date. */
-  max(value: Date | string): FieldBuilderWithValue<this, TValue, DateFieldSchema> {
+  max(
+    value: Date | string,
+  ): FieldBuilderWithValue<this, TValue, DateFieldSchema> {
     return this.withState(withMaxDate(this.state, value));
   }
 }
