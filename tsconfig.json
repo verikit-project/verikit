@@ -4,6 +4,7 @@
     "moduleResolution": "NodeNext",
     "noEmit": true,
     "jsx": "react-jsx",
+    "skipLibCheck": true,
     "strict": true,
     "target": "ES2022"
   },
@@ -21,6 +22,9 @@
     },
     {
       "path": "./packages/server"
+    },
+    {
+      "path": "./packages/drizzle"
     }
   ]
 }

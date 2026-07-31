@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["packages/drizzle/src/index.ts"],
+  "out": "docs/api/drizzle",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "drizzle",
+  "readme": "none"
+}
