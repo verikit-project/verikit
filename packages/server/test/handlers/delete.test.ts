@@ -1,0 +1,61 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { definePermissions } from "@verikit/core";
+import { handleDelete } from "../../src/handlers/delete.js";
+import { buildRouteTable } from "../../src/routing/route-table.js";
+import {
+  createInMemoryAdapter,
+  createPostResource,
+  type Post,
+} from "../fixtures.js";
+
+interface Actor {
+  role: "admin" | "viewer";
+}
+
+function ctxFor(
+  adapter: ReturnType<typeof createInMemoryAdapter>,
+  permissions?: ReturnType<typeof definePermissions<Actor>>,
+) {
+  const [entry] = buildRouteTable(
+    [{ resource: createPostResource(), adapter, permissions }],
+    "",
+  );
+  return {
+    entry: entry!,
+    actor: { role: "viewer" } as Actor,
+    request: new Request("https://x/post/1", { method: "DELETE" }),
+    url: new URL("https://x/post/1"),
+  };
+}
+
+const post: Post = { id: "1", title: "Hello", body: "world", published: false };
+
+test("handleDelete removes the record and returns 204", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const response = await handleDelete(ctxFor(adapter), "1");
+
+  assert.equal(response.status, 204);
+  assert.equal(adapter.records.length, 0);
+});
+
+test("handleDelete returns 404 for a missing record", async () => {
+  const response = await handleDelete(
+    ctxFor(createInMemoryAdapter()),
+    "missing",
+  );
+  assert.equal(response.status, 404);
+});
+
+test("handleDelete returns 403 when the actor lacks record-level delete access, without deleting", async () => {
+  const permissions = definePermissions<Actor>().can(
+    "delete",
+    ({ actor }) => actor.role === "admin",
+  );
+  const adapter = createInMemoryAdapter([{ ...post }]);
+
+  const response = await handleDelete(ctxFor(adapter, permissions), "1");
+
+  assert.equal(response.status, 403);
+  assert.equal(adapter.records.length, 1);
+});
