@@ -84,6 +84,16 @@ export function createDrizzleAdapter<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the query-builder chain's shape differs per dialect; conditionally built below regardless of which one `db` is
   const client = db as any;
 
+  async function selectById(value: unknown) {
+    const [record] = await client
+      .select()
+      .from(table)
+      .where(eq(idColumn, value))
+      .limit(1);
+
+    return record;
+  }
+
   return {
     async list(params: ResourceListParams) {
       const where = params.search
@@ -127,13 +137,7 @@ export function createDrizzleAdapter<
         return undefined;
       }
 
-      const [record] = await client
-        .select()
-        .from(table)
-        .where(eq(idColumn, value))
-        .limit(1);
-
-      return record;
+      return selectById(value);
     },
 
     async create(values: Record<string, unknown>) {
@@ -152,6 +156,23 @@ export function createDrizzleAdapter<
       }
 
       const row = mapValuesToRow(values, columnsByField);
+
+      // An empty payload (or one whose fields all mapped to no column) is a
+      // legitimate no-op: the caller already confirmed the record exists, so
+      // this returns it unchanged rather than sending drizzle a `set({})`,
+      // which throws "No values to set" instead of updating zero columns.
+      if (Object.keys(row).length === 0) {
+        const record = await selectById(value);
+
+        if (!record) {
+          throw new Error(
+            `@verikit/drizzle: no record with id "${id}" to update.`,
+          );
+        }
+
+        return record;
+      }
+
       const [record] = await client
         .update(table)
         .set(row)

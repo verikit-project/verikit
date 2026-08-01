@@ -38,6 +38,26 @@ test("find returns undefined for an unknown id", async () => {
   assert.equal(await adapter.find("missing"), undefined);
 });
 
+test("update with an empty payload returns the record unchanged instead of throwing", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+
+  const created = await adapter.create({ title: "Hello", body: "World" });
+
+  const updated = await adapter.update(created.id, {});
+  assert.deepEqual(updated, created);
+});
+
+test("update with only unmapped fields returns the record unchanged instead of throwing", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+
+  const created = await adapter.create({ title: "Hello", body: "World" });
+
+  const updated = await adapter.update(created.id, { notAField: "x" });
+  assert.deepEqual(updated, created);
+});
+
 test("update throws for an unknown id", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());
