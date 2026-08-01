@@ -88,6 +88,31 @@ test("list paginates and reports the total across all pages", async () => {
   assert.equal(page3.records.length, 1);
 });
 
+test("list runs its row and count queries inside a single transaction", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+
+  await adapter.create({ title: "A", body: "" });
+  await adapter.create({ title: "B", body: "" });
+
+  let transactionCalls = 0;
+  const originalTransaction = db.transaction.bind(db);
+  db.transaction = ((fn: Parameters<typeof originalTransaction>[0]) => {
+    transactionCalls++;
+    return originalTransaction(fn);
+  }) as typeof db.transaction;
+
+  const result = await adapter.list({ page: 1, pageSize: 10 });
+
+  assert.equal(
+    transactionCalls,
+    1,
+    "list() should wrap its row and count queries in one transaction, not run them as two independent reads",
+  );
+  assert.equal(result.total, 2);
+  assert.equal(result.records.length, 2);
+});
+
 test("list searches across every searchable field, case-insensitively", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());

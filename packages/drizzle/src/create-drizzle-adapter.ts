@@ -106,6 +106,42 @@ export function createDrizzleAdapter<
     return record;
   }
 
+  // Builds the row-fetch and count queries for `list()` against whichever
+  // client `tx` is  the outer transaction wrapper, either dialect's own
+  // client  so both queries always run against the same snapshot instead
+  // of two independent reads that a concurrent write could land between.
+  function buildListQueries(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same dialect-erased client shape as `client` above
+    tx: any,
+    params: ResourceListParams,
+    where: ReturnType<typeof searchCondition>,
+  ) {
+    let rowsQuery = tx.select().from(table);
+    let totalQuery = tx.select({ value: count() }).from(table);
+
+    if (where) {
+      rowsQuery = rowsQuery.where(where);
+      totalQuery = totalQuery.where(where);
+    }
+
+    if (params.sort) {
+      const sortColumn = columnsByField.get(params.sort.field)?.column;
+
+      if (sortColumn) {
+        rowsQuery = rowsQuery.orderBy(
+          params.sort.direction === "desc" ? desc(sortColumn) : asc(sortColumn),
+        );
+      }
+    }
+
+    return {
+      rowsQuery: rowsQuery
+        .limit(params.pageSize)
+        .offset((params.page - 1) * params.pageSize),
+      totalQuery,
+    };
+  }
+
   return {
     async list(params: ResourceListParams) {
       // A search term against a resource with no searchable fields can never
@@ -119,34 +155,35 @@ export function createDrizzleAdapter<
         ? searchCondition(searchableColumns, params.search)
         : undefined;
 
-      let rowsQuery = client.select().from(table);
-      let totalQuery = client.select({ value: count() }).from(table);
-
-      if (where) {
-        rowsQuery = rowsQuery.where(where);
-        totalQuery = totalQuery.where(where);
-      }
-
-      if (params.sort) {
-        const sortColumn = columnsByField.get(params.sort.field)?.column;
-
-        if (sortColumn) {
-          rowsQuery = rowsQuery.orderBy(
-            params.sort.direction === "desc"
-              ? desc(sortColumn)
-              : asc(sortColumn),
+      // better-sqlite3 is fully synchronous: its native `transaction()`
+      // wrapper throws "Transaction function cannot return a promise" if the
+      // callback is `async`, so the row and count queries have to run via
+      // their synchronous `.all()` method inside a plain callback instead of
+      // `await`-ing them. Every other drizzle dialect's `transaction()` is
+      // genuinely async and supports the `await Promise.all([...])` form.
+      if (client.resultKind === "sync") {
+        return client.transaction(() => {
+          const { rowsQuery, totalQuery } = buildListQueries(
+            client,
+            params,
+            where,
           );
-        }
+          const records = rowsQuery.all();
+          const [totalRow] = totalQuery.all();
+
+          return { records, total: totalRow?.value ?? 0 };
+        });
       }
 
-      const [records, [totalRow]] = await Promise.all([
-        rowsQuery
-          .limit(params.pageSize)
-          .offset((params.page - 1) * params.pageSize),
-        totalQuery,
-      ]);
+      return client.transaction(async (tx: typeof client) => {
+        const { rowsQuery, totalQuery } = buildListQueries(tx, params, where);
+        const [records, [totalRow]] = await Promise.all([
+          rowsQuery,
+          totalQuery,
+        ]);
 
-      return { records, total: totalRow?.value ?? 0 };
+        return { records, total: totalRow?.value ?? 0 };
+      });
     },
 
     async find(id: string) {
