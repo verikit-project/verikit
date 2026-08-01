@@ -96,6 +96,13 @@ export function createDrizzleAdapter<
 
   return {
     async list(params: ResourceListParams) {
+      // A search term against a resource with no searchable fields can never
+      // match anything — treat it as an unsatisfiable filter (zero results),
+      // not as "no filter" (which would return every row unfiltered).
+      if (params.search && searchableColumns.length === 0) {
+        return { records: [], total: 0 };
+      }
+
       const where = params.search
         ? searchCondition(searchableColumns, params.search)
         : undefined;

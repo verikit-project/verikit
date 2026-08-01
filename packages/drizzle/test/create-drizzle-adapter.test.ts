@@ -111,6 +111,20 @@ test("list escapes LIKE wildcards in the search term", async () => {
   assert.equal(result.total, 1);
 });
 
+test("list with a search term returns zero results for a resource with no searchable fields", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createLegacyPostResource());
+
+  await adapter.create({ title: "Hello" });
+
+  const result = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    search: "hello",
+  });
+  assert.deepEqual(result, { records: [], total: 0 });
+});
+
 test("list sorts by the requested field and direction", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());
