@@ -57,7 +57,7 @@ export async function maybeCheckAction<TActor, TRecord>(
 
 /**
  * Computes the set of field names the actor cannot read, once per request
- * rather than once per record — list/search apply the same set to every row;
+ * rather than once per record  list/search apply the same set to every row;
  * find has a real record and can pass it through `context` for record-aware
  * rules.
  */

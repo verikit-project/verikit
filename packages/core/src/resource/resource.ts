@@ -26,7 +26,7 @@ export type RelationshipNode = RelationshipSchema;
 
 /**
  * Structural shape shared by belongsTo/hasMany/belongsToMany, whose concrete
- * builders/objects have no common base class — only `toSchema` is uniform.
+ * builders/objects have no common base class  only `toSchema` is uniform.
  */
 export interface AnyRelationshipBuilder {
   toSchema(name?: string): RelationshipSchema;

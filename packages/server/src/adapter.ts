@@ -23,7 +23,7 @@ export interface ResourceListResult<TRecord = Record<string, unknown>> {
 /**
  * Storage abstraction a resource is bound to when registered with
  * `createServer()`. Deliberately storage-agnostic: `@verikit/server` never
- * imports an ORM, and `id` is always the raw string path segment — an
+ * imports an ORM, and `id` is always the raw string path segment  an
  * adapter implementation (e.g. a future `@verikit/drizzle`) owns any
  * coercion to its own key type.
  */

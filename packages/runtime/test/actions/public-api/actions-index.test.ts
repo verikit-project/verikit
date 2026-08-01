@@ -14,7 +14,7 @@ test("actions barrels expose the builder and execution entrypoints", () => {
 });
 
 test("ActionState is not part of the public actions barrel", () => {
-  // ActionState is the builder's raw, pre-finalized internal state — not
+  // ActionState is the builder's raw, pre-finalized internal state  not
   // meant to be importable from the package. This is a compile-time check:
   // if ActionState is ever re-exported from the barrel again, the
   // `@ts-expect-error` below stops matching a real error and this fails to

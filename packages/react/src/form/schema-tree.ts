@@ -109,7 +109,7 @@ function shouldValidateTreeField(
   const key = String(path[path.length - 1]);
 
   // An object literal with a computed key always creates that key, even when
-  // the value is `undefined` — so `{ [key]: getValueAtPath(...) }` would
+  // the value is `undefined`  so `{ [key]: getValueAtPath(...) }` would
   // report every field as "present" regardless of whether `values` actually
   // has an entry there. Only include the key when it's genuinely present, so
   // `shouldValidateField`'s `Object.hasOwn` check reflects reality.

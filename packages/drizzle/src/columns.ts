@@ -3,7 +3,7 @@ import { type Column, getTableColumns, or, sql, type Table } from "drizzle-orm";
 
 /**
  * A field's storage column, plus the table's own JS property key for it.
- * `jsKey` is what drizzle's `.values()`/`.set()` expect on write — it only
+ * `jsKey` is what drizzle's `.values()`/`.set()` expect on write  it only
  * differs from the field name when the field was mapped via
  * `from(column).as(...)`.
  */
@@ -78,7 +78,7 @@ export function mapValuesToRow(
 /**
  * Finds the table's single-column primary key, used to satisfy the
  * `ResourceAdapter` contract's raw string `id`. Resources don't need to
- * declare their own "id" field for this — the primary key is a storage-level
+ * declare their own "id" field for this  the primary key is a storage-level
  * concern the table already knows about.
  *
  * @throws {Error} If the table has zero or multiple primary key columns.

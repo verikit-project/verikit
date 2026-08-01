@@ -12,7 +12,7 @@ import type { ActionRunResult } from "./action-result.js";
  *
  * Availability is checked before confirmation so an unavailable action
  * reports `reason: "unavailable"` even when it also declares
- * `.confirmation()` — otherwise a caller would be asked to confirm an
+ * `.confirmation()`  otherwise a caller would be asked to confirm an
  * action that can't actually run.
  *
  * Any error thrown by the `before` hook, action handler, or `after`

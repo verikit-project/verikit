@@ -348,7 +348,7 @@ test("render field uses registry overrides", () => {
 test("render field renders nothing for a hidden field, regardless of value", () => {
   // `resolveResourceSchema` marks a field `hidden` both for schema-authored
   // hidden fields and for fields the actor lacks read access to. Either way
-  // the label and current value must never reach the DOM — a merely
+  // the label and current value must never reach the DOM  a merely
   // `disabled` input would still leak them.
   const rendered = RenderField({
     field: field({ fieldType: "text", hidden: true, label: "Salary" }),

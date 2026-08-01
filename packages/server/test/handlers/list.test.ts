@@ -109,7 +109,7 @@ test("handleList applies a sort field that's part of the resource's schema", asy
 
 test("handleList drops a sort field that isn't part of the resource's schema", async () => {
   // `sort` reaches the adapter verbatim, so an unrecognized (or injection-like)
-  // field name must never get there — a naive adapter building a raw
+  // field name must never get there  a naive adapter building a raw
   // `ORDER BY <field>` would have no other defense against it.
   const ctx = ctxFor(
     createInMemoryAdapter(samplePosts),

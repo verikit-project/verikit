@@ -50,7 +50,7 @@ export interface RenderFieldProps extends VerikitFieldComponentProps {
 
 /**
  * Renders a Verikit field with the matching component from the active
- * registry. Renders nothing when the field is `hidden` — `resolveResourceSchema`
+ * registry. Renders nothing when the field is `hidden`  `resolveResourceSchema`
  * sets this both for schema-authored hidden fields and for fields the actor
  * lacks read access to, so a merely-`disabled` input would leak the label
  * and current value of a field the actor isn't allowed to see.

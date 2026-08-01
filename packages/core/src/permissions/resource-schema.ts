@@ -70,7 +70,7 @@ function resolveTreeNode(
  * adapters can render directly from either `fields` or `tree` and see the
  * same access decisions.
  *
- * Does not mutate the input schema. Relationships are left untouched —
+ * Does not mutate the input schema. Relationships are left untouched 
  * `PermissionsBuilder` only gates named fields and actions.
  */
 export async function resolveResourceSchema<TActor, TRecord>(

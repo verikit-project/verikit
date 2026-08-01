@@ -34,7 +34,7 @@ export type AnyDrizzleDatabase =
  *
  * Column mapping: a field maps to the same-named table column by default, or
  * to an explicit one via `from(column).as(field())` when the names differ.
- * The row's id always comes from the table's own primary key column — a
+ * The row's id always comes from the table's own primary key column; a
  * resource doesn't need to declare an "id" field for this to work.
  *
  * @throws {Error} If `resource.table` is missing, the table doesn't declare
@@ -78,6 +78,18 @@ export function createDrizzleAdapter<
         );
       }
 
+      // searchCondition() builds a lower(...) like lower(...) comparison,
+      // which only Postgres/MySQL/SQLite agree on for text columns. On a
+      // non-text column, Postgres and MySQL throw at query time (SQLite's
+      // loose typing masks it by silently no-opping instead). `.searchable()`
+      // has no type restriction in @verikit/core, so this has to be a
+      // runtime check here rather than a compile-time one.
+      if (resolved.column.dataType !== "string") {
+        throw new Error(
+          `@verikit/drizzle: resource "${resource.name}"'s searchable field "${name}" maps to a non-text column (dataType "${resolved.column.dataType}"). Search only supports text columns.`,
+        );
+      }
+
       return resolved.column;
     });
 
@@ -97,7 +109,7 @@ export function createDrizzleAdapter<
   return {
     async list(params: ResourceListParams) {
       // A search term against a resource with no searchable fields can never
-      // match anything — treat it as an unsatisfiable filter (zero results),
+      // match anything; treat it as an unsatisfiable filter (zero results),
       // not as "no filter" (which would return every row unfiltered).
       if (params.search && searchableColumns.length === 0) {
         return { records: [], total: 0 };

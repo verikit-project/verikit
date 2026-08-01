@@ -129,7 +129,7 @@ test("createServer derives the actor from the context hook and applies permissio
   const asViewer = await handler(
     new Request("https://x/post/1", { method: "DELETE" }),
   );
-  // 404, not 403 — a denied actor can't distinguish "doesn't exist" from
+  // 404, not 403  a denied actor can't distinguish "doesn't exist" from
   // "exists but I can't delete it" (an existence oracle).
   assert.equal(asViewer.status, 404);
 

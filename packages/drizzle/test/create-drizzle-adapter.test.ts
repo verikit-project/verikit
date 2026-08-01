@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { defineResource, text } from "@verikit/core";
+import { boolean, defineResource, text } from "@verikit/core";
 import { sql } from "drizzle-orm";
 import { int as mysqlInt, mysqlTable } from "drizzle-orm/mysql-core";
 import { sqliteTable, text as sqliteText } from "drizzle-orm/sqlite-core";
@@ -219,6 +219,19 @@ test("throws when a searchable field has no matching column", () => {
     () => createDrizzleAdapter(db, resource),
     /has no matching column/,
   );
+});
+
+test("throws when a searchable field maps to a non-text column", () => {
+  const db = createTestDb();
+  const resource = defineResource("post", {
+    table: posts,
+    fields: {
+      title: text().required(),
+      published: boolean().searchable(),
+    },
+  });
+
+  assert.throws(() => createDrizzleAdapter(db, resource), /non-text column/);
 });
 
 test("throws for a MySQL table (no RETURNING support)", () => {

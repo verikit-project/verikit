@@ -17,7 +17,7 @@ function defaultDeniedMessage(field: string): string {
  *
  * A field the actor cannot write to is reported as a single validation issue
  * (using the denying rule's `reason` if it provided one) instead of being
- * run through its normal constraint and attached-validator checks — being
+ * run through its normal constraint and attached-validator checks  being
  * unwritable takes precedence over whether the given value would otherwise
  * be valid.
  */

@@ -46,11 +46,11 @@ const DEFAULT_SEARCH_PAGE_SIZE = 10;
  * Derives a web-standard `(Request) => Promise<Response>` handler from a set
  * of resources: CRUD, a search alias, and named-action routes, each wired
  * through `@verikit/core` permissions/validation and `@verikit/runtime`'s
- * `runAction`. Storage is never touched directly — every operation goes
+ * `runAction`. Storage is never touched directly  every operation goes
  * through the resource's `ResourceAdapter`.
  *
  * @throws {Error} If two resources resolve to the same route, or a resource
- * declares two actions with the same name — checked once, at creation time.
+ * declares two actions with the same name  checked once, at creation time.
  */
 export function createServer<TActor = unknown>(
   options: CreateServerOptions<TActor>,
@@ -98,7 +98,7 @@ export function createServer<TActor = unknown>(
       }
     } catch {
       // Adapter (or other handler) exceptions shouldn't surface as an
-      // unhandled rejection or a raw error to the caller — map them to the
+      // unhandled rejection or a raw error to the caller  map them to the
       // package's own JSON error envelope. The underlying error is
       // intentionally not included in the response; it may carry storage
       // internals a client shouldn't see.
