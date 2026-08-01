@@ -31,6 +31,7 @@ test("react package exposes its public entrypoint", async () => {
     "getValueAtPath",
     "inferAndValidateResource",
     "inferAndValidateSchemaTree",
+    "omitFieldError",
     "pathKey",
     "resolveVerikitFields",
     "setValueAtPath",

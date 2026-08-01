@@ -1,14 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { boolean, defineResource, text } from "@verikit/core";
+import { boolean, defineResource, from, text } from "@verikit/core";
 import { sql } from "drizzle-orm";
 import { int as mysqlInt, mysqlTable } from "drizzle-orm/mysql-core";
 import { sqliteTable, text as sqliteText } from "drizzle-orm/sqlite-core";
-import { createDrizzleAdapter } from "../src/create-drizzle-adapter.js";
 import {
+  createDrizzleAdapter,
+  type AnyDrizzleDatabase,
+} from "../src/create-drizzle-adapter.js";
+import { searchCondition } from "../src/columns.js";
+import {
+  createCounterResource,
   createLegacyPostResource,
   createPostResource,
   createTestDb,
+  legacyPosts,
   posts,
 } from "./fixtures.js";
 
@@ -65,11 +71,45 @@ test("update throws for an unknown id", async () => {
   await assert.rejects(() => adapter.update("missing", { title: "x" }));
 });
 
+test("update with an empty payload throws for an unknown id", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+
+  await assert.rejects(() => adapter.update("missing", {}));
+});
+
 test("delete is a no-op for an unknown id", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());
 
   await adapter.delete("missing");
+});
+
+test("find/update/delete treat a non-numeric id against a numeric id column as missing", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createCounterResource());
+
+  const created = await adapter.create({ label: "A" });
+  assert.equal((await adapter.find(String(created.id)))?.label, "A");
+
+  assert.equal(await adapter.find("not-a-number"), undefined);
+  await assert.rejects(() => adapter.update("not-a-number", { label: "B" }));
+  await adapter.delete("not-a-number");
+});
+
+test("throws when a field's from(column) isn't a column of its resource's table", () => {
+  const db = createTestDb();
+  const resource = defineResource("post", {
+    table: posts,
+    fields: {
+      title: from(legacyPosts.headline).as(text().required()),
+    },
+  });
+
+  assert.throws(
+    () => createDrizzleAdapter(db, resource),
+    /isn't a column of its resource's table/,
+  );
 });
 
 test("list paginates and reports the total across all pages", async () => {
@@ -283,4 +323,46 @@ test("boolean columns round-trip as real booleans, not 0/1", async () => {
     published: true,
   });
   assert.equal(created.published, true);
+});
+
+test("searchCondition returns undefined for no columns", () => {
+  assert.equal(searchCondition([], "hello"), undefined);
+});
+
+test("list uses an async transaction on a non-sync drizzle client", async () => {
+  const rows = [{ id: "1", title: "Hello" }];
+  const totalRows = [{ value: 1 }];
+
+  function makeQuery(result: unknown[]) {
+    const query = {
+      from: () => query,
+      where: () => query,
+      orderBy: () => query,
+      limit: () => query,
+      offset: () => query,
+      then: (resolve: (value: unknown[]) => void) => resolve(result),
+    };
+    return query;
+  }
+
+  let transactionCalled = false;
+  const fakeDb = {
+    // Marks this client as one of Postgres/MySQL's genuinely async
+    // dialects, unlike better-sqlite3's synchronous "sync" resultKind.
+    resultKind: "async",
+    select: (fields?: unknown) => makeQuery(fields ? totalRows : rows),
+    transaction: async (fn: (tx: unknown) => unknown) => {
+      transactionCalled = true;
+      return fn(fakeDb);
+    },
+  };
+
+  const adapter = createDrizzleAdapter(
+    fakeDb as unknown as AnyDrizzleDatabase,
+    createPostResource(),
+  );
+  const result = await adapter.list({ page: 1, pageSize: 10 });
+
+  assert.equal(transactionCalled, true);
+  assert.deepEqual(result, { records: rows, total: 1 });
 });

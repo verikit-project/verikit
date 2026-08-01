@@ -116,6 +116,15 @@ export function firstFieldErrors(
   );
 }
 
+/** Returns a copy of `fieldErrors` with `name`'s entry removed. */
+export function omitFieldError(
+  fieldErrors: VerikitFieldErrors,
+  name: string,
+): VerikitFieldErrors {
+  const { [name]: _removed, ...remaining } = fieldErrors;
+  return remaining;
+}
+
 /** Infers raw values and validates the inferred resource values. */
 export async function inferAndValidateResource(
   fields: VerikitFormFields,

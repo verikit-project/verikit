@@ -25,6 +25,12 @@ export const legacyPosts = sqliteTable("legacy_posts", {
   headline: sqliteText("headline").notNull(),
 });
 
+/** A table with a numeric (not text) primary key, to exercise `coerceId`'s numeric-column path. */
+export const counters = sqliteTable("counters", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  label: sqliteText("label").notNull(),
+});
+
 export function createTestDb() {
   const sqlite = new Database(":memory:");
   const db = drizzle(sqlite);
@@ -42,6 +48,13 @@ export function createTestDb() {
     create table legacy_posts (
       post_id text primary key,
       headline text not null
+    )
+  `);
+
+  db.run(sql`
+    create table counters (
+      id integer primary key autoincrement,
+      label text not null
     )
   `);
 
@@ -66,6 +79,15 @@ export function createLegacyPostResource() {
       // Field name ("title") deliberately differs from the column's JS key
       // ("headline") to exercise from(column).as(...) name-mismatch mapping.
       title: from(legacyPosts.headline).as(text().required()),
+    },
+  });
+}
+
+export function createCounterResource() {
+  return defineResource("counter", {
+    table: counters,
+    fields: {
+      label: text().required(),
     },
   });
 }

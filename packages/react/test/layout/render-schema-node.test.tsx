@@ -21,6 +21,10 @@ import {
   RenderSchemaTree,
   setValueAtPath,
 } from "../../src/layout/index.js";
+// hasValueAtPath is an internal helper (used by the schema-tree form
+// bridge to tell "cleared to undefined" apart from "never touched") and
+// deliberately isn't part of layout/index.js's public surface.
+import { hasValueAtPath } from "../../src/layout/path.js";
 
 type AnyElement = ReactElement<Record<string, unknown>>;
 
@@ -45,6 +49,18 @@ test("getValueAtPath resolves nested paths and pathKey joins them", () => {
   assert.equal(getValueAtPath(undefined, ["a"]), undefined);
   assert.equal(pathKey(["a", 1, "c"]), "a.1.c");
   assert.equal(pathKey([]), "");
+});
+
+test("hasValueAtPath distinguishes an absent key from a value of undefined", () => {
+  const source = { a: { b: undefined, c: 1 }, list: [0] };
+
+  assert.equal(hasValueAtPath(source, []), true);
+  assert.equal(hasValueAtPath(source, ["a", "b"]), true);
+  assert.equal(hasValueAtPath(source, ["a", "missing"]), false);
+  assert.equal(hasValueAtPath(source, ["a", "c", "d"]), false);
+  assert.equal(hasValueAtPath(null, ["a"]), false);
+  assert.equal(hasValueAtPath(source, ["list", 0]), true);
+  assert.equal(hasValueAtPath(source, ["list", 1]), false);
 });
 
 test("setValueAtPath clones containers along the path without mutating the source", () => {

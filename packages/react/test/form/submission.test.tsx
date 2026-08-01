@@ -7,6 +7,7 @@ import {
   firstFieldError,
   firstFieldErrors,
   inferAndValidateResource,
+  omitFieldError,
   resolveVerikitFields,
   submitVerikitActionForm,
   submitVerikitResourceForm,
@@ -43,6 +44,11 @@ test("validation issues map to field errors", () => {
     email: "Invalid email",
   });
   assert.deepEqual(firstFieldErrors({}), {});
+  assert.deepEqual(omitFieldError(errors, "email"), {
+    "0": ["Indexed issue"],
+    $form: ["Form issue"],
+  });
+  assert.deepEqual(omitFieldError({}, "email"), {});
 });
 
 test("resource submission infers, validates, maps errors, and calls onSubmit", async () => {

@@ -11,6 +11,7 @@ import { submitVerikitSchemaTreeForm } from "./schema-tree.js";
 import {
   firstFieldError,
   firstFieldErrors,
+  omitFieldError,
   type VerikitFieldErrors,
   type VerikitFormValues,
   type VerikitResourceSubmitResult,
@@ -139,10 +140,7 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
       // rapid edits to different fields before a re-render) would otherwise
       // both close over the same stale `fieldErrors` snapshot, so the second
       // call's `setFieldErrors` would silently undo the first call's removal.
-      setFieldErrors((current) => {
-        const { [key]: _removed, ...remaining } = current;
-        return remaining;
-      });
+      setFieldErrors((current) => omitFieldError(current, key));
     },
     [form],
   );

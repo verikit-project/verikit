@@ -4,6 +4,7 @@ import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
 import type { VerikitFieldComponentProps } from "../fields/index.js";
 import {
   firstFieldError,
+  omitFieldError,
   submitVerikitResourceForm,
   type VerikitFieldErrors,
   type VerikitFormFields,
@@ -152,10 +153,7 @@ export function useVerikitForm<TResult = unknown>({
           // would otherwise both close over the same stale `fieldErrors`
           // snapshot, so the second call's `setFieldErrors` would silently
           // undo the first call's removal.
-          setFieldErrors((current) => {
-            const { [name]: _removed, ...remaining } = current;
-            return remaining;
-          });
+          setFieldErrors((current) => omitFieldError(current, name));
         },
       };
     },

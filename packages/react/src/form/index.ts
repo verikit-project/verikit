@@ -2,6 +2,7 @@ export {
   firstFieldError,
   firstFieldErrors,
   inferAndValidateResource,
+  omitFieldError,
   submitVerikitActionForm,
   submitVerikitResourceForm,
   validationIssuesToFieldErrors,
