@@ -33,8 +33,7 @@
   "sideEffects": [
     "*.css"
   ],
-  "dependencies": {
-    "shadcn": "^4.14.1",
+  "peerDependencies": {
     "tailwindcss": "^4.3.3"
   }
 }

@@ -355,9 +355,6 @@ importers:
 
   packages/theme:
     dependencies:
-      shadcn:
-        specifier: ^4.14.1
-        version: 4.14.1(typescript@6.0.3)
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
