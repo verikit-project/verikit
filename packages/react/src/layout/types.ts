@@ -51,7 +51,7 @@ export interface SchemaRenderProps {
   onRepeaterRemove?: (path: SchemaPath, index: number) => void;
   /**
    * Returns a stable React key for a repeater row, given the repeater's own
-   * path and the row's current index. Falls back to `index` when omitted 
+   * path and the row's current index. Falls back to `index` when omitted
    * fine for a tree with no repeaters, but a caller that removes rows from
    * the middle of one should supply this (`useVerikitSchemaTreeForm` does)
    * so React doesn't reuse a removed row's DOM for whatever row shifts into
