@@ -2,7 +2,7 @@ import type { ListParams } from "@verikit/client";
 
 /**
  * Builds the query keys the resource hooks use, so query hooks and mutation
- * hooks' invalidation calls always agree on the same shape. Internal only 
+ * hooks' invalidation calls always agree on the same shape. Internal only
  * not part of this package's public surface.
  */
 export function resourceQueryKeys(name: string) {

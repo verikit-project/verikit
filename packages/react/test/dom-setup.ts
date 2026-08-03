@@ -5,7 +5,7 @@ import { JSDOM } from "jsdom";
  * `createRoot` can mount into a real container and actually reconcile state
  * updates. Only the small set of interactive tests that need to observe a
  * `useState` functional updater actually run (which a one-shot
- * `renderToStaticMarkup` never triggers) should use this — every other test
+ * `renderToStaticMarkup` never triggers) should use this  every other test
  * in this package needs no DOM at all. Returns a cleanup function that
  * restores whatever was there before.
  */
