@@ -304,6 +304,19 @@ test("a 200 response with an empty body resolves to undefined", async () => {
   assert.equal(result, undefined);
 });
 
+test("sendRequest with no segments hits the base URL directly", async () => {
+  const { fetchImpl, calls } = fakeFetch(() => jsonResponse({ data: "root" }));
+
+  await sendRequest({
+    fetchImpl,
+    baseUrl: "https://x.test/api",
+    method: "GET",
+    segments: [],
+  });
+
+  assert.equal(calls[0]!.url, "https://x.test/api");
+});
+
 test("createClient defaults to the global fetch when none is supplied", () => {
   const client = createClient({ baseUrl: "https://x.test" });
   assert.equal(typeof client.resource("posts").list, "function");

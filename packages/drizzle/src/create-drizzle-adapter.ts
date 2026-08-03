@@ -169,20 +169,23 @@ export function createDrizzleAdapter<
             where,
           );
           const records = rowsQuery.all();
-          const [totalRow] = totalQuery.all();
+          // A `count(*)` aggregate with no GROUP BY always returns exactly
+          // one row (0 for no matches), never zero rows, across every
+          // dialect this adapter targets.
+          const [{ value: total }] = totalQuery.all();
 
-          return { records, total: totalRow?.value ?? 0 };
+          return { records, total };
         });
       }
 
       return client.transaction(async (tx: typeof client) => {
         const { rowsQuery, totalQuery } = buildListQueries(tx, params, where);
-        const [records, [totalRow]] = await Promise.all([
+        const [records, [{ value: total }]] = await Promise.all([
           rowsQuery,
           totalQuery,
         ]);
 
-        return { records, total: totalRow?.value ?? 0 };
+        return { records, total };
       });
     },
 
