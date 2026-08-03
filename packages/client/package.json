@@ -1,0 +1,48 @@
+{
+  "name": "@verikit/client",
+  "version": "0.11.1",
+  "description": "Thin fetch client for @verikit/server's REST API.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "keywords": [
+    "typescript",
+    "resource",
+    "schema",
+    "resource-model",
+    "metadata",
+    "builder",
+    "validation",
+    "framework",
+    "client",
+    "fetch"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "build": "pnpm clean && tsc -b",
+    "prepack": "pnpm build",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@verikit/core": "workspace:*",
+    "@verikit/runtime": "workspace:*",
+    "@verikit/server": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}

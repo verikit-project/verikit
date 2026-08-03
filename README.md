@@ -14,6 +14,7 @@ Verikit is a TypeScript toolkit for defining reusable resource schemas.
 - `@verikit/theme`
 - `@verikit/server`
 - `@verikit/drizzle`
+- `@verikit/client`
 
 ## Install
 

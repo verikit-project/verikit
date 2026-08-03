@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["packages/client/src/index.ts"],
+  "out": "docs/api/client",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "client",
+  "readme": "none"
+}

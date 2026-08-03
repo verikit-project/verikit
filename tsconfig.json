@@ -25,6 +25,9 @@
     },
     {
       "path": "./packages/drizzle"
+    },
+    {
+      "path": "./packages/client"
     }
   ]
 }

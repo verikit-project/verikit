@@ -242,6 +242,24 @@ importers:
         specifier: ^8.63.0
         version: 8.63.0(eslint@10.7.0)(typescript@6.0.3)
 
+  packages/client:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      '@verikit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verikit/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@verikit/server':
+        specifier: workspace:*
+        version: link:../server
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/core:
     devDependencies:
       '@types/node':
