@@ -305,6 +305,9 @@ importers:
       '@tanstack/react-form':
         specifier: ^1.33.2
         version: 1.33.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@verikit/client':
+        specifier: workspace:*
+        version: link:../client
       '@verikit/core':
         specifier: workspace:*
         version: link:../core
