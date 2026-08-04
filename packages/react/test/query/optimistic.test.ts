@@ -1,0 +1,165 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { QueryClient } from "@tanstack/react-query";
+import {
+  patchCachedListRecord,
+  removeCachedListRecord,
+  restoreResourceQueries,
+  snapshotResourceQueries,
+} from "../../src/query/optimistic.js";
+import { resourceQueryKeys } from "../../src/query/query-keys.js";
+
+interface Row {
+  id: string;
+  title: string;
+}
+
+function createClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+}
+
+test("snapshotResourceQueries/restoreResourceQueries round-trip every cached query under a resource's prefix", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+
+  queryClient.setQueryData(keys.list(), {
+    records: [{ id: "1", title: "Hello" }],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  });
+  queryClient.setQueryData(keys.find("1"), { id: "1", title: "Hello" });
+
+  const snapshot = snapshotResourceQueries(queryClient, keys);
+  assert.equal(snapshot.length, 2);
+
+  queryClient.setQueryData(keys.find("1"), { id: "1", title: "Mutated" });
+  queryClient.removeQueries({ queryKey: keys.list(), exact: true });
+
+  restoreResourceQueries(queryClient, snapshot);
+
+  assert.deepEqual(queryClient.getQueryData(keys.find("1")), {
+    id: "1",
+    title: "Hello",
+  });
+  assert.deepEqual(queryClient.getQueryData(keys.list()), {
+    records: [{ id: "1", title: "Hello" }],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  });
+});
+
+test("patchCachedListRecord patches only the matching record, leaving others untouched", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+
+  queryClient.setQueryData(keys.list(), {
+    records: [
+      { id: "1", title: "Hello" },
+      { id: "2", title: "World" },
+    ],
+    total: 2,
+    page: 1,
+    pageSize: 25,
+  });
+
+  patchCachedListRecord<Row>(queryClient, keys, "1", (record) => ({
+    ...record,
+    title: "Changed",
+  }));
+
+  assert.deepEqual(queryClient.getQueryData(keys.list()), {
+    records: [
+      { id: "1", title: "Changed" },
+      { id: "2", title: "World" },
+    ],
+    total: 2,
+    page: 1,
+    pageSize: 25,
+  });
+});
+
+test("patchCachedListRecord leaves a record with no matching/string id untouched", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+  const withoutId = { title: "No id" } as unknown as Row;
+
+  queryClient.setQueryData(keys.list(), {
+    records: [withoutId],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  });
+
+  patchCachedListRecord<Row>(queryClient, keys, "1", (record) => ({
+    ...record,
+    title: "Should not apply",
+  }));
+
+  assert.deepEqual(
+    queryClient.getQueryData<{ records: Row[] }>(keys.list())?.records,
+    [withoutId],
+  );
+});
+
+test("patchCachedListRecord and removeCachedListRecord no-op on a matched query with no data yet", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+
+  // A list query that's been started (matches the predicate) but hasn't
+  // resolved yet, so its cached data is still `undefined`.
+  void queryClient.prefetchQuery({
+    queryKey: keys.list(),
+    queryFn: () => new Promise<never>(() => {}),
+  });
+  assert.equal(queryClient.getQueryData(keys.list()), undefined);
+
+  assert.doesNotThrow(() => {
+    patchCachedListRecord<Row>(queryClient, keys, "1", (record) => record);
+    removeCachedListRecord<Row>(queryClient, keys, "1");
+  });
+  assert.equal(queryClient.getQueryData(keys.list()), undefined);
+});
+
+test("removeCachedListRecord removes the matching record and decrements total", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+
+  queryClient.setQueryData(keys.list(), {
+    records: [
+      { id: "1", title: "Hello" },
+      { id: "2", title: "World" },
+    ],
+    total: 2,
+    page: 1,
+    pageSize: 25,
+  });
+
+  removeCachedListRecord<Row>(queryClient, keys, "1");
+
+  assert.deepEqual(queryClient.getQueryData(keys.list()), {
+    records: [{ id: "2", title: "World" }],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  });
+});
+
+test("removeCachedListRecord returns the same data reference when nothing matches", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+  const data = {
+    records: [{ id: "1", title: "Hello" }],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  };
+
+  queryClient.setQueryData(keys.list(), data);
+  removeCachedListRecord<Row>(queryClient, keys, "missing");
+
+  assert.equal(queryClient.getQueryData(keys.list()), data);
+});

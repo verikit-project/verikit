@@ -32,10 +32,27 @@ export interface FakeResourceCalls {
  * tests use, so these hook tests stay fast and deterministic without a real
  * server or network path.
  */
+export interface FakeClientFailures {
+  update?: boolean;
+  delete?: boolean;
+}
+
+type FakeMethod = "list" | "find" | "create" | "update" | "delete" | "action";
+
 export function createFakeClient(initial: readonly FakeRecord[] = []): {
   client: VerikitClient;
   calls: FakeResourceCalls;
   records: FakeRecord[];
+  /** Set a flag to `true` to make the next matching call reject once, then reset itself. */
+  failNext: FakeClientFailures;
+  /**
+   * Makes the next call to `method` wait until the returned function is
+   * invoked, so a test can observe cache state while a "network" call is
+   * still in flight (e.g. to prove an optimistic update landed before the
+   * server responded, or that a hook with no built-in optimism left the
+   * cache untouched while waiting).
+   */
+  block: (method: FakeMethod) => () => void;
 } {
   const records: FakeRecord[] = initial.map((record) => ({ ...record }));
   const calls: FakeResourceCalls = {
@@ -46,6 +63,26 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     delete: 0,
     action: 0,
   };
+  const failNext: FakeClientFailures = {};
+  const gates = new Map<FakeMethod, Promise<void>>();
+
+  function block(method: FakeMethod): () => void {
+    let release = () => {};
+    gates.set(
+      method,
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+    );
+    return () => {
+      release();
+      gates.delete(method);
+    };
+  }
+
+  async function waitForGate(method: FakeMethod): Promise<void> {
+    await gates.get(method);
+  }
 
   const resourceClient: ResourceClient<FakeRecord> = {
     async list(
@@ -53,6 +90,7 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       _options?: RequestOptions,
     ): Promise<ListResponse<FakeRecord>> {
       calls.list += 1;
+      await waitForGate("list");
       return {
         records: [...records],
         total: records.length,
@@ -67,6 +105,7 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
 
     async find(id, _options) {
       calls.find += 1;
+      await waitForGate("find");
       const record = records.find((candidate) => candidate.id === id);
 
       if (!record) {
@@ -78,6 +117,7 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
 
     async create(input, _options) {
       calls.create += 1;
+      await waitForGate("create");
       const record = {
         id: crypto.randomUUID(),
         title: "",
@@ -89,6 +129,13 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
 
     async update(id, input, _options) {
       calls.update += 1;
+      await waitForGate("update");
+
+      if (failNext.update) {
+        failNext.update = false;
+        throw new Error("Simulated update failure.");
+      }
+
       const index = records.findIndex((candidate) => candidate.id === id);
 
       if (index === -1) {
@@ -101,6 +148,13 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
 
     async delete(id, _options) {
       calls.delete += 1;
+      await waitForGate("delete");
+
+      if (failNext.delete) {
+        failNext.delete = false;
+        throw new Error("Simulated delete failure.");
+      }
+
       const index = records.findIndex((candidate) => candidate.id === id);
 
       if (index !== -1) {
@@ -114,6 +168,7 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       options?: ActionOptions,
     ): Promise<ActionResult<TResult>> {
       calls.action += 1;
+      await waitForGate("action");
       return {
         result: { actionName, input, recordId: options?.recordId } as TResult,
         message: "done",
@@ -127,7 +182,7 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     },
   };
 
-  return { client, calls, records };
+  return { client, calls, records, failNext, block };
 }
 
 export interface TestHarness {

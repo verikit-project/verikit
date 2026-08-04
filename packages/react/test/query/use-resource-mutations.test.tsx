@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
+import type { ListResponse } from "@verikit/client";
 import { act } from "react";
 import { installJsdom } from "../dom-setup.js";
 import {
@@ -16,6 +17,9 @@ import {
   waitFor,
   type FakeRecord,
 } from "./fixtures.js";
+
+const findKey = (id: string) => ["verikit", "posts", "find", id];
+const listKey = ["verikit", "posts", "list", {}];
 
 let uninstallJsdom: () => void;
 
@@ -96,6 +100,131 @@ test("useUpdateResource updates a record and invalidates its list and find(id) q
   harness.cleanup();
 });
 
+test("useUpdateResource applies its optimistic merge to the cache before the network call resolves", async () => {
+  const { client, block } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  let list: ReturnType<typeof useListResource<FakeRecord>> | undefined;
+  let find: ReturnType<typeof useResourceFind<FakeRecord>> | undefined;
+  let update: ReturnType<typeof useUpdateResource<FakeRecord>> | undefined;
+  const onMutateCalls: string[] = [];
+
+  function Probe() {
+    list = useListResource<FakeRecord>("posts");
+    find = useResourceFind<FakeRecord>("posts", "1");
+    update = useUpdateResource<FakeRecord>("posts", {
+      onMutate: (variables) => {
+        onMutateCalls.push(variables.id);
+      },
+    });
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => list?.status === "success" && find?.status === "success");
+
+  const release = block("update");
+  let pending: Promise<FakeRecord> | undefined;
+
+  await act(() => {
+    pending = update!.mutateAsync({ id: "1", input: { title: "Optimistic" } });
+  });
+
+  // The fake "server" call is blocked, so this can only be the optimistic write.
+  await waitFor(
+    () =>
+      harness.queryClient.getQueryData<FakeRecord>(findKey("1"))?.title ===
+      "Optimistic",
+  );
+  assert.equal(
+    harness.queryClient.getQueryData<ListResponse<FakeRecord>>(listKey)
+      ?.records[0]?.title,
+    "Optimistic",
+  );
+
+  release();
+  await act(async () => {
+    await pending;
+  });
+
+  assert.deepEqual(onMutateCalls, ["1"]);
+
+  harness.cleanup();
+});
+
+test("useUpdateResource merging into an uncached find(id) is a no-op (nothing to merge into)", async () => {
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  let update: ReturnType<typeof useUpdateResource<FakeRecord>> | undefined;
+
+  function Probe() {
+    // No useResourceFind("1") mounted, so keys.find("1") starts uncached.
+    update = useUpdateResource<FakeRecord>("posts");
+    return null;
+  }
+
+  await harness.render(<Probe />);
+
+  const updated = await act(async () =>
+    update!.mutateAsync({ id: "1", input: { title: "Changed" } }),
+  );
+  assert.equal(updated.title, "Changed");
+  assert.equal(
+    harness.queryClient.getQueryData(["verikit", "posts", "find", "1"]),
+    undefined,
+  );
+
+  harness.cleanup();
+});
+
+test("useUpdateResource rolls back its optimistic merge when the mutation fails", async () => {
+  const { client, calls, failNext } = createFakeClient([
+    { id: "1", title: "Hello" },
+  ]);
+  const harness = setupHarness(client);
+
+  let list: ReturnType<typeof useListResource<FakeRecord>> | undefined;
+  let find: ReturnType<typeof useResourceFind<FakeRecord>> | undefined;
+  let update: ReturnType<typeof useUpdateResource<FakeRecord>> | undefined;
+  const onErrorCalls: string[] = [];
+
+  function Probe() {
+    list = useListResource<FakeRecord>("posts");
+    find = useResourceFind<FakeRecord>("posts", "1");
+    update = useUpdateResource<FakeRecord>("posts", {
+      onError: (_error, variables) => {
+        onErrorCalls.push(variables.id);
+      },
+    });
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => list?.status === "success" && find?.status === "success");
+
+  failNext.update = true;
+  await act(async () => {
+    await assert.rejects(() =>
+      update!.mutateAsync({ id: "1", input: { title: "Will fail" } }),
+    );
+  });
+
+  assert.equal(calls.update, 1);
+  assert.deepEqual(onErrorCalls, ["1"]);
+  assert.equal(
+    harness.queryClient.getQueryData<FakeRecord>(findKey("1"))?.title,
+    "Hello",
+  );
+  assert.equal(
+    harness.queryClient.getQueryData<ListResponse<FakeRecord>>(listKey)
+      ?.records[0]?.title,
+    "Hello",
+  );
+
+  harness.cleanup();
+});
+
 test("useDeleteResource deletes a record, invalidates lists, and removes (not just invalidates) its find(id) cache entry", async () => {
   const { client, calls } = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(client);
@@ -137,6 +266,186 @@ test("useDeleteResource deletes a record, invalidates lists, and removes (not ju
   );
 
   await waitFor(() => calls.list === 2);
+
+  harness.cleanup();
+});
+
+test("useDeleteResource optimistically removes the record from cache before the network call resolves", async () => {
+  const { client, block } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  let list: ReturnType<typeof useListResource<FakeRecord>> | undefined;
+  let find: ReturnType<typeof useResourceFind<FakeRecord>> | undefined;
+  let del: ReturnType<typeof useDeleteResource> | undefined;
+  const onMutateCalls: string[] = [];
+
+  function Probe() {
+    list = useListResource<FakeRecord>("posts");
+    find = useResourceFind<FakeRecord>("posts", "1");
+    del = useDeleteResource("posts", {
+      onMutate: (id) => {
+        onMutateCalls.push(id);
+      },
+    });
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => list?.status === "success" && find?.status === "success");
+
+  // `find("1")` is actively mounted, so removing its cache entry would
+  // otherwise trigger an immediate auto-refetch that repopulates it before
+  // this test can observe the optimistic removal  block that path too.
+  const releaseDelete = block("delete");
+  const releaseFind = block("find");
+  let pending: Promise<void> | undefined;
+
+  await act(() => {
+    pending = del!.mutateAsync("1");
+  });
+
+  // The fake "server" call is blocked, so this can only be the optimistic removal.
+  await waitFor(
+    () =>
+      harness.queryClient.getQueryData<ListResponse<FakeRecord>>(listKey)
+        ?.records.length === 0,
+  );
+  assert.equal(harness.queryClient.getQueryData(findKey("1")), undefined);
+
+  releaseDelete();
+  releaseFind();
+  await act(async () => {
+    await pending;
+  });
+
+  assert.deepEqual(onMutateCalls, ["1"]);
+
+  harness.cleanup();
+});
+
+test("useDeleteResource rolls back its optimistic removal when the mutation fails", async () => {
+  const { client, calls, failNext } = createFakeClient([
+    { id: "1", title: "Hello" },
+  ]);
+  const harness = setupHarness(client);
+
+  let list: ReturnType<typeof useListResource<FakeRecord>> | undefined;
+  let find: ReturnType<typeof useResourceFind<FakeRecord>> | undefined;
+  let del: ReturnType<typeof useDeleteResource> | undefined;
+  const onErrorCalls: string[] = [];
+
+  function Probe() {
+    list = useListResource<FakeRecord>("posts");
+    find = useResourceFind<FakeRecord>("posts", "1");
+    del = useDeleteResource("posts", {
+      onError: (_error, id) => {
+        onErrorCalls.push(id);
+      },
+    });
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => list?.status === "success" && find?.status === "success");
+
+  failNext.delete = true;
+  await act(async () => {
+    await assert.rejects(() => del!.mutateAsync("1"));
+  });
+
+  assert.equal(calls.delete, 1);
+  assert.deepEqual(onErrorCalls, ["1"]);
+  assert.deepEqual(harness.queryClient.getQueryData<FakeRecord>(findKey("1")), {
+    id: "1",
+    title: "Hello",
+  });
+  assert.equal(
+    harness.queryClient.getQueryData<ListResponse<FakeRecord>>(listKey)?.records
+      .length,
+    1,
+  );
+
+  harness.cleanup();
+});
+
+test("useCreateResource leaves the cache untouched while the mutation is in flight (no built-in optimism)", async () => {
+  const { client, block } = createFakeClient([]);
+  const harness = setupHarness(client);
+
+  let list: ReturnType<typeof useListResource<FakeRecord>> | undefined;
+  let create: ReturnType<typeof useCreateResource<FakeRecord>> | undefined;
+
+  function Probe() {
+    list = useListResource<FakeRecord>("posts");
+    create = useCreateResource<FakeRecord>("posts");
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => list?.status === "success");
+
+  const release = block("create");
+  let pending: Promise<FakeRecord> | undefined;
+
+  await act(() => {
+    pending = create!.mutateAsync({ title: "New" });
+  });
+
+  // Give any (hypothetical) optimistic write a chance to land, then confirm
+  // the blocked "server" call is genuinely the only thing still pending.
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+  assert.deepEqual(
+    harness.queryClient.getQueryData<ListResponse<FakeRecord>>(listKey)
+      ?.records,
+    [],
+  );
+
+  release();
+  await act(async () => {
+    await pending;
+  });
+
+  harness.cleanup();
+});
+
+test("useActionResource leaves the cache untouched while the mutation is in flight (no built-in optimism)", async () => {
+  const { client, block } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  let find: ReturnType<typeof useResourceFind<FakeRecord>> | undefined;
+  let action:
+    ReturnType<typeof useActionResource<{ actionName: string }>> | undefined;
+
+  function Probe() {
+    find = useResourceFind<FakeRecord>("posts", "1");
+    action = useActionResource<{ actionName: string }>("posts", "publish");
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => find?.status === "success");
+
+  const release = block("action");
+  let pending: Promise<{ result: { actionName: string } }> | undefined;
+
+  await act(() => {
+    pending = action!.mutateAsync({ recordId: "1" });
+  });
+
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+  assert.deepEqual(harness.queryClient.getQueryData<FakeRecord>(findKey("1")), {
+    id: "1",
+    title: "Hello",
+  });
+
+  release();
+  await act(async () => {
+    await pending;
+  });
 
   harness.cleanup();
 });
