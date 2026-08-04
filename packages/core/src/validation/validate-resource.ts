@@ -3,10 +3,7 @@ import { validateField, validateFieldAsync } from "./validate-field.js";
 import { ValidationIssue, ValidationResult } from "../types/validation.js";
 
 /**
- * Merges per-field results (from `validateField`, `validateFieldAsync`, or
- * any other function returning the same shape, e.g. `@verikit/runtime`'s
- * `inferField`) into a single resource-level result, prefixing each field's
- * issue paths with its name.
+ * Merges per-field results (from `validateField`, `validateFieldAsync`, or any other function returning the same shape, e.g. `@verikit/runtime`'s `inferField`) into a single resource-level result, prefixing each field's issue paths with its name.
  */
 export function aggregateFieldResults(
   entries: readonly [string, ValidationResult][],
@@ -45,9 +42,7 @@ export function shouldValidateField(
 }
 
 /**
- * Validates values against a resource's field schemas.
- * Relationships are intentionally excluded because they describe schema
- * structure rather than value payloads.
+ * Validates values against a resource's field schemas. Relationships are intentionally excluded because they describe schema structure rather than value payloads.
  */
 export function validateResource(
   fields: Record<string, FieldSchema>,

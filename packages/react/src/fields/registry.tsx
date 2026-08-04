@@ -32,7 +32,9 @@ export const defaultFieldRegistry = {
   image: ImageField,
 } satisfies VerikitFieldRegistry;
 
-/** Resolves a field renderer from an override registry or the default registry. */
+/**
+ * Resolves a field renderer from an override registry or the default registry.
+ */
 export function getFieldComponent(
   fieldType: FieldType,
   registry: Partial<VerikitFieldRegistry> = {},
@@ -49,11 +51,7 @@ export interface RenderFieldProps extends VerikitFieldComponentProps {
 }
 
 /**
- * Renders a Verikit field with the matching component from the active
- * registry. Renders nothing when the field is `hidden`  `resolveResourceSchema`
- * sets this both for schema-authored hidden fields and for fields the actor
- * lacks read access to, so a merely-`disabled` input would leak the label
- * and current value of a field the actor isn't allowed to see.
+ * Renders a Verikit field with the matching component from the active registry. Renders nothing when the field is `hidden` `resolveResourceSchema` sets this both for schema-authored hidden fields and for fields the actor lacks read access to, so a merely-`disabled` input would leak the label and current value of a field the actor isn't allowed to see.
  */
 export function RenderField({
   registry,

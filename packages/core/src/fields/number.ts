@@ -1,8 +1,7 @@
 import { FieldBuilder, FieldBuilderWithValue, FieldSchema } from "./base.js";
 
 /**
- * Schema describing a numeric field.
- * `min`, `max`, and `step` provide hints for UI adapters.
+ * Schema describing a numeric field. `min`, `max`, and `step` provide hints for UI adapters.
  */
 export interface NumberFieldSchema extends FieldSchema {
   /** Literal field type discriminator for numeric fields. */

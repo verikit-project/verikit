@@ -63,15 +63,12 @@ function resolveTreeNode(
 }
 
 /**
- * Resolves a resource schema for a specific actor: fields the actor cannot
- * read are marked `hidden`, and fields the actor cannot write are marked
- * `readOnly`, layered on top of whatever those flags were already set to.
- * Layout tree nodes referencing those fields are updated to match, so
- * adapters can render directly from either `fields` or `tree` and see the
- * same access decisions.
- *
- * Does not mutate the input schema. Relationships are left untouched
- * `PermissionsBuilder` only gates named fields and actions.
+ * Resolves a resource schema for a specific actor:
+ * fields the actor cannot read are marked `hidden`,
+ *  and fields the actor cannot write are marked `readOnly`,
+ *  layered on top of whatever those flags were already set to.
+ * Layout tree nodes referencing those fields are updated to match, so adapters can render directly from either `fields` or `tree` and see the same access decisions.
+ *  Does not mutate the input schema. Relationships are left untouched `PermissionsBuilder` only gates named fields and actions.
  */
 export async function resolveResourceSchema<TActor, TRecord>(
   schema: ResourceSchema,

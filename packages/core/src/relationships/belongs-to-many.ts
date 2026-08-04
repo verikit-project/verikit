@@ -5,13 +5,14 @@ import {
 } from "./shared/relationship-builder.js";
 
 /**
- * Schema describing a many-to-many relationship, typically resolved through
- * a join/through resource.
+ * Schema describing a many-to-many relationship, typically resolved through a join/through resource.
  */
 export interface BelongsToManyRelationshipSchema {
   /** Literal "relationship" discriminator for discriminated unions. */
   type: "relationship";
-  /** Literal discriminator identifying this as a belongs-to-many relationship. */
+  /**
+   * Literal discriminator identifying this as a belongs-to-many relationship.
+   */
   relationshipType: "belongsToMany";
   /** Name of the relationship on its owning resource, set by `toSchema`. */
   name?: string;
@@ -29,14 +30,15 @@ export interface BelongsToManyRelationshipSchema {
   displayField?: string;
 }
 
-/** State for belongs-to-many builders: the shared shape plus the join resource name. */
+/**
+ * State for belongs-to-many builders: the shared shape plus the join resource name.
+ */
 export interface BelongsToManyRelationshipBuilderState extends RelationshipBuilderState {
   through?: string;
 }
 
 /**
- * Fluent builder for many-to-many relationships resolved through a
- * join/through resource.
+ * Fluent builder for many-to-many relationships resolved through a join/through resource.
  */
 export class BelongsToManyRelationshipBuilder<
   TResource extends Resource = Resource,
@@ -74,16 +76,16 @@ export class BelongsToManyRelationshipBuilder<
   }
 }
 
-/** Extracts the inferred array value type of a belongs-to-many relationship. */
+/**
+ * Extracts the inferred array value type of a belongs-to-many relationship.
+ */
 export type InferBelongsToMany<TRelationship> =
   TRelationship extends BelongsToManyRelationshipBuilder<infer TResource>
     ? InferResource<TResource>[]
     : never;
 
 /**
- * Creates a many-to-many relationship.
- * The target is provided as a thunk so resources can reference each other
- * before both are fully defined.
+ * Creates a many-to-many relationship. The target is provided as a thunk so resources can reference each other before both are fully defined.
  */
 export function belongsToMany<TResource extends Resource>(
   target: () => TResource,

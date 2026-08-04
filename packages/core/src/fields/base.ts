@@ -5,8 +5,7 @@ import { validateBuiltInFieldConstraints } from "./shared/built-in-constraints.j
 export type Primitive = string | number | boolean | Date | null | undefined;
 
 /**
- * Standard Schema interface compatible with Zod, Valibot, ArkType, and
- * similar libraries; lets `.validation()` accept any compliant validator.
+ * Standard Schema interface compatible with Zod, Valibot, ArkType, and similar libraries; lets `.validation()` accept any compliant validator.
  */
 export interface StandardSchemaIssue {
   readonly message: string;
@@ -30,8 +29,7 @@ export interface StandardSchemaLike<Input = unknown, Output = Input> {
 }
 
 /**
- * Discriminated union of supported field input types.
- * Each type maps to a UI component in adapters and defines how data is processed.
+ * Discriminated union of supported field input types. Each type maps to a UI component in adapters and defines how data is processed.
  */
 export type FieldType =
   | "text" // Single-line text input
@@ -54,11 +52,12 @@ export interface FieldOption<TValue extends OptionValue = OptionValue> {
   value: TValue;
 }
 
-/** Metadata for consume-mode fields that reference an existing database column. */
+/**
+ * Metadata for consume-mode fields that reference an existing database column.
+ */
 export interface FieldSource<TColumn = unknown> {
   /**
-   * The consumption mode. Currently only "consume" is supported (derive field from column).
-   * "generate" mode is implicit when `source` is undefined.
+   * The consumption mode. Currently only "consume" is supported (derive field from column). "generate" mode is implicit when `source` is undefined.
    */
   mode: "consume";
   /** Reference to the column being consumed */
@@ -66,8 +65,7 @@ export interface FieldSource<TColumn = unknown> {
 }
 
 /**
- * Serializable field schema shared between builders and adapters.
- * Type-specific extensions belong in `meta`.
+ * Serializable field schema shared between builders and adapters. Type-specific extensions belong in `meta`.
  */
 export interface FieldSchema {
   /** Literal "field" discriminator for discriminated unions */
@@ -80,25 +78,35 @@ export interface FieldSchema {
   // Universal presentation and behavior flags
   // Every adapter relies on these properties; do not remove or change semantics.
 
-  /** Display label shown to users in forms and tables (e.g., "Email Address") */
+  /**
+   * Display label shown to users in forms and tables (e.g., "Email Address")
+   */
   label?: string;
   /** Help text explaining the field's purpose */
   description?: string;
   /** Placeholder text for empty form inputs */
   placeholder?: string;
-  /** Field must have a non-null, non-undefined value; form submission fails without it */
+  /**
+   * Field must have a non-null, non-undefined value; form submission fails without it
+   */
   required?: boolean;
-  /** Field can store null as an explicit value (distinct from undefined/omitted) */
+  /**
+   * Field can store null as an explicit value (distinct from undefined/omitted)
+   */
   nullable?: boolean;
   /** Field supports full-text search in list/table queries */
   searchable?: boolean;
   /** Column can be used for sorting in tables */
   sortable?: boolean;
-  /** Field should not be displayed in forms or tables (stored but hidden from UI) */
+  /**
+   * Field should not be displayed in forms or tables (stored but hidden from UI)
+   */
   hidden?: boolean;
   /** Field is visible but cannot be edited; display-only in forms */
   readOnly?: boolean;
-  /** Fallback value if the field is not provided (e.g., radio default, checkbox unchecked) */
+  /**
+   * Fallback value if the field is not provided (e.g., radio default, checkbox unchecked)
+   */
   defaultValue?: unknown;
   /** Enumerated options for select-type fields */
   options?: readonly FieldOption[];
@@ -106,7 +114,9 @@ export interface FieldSchema {
   validation?: StandardSchemaLike;
   /** Consume-mode reference to a column */
   source?: FieldSource;
-  /** Vendor-specific or adapter-specific metadata (e.g., custom component params) */
+  /**
+   * Vendor-specific or adapter-specific metadata (e.g., custom component params)
+   */
   meta?: Record<string, unknown>;
 }
 
@@ -122,8 +132,7 @@ export type InferField<TField> = TField extends {
   : never;
 
 /**
- * Internal type representing the mutable state of a FieldBuilder.
- * Excludes "type" and "name" since those are set only at finalization.
+ * Internal type representing the mutable state of a FieldBuilder. Excludes "type" and "name" since those are set only at finalization.
  */
 export type FieldBuilderState<TSchema extends FieldSchema = FieldSchema> = Omit<
   TSchema,
@@ -131,9 +140,7 @@ export type FieldBuilderState<TSchema extends FieldSchema = FieldSchema> = Omit<
 >;
 
 /**
- * Preserves the current concrete builder shape while replacing its inferred
- * value type. This keeps subclass methods available after base modifiers like
- * `.label()`, `.required()`, or `.nullable()`.
+ * Preserves the current concrete builder shape while replacing its inferred value type. This keeps subclass methods available after base modifiers like `.label()`, `.required()`, or `.nullable()`.
  */
 export type FieldBuilderWithValue<
   TBuilder,
@@ -197,37 +204,31 @@ function assertDefaultSatisfiesConstraints(
 }
 
 /**
- * Immutable fluent builder for field schemas: each modifier method returns a
- * new builder with updated state and TValue narrowed/widened accordingly.
- * Call `.toSchema(name)` to finalize into a `FieldSchema`.
+ * Immutable fluent builder for field schemas: each modifier method returns a new builder with updated state and TValue narrowed/widened accordingly. Call `.toSchema(name)` to finalize into a `FieldSchema`.
  */
 export class FieldBuilder<
   TValue = unknown,
   TSchema extends FieldSchema = FieldSchema,
 > {
   /**
-   * Phantom property used by InferField to extract TValue.
-   * Does not exist at runtime; used only for type inference.
+   * Phantom property used by InferField to extract TValue. Does not exist at runtime; used only for type inference.
    */
   readonly $value!: TValue;
 
   /**
-   * Internal mutable state of the builder.
-   * Exposed as protected so subclasses can access and extend state.
+   * Internal mutable state of the builder. Exposed as protected so subclasses can access and extend state.
    */
   protected readonly state: FieldBuilderState<TSchema>;
 
   /**
-   * Typically constructed via `createField()` or a field-type helper
-   * (`text()`, `select()`, etc.), not directly.
+   * Typically constructed via `createField()` or a field-type helper (`text()`, `select()`, etc.), not directly.
    */
   constructor(state: FieldBuilderState<TSchema>) {
     this.state = cloneBuilderState(state);
   }
 
   /**
-   * Creates a new instance of the current concrete builder (via
-   * `this.constructor`) so subclass methods stay available after chaining.
+   * Creates a new instance of the current concrete builder (via `this.constructor`) so subclass methods stay available after chaining.
    */
   protected withState<TNextValue = TValue>(
     patch: Partial<TSchema>,
@@ -248,18 +249,14 @@ export class FieldBuilder<
   }
 
   /**
-   * Returns builder state without finalizing via `toSchema(name)`; used
-   * internally to compose builders (e.g. `from(column).as(field)`).
-   * @internal
+   * Returns builder state without finalizing via `toSchema(name)`; used internally to compose builders (e.g. `from(column).as(field)`). @internal
    */
   getState(): FieldBuilderState<TSchema> {
     return cloneBuilderState(this.state);
   }
 
   /**
-   * Returns a sourced copy of this builder while preserving the concrete
-   * builder type; used by `from(column).as(field)`.
-   * @internal
+   * Returns a sourced copy of this builder while preserving the concrete builder type; used by `from(column).as(field)`. @internal
    */
   withSource(source: FieldSource): this {
     return this.withState({ source } as Partial<TSchema>) as this;
@@ -284,7 +281,9 @@ export class FieldBuilder<
     return this.withState({ placeholder } as Partial<TSchema>);
   }
 
-  /** Marks the field required, narrowing TValue and forcing nullable: false. */
+  /**
+   * Marks the field required, narrowing TValue and forcing nullable: false.
+   */
   required(): FieldBuilderWithValue<this, NonNullable<TValue>, TSchema> {
     return this.withState<NonNullable<TValue>>({
       nullable: false,
@@ -309,8 +308,7 @@ export class FieldBuilder<
   }
 
   /**
-   * Sets a form-level fallback value (not a database DEFAULT) and excludes
-   * undefined from TValue.
+   * Sets a form-level fallback value (not a database DEFAULT) and excludes undefined from TValue.
    */
   default(
     value: Exclude<TValue, undefined>,
@@ -341,8 +339,7 @@ export class FieldBuilder<
   }
 
   /**
-   * Attaches a StandardSchema validator (Zod, Valibot, ArkType, etc.); its
-   * output type becomes the new TValue.
+   * Attaches a StandardSchema validator (Zod, Valibot, ArkType, etc.); its output type becomes the new TValue.
    */
   validation<TOutput = TValue>(
     validation: StandardSchemaLike<unknown, TOutput>,
@@ -363,8 +360,7 @@ export class FieldBuilder<
   }
 
   /**
-   * Finalizes the builder into a `FieldSchema`.
-   * @throws {Error} If `name` is empty or whitespace-only.
+   * Finalizes the builder into a `FieldSchema`. @throws {Error} If `name` is empty or whitespace-only.
    */
   toSchema(name: string): TSchema {
     if (name.trim().length === 0) {
@@ -380,8 +376,7 @@ export class FieldBuilder<
 }
 
 /**
- * Creates a field builder.
- * Used internally by helpers such as `text()` and `select()`.
+ * Creates a field builder. Used internally by helpers such as `text()` and `select()`.
  */
 export function createField<TValue, TSchema extends FieldSchema = FieldSchema>(
   fieldType: TSchema["fieldType"],

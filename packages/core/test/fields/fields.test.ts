@@ -662,10 +662,9 @@ test("createField remains available for custom core field construction", () => {
 });
 
 test("shared field-constraint helpers are reachable from the public fields barrel", async () => {
-  // These live alongside `withAccept`/`withMaxSize`/`withMultiple` (already
-  // exported here) but were previously only importable via their deep
-  // `shared/*.js` paths  an asymmetry in the barrel, not an intentional
-  // internal/public split.
+  // These live alongside `withAccept`/`withMaxSize`/`withMultiple` (already exported
+  // here) but were previously only importable via their deep `shared/*.js` paths an
+  // asymmetry in the barrel, not an intentional internal/public split.
   const barrel: Record<string, unknown> =
     await import("../../src/fields/index.js");
 

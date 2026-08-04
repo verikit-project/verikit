@@ -7,18 +7,7 @@ import type { ActionRunRequest } from "./action-context.js";
 import type { ActionRunResult } from "./action-result.js";
 
 /**
- * Runs an action, in order: a permissions check, an availability check, a
- * confirmation gate, form validation, lifecycle hooks, and execution.
- *
- * Availability is checked before confirmation so an unavailable action
- * reports `reason: "unavailable"` even when it also declares
- * `.confirmation()`  otherwise a caller would be asked to confirm an
- * action that can't actually run.
- *
- * Any error thrown by the `before` hook, action handler, or `after`
- * hook causes the action to fail. The optional `error` hook is then
- * invoked. Errors thrown by the `error` hook are ignored so they do
- * not mask the original execution failure.
+ * Runs an action, in order: a permissions check, an availability check, a confirmation gate, form validation, lifecycle hooks, and execution. Availability is checked before confirmation so an unavailable action reports `reason: "unavailable"` even when it also declares `.confirmation()` otherwise a caller would be asked to confirm an action that can't actually run. Any error thrown by the `before` hook, action handler, or `after` hook causes the action to fail. The optional `error` hook is then invoked. Errors thrown by the `error` hook are ignored so they do not mask the original execution failure.
  */
 export async function runAction<
   TName extends string,

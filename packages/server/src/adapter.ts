@@ -1,10 +1,14 @@
-/** Parameters passed to `ResourceAdapter.list()` for both the list and search routes. */
+/**
+ * Parameters passed to `ResourceAdapter.list()` for both the list and search routes.
+ */
 export interface ResourceListParams {
   /** 1-based page number. */
   page: number;
   /** Maximum records to return for this page. */
   pageSize: number;
-  /** Free-text search term, present on the search route (and optionally on list). */
+  /**
+   * Free-text search term, present on the search route (and optionally on list).
+   */
   search?: string;
   /** Column to sort by and its direction. */
   sort?: {
@@ -21,11 +25,7 @@ export interface ResourceListResult<TRecord = Record<string, unknown>> {
 }
 
 /**
- * Storage abstraction a resource is bound to when registered with
- * `createServer()`. Deliberately storage-agnostic: `@verikit/server` never
- * imports an ORM, and `id` is always the raw string path segment  an
- * adapter implementation (e.g. a future `@verikit/drizzle`) owns any
- * coercion to its own key type.
+ * Storage abstraction a resource is bound to when registered with `createServer()`. Deliberately storage-agnostic: `@verikit/server` never imports an ORM, and `id` is always the raw string path segment an adapter implementation (e.g. a future `@verikit/drizzle`) owns any coercion to its own key type.
  */
 export interface ResourceAdapter<TRecord = Record<string, unknown>> {
   list(params: ResourceListParams): Promise<ResourceListResult<TRecord>>;

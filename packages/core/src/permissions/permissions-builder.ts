@@ -98,11 +98,8 @@ function cloneState<
 
 /**
  * Immutable fluent builder describing CRUD-level operations,
- * per-field read/write access, and named runtime actions.
- *
- * This builder only assembles rules; it does not evaluate them. Evaluating a
- * rule against a `PermissionContext` (and wiring that into `validateResource`
- * or `runAction`) is left to a runtime helper.
+ *  per-field read/write access, and named runtime actions. This builder only assembles rules;
+ * it does not evaluate them. Evaluating a rule against a `PermissionContext` (and wiring that into `validateResource` or `runAction`) is left to a runtime helper.
  */
 export class PermissionsBuilder<
   TActor = unknown,
@@ -219,8 +216,7 @@ export function definePermissions<
 }
 
 /**
- * Creates a permissions builder constrained to a resource's field names, with
- * optional action names supplied by the caller.
+ * Creates a permissions builder constrained to a resource's field names, with optional action names supplied by the caller.
  */
 export function defineResourcePermissions<
   TActor,

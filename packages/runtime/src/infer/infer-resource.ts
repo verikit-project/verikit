@@ -7,8 +7,7 @@ import {
 import { inferField } from "./infer-field.js";
 
 /**
- * Infers typed values for a resource from raw input using each field's schema.
- * Optional fields omitted from the input are skipped unless they have defaults.
+ * Infers typed values for a resource from raw input using each field's schema. Optional fields omitted from the input are skipped unless they have defaults.
  */
 export function inferResource(
   fields: Record<string, FieldSchema>,

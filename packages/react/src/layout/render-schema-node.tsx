@@ -224,13 +224,7 @@ function renderWizardNode(
 }
 
 /**
- * Renders a repeater's rows keyed by `getRepeaterRowKey` (when the caller
- * supplies one, as `useVerikitSchemaTreeForm` does) instead of array index.
- * Index-based keys make React reuse a removed row's DOM (and any focus or
- * uncontrolled state inside it) for whatever row happens to shift into its
- * position afterward. Falls back to `index` when no key source is given, so
- * a caller wiring this tree up manually without the hook keeps the previous
- * (imperfect, but no worse than before) behavior.
+ * Renders a repeater's rows keyed by `getRepeaterRowKey` (when the caller supplies one, as `useVerikitSchemaTreeForm` does) instead of array index. Index-based keys make React reuse a removed row's DOM (and any focus or uncontrolled state inside it) for whatever row happens to shift into its position afterward. Falls back to `index` when no key source is given, so a caller wiring this tree up manually without the hook keeps the previous (imperfect, but no worse than before) behavior.
  */
 function renderRepeaterNode(
   node: RepeaterNode,
@@ -306,7 +300,9 @@ function renderActionNode(
   );
 }
 
-/** Renders one Verikit schema node using the built-in React layout components. */
+/**
+ * Renders one Verikit schema node using the built-in React layout components.
+ */
 export function RenderSchemaNode(props: RenderSchemaNodeProps): ReactNode {
   const { node } = props;
   const path = props.path ?? [];

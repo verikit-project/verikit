@@ -2,22 +2,15 @@ import type { FieldSchema } from "@verikit/core";
 import { type Column, getTableColumns, or, sql, type Table } from "drizzle-orm";
 
 /**
- * A field's storage column, plus the table's own JS property key for it.
- * `jsKey` is what drizzle's `.values()`/`.set()` expect on write  it only
- * differs from the field name when the field was mapped via
- * `from(column).as(...)`.
+ * A field's storage column, plus the table's own JS property key for it. `jsKey` is what drizzle's `.values()`/`.set()` expect on write it only differs from the field name when the field was mapped via `from(column).as(...)`.
  */
 export interface ResolvedColumn {
   column: Column;
   jsKey: string;
 }
 
-/** Resolves each field's storage column: a `from(column).as(...)` source takes
- * priority (handles field/column name mismatches); otherwise falls back to a
- * same-named column on the table. Fields with neither are left unmapped.
- *
- * @throws {Error} If a field's `from(column)` source isn't actually one of
- * `table`'s own columns.
+/**
+ * Resolves each field's storage column: a `from(column).as(...)` source takes priority (handles field/column name mismatches); otherwise falls back to a same-named column on the table. Fields with neither are left unmapped. @throws {Error} If a field's `from(column)` source isn't actually one of `table`'s own columns.
  */
 export function resolveFieldColumns(
   table: Table,
@@ -54,9 +47,7 @@ export function resolveFieldColumns(
 }
 
 /**
- * Translates a create/update payload (keyed by resource field name) into a
- * row object keyed by the table's own JS column keys, dropping any field
- * with no resolvable column.
+ * Translates a create/update payload (keyed by resource field name) into a row object keyed by the table's own JS column keys, dropping any field with no resolvable column.
  */
 export function mapValuesToRow(
   values: Record<string, unknown>,
@@ -76,12 +67,7 @@ export function mapValuesToRow(
 }
 
 /**
- * Finds the table's single-column primary key, used to satisfy the
- * `ResourceAdapter` contract's raw string `id`. Resources don't need to
- * declare their own "id" field for this  the primary key is a storage-level
- * concern the table already knows about.
- *
- * @throws {Error} If the table has zero or multiple primary key columns.
+ * Finds the table's single-column primary key, used to satisfy the `ResourceAdapter` contract's raw string `id`. Resources don't need to declare their own "id" field for this the primary key is a storage-level concern the table already knows about. @throws {Error} If the table has zero or multiple primary key columns.
  */
 export function resolveIdColumn(table: Table, resourceName: string): Column {
   const columns = Object.values(
@@ -99,10 +85,7 @@ export function resolveIdColumn(table: Table, resourceName: string): Column {
 }
 
 /**
- * Coerces the adapter's raw string `id` to the id column's storage type.
- * Returns `undefined` for a numeric column given a non-numeric id, letting
- * callers treat it as "no such record" instead of sending `NaN` to the
- * driver.
+ * Coerces the adapter's raw string `id` to the id column's storage type. Returns `undefined` for a numeric column given a non-numeric id, letting callers treat it as "no such record" instead of sending `NaN` to the driver.
  */
 export function coerceId(column: Column, id: string): unknown {
   if (column.dataType === "number") {
@@ -120,10 +103,7 @@ function escapeLikeTerm(term: string): string {
 }
 
 /**
- * Builds a case-insensitive, cross-dialect "contains" condition across the
- * given columns. Deliberately avoids drizzle's `ilike()` (Postgres-only SQL
- * keyword) in favor of `lower(...) like lower(...)`, which Postgres, SQLite,
- * and MySQL all understand the same way.
+ * Builds a case-insensitive, cross-dialect "contains" condition across the given columns. Deliberately avoids drizzle's `ilike()` (Postgres-only SQL keyword) in favor of `lower(...) like lower(...)`, which Postgres, SQLite, and MySQL all understand the same way.
  */
 export function searchCondition(columns: Column[], term: string) {
   if (columns.length === 0) {

@@ -1,6 +1,5 @@
 /**
- * Returns true for plain object literals (`{}` or `Object.create(null)`),
- * excluding class instances, arrays, Dates, and other built-ins.
+ * Returns true for plain object literals (`{}` or `Object.create(null)`), excluding class instances, arrays, Dates, and other built-ins.
  */
 export function isPlainObject(
   value: unknown,
@@ -14,9 +13,7 @@ export function isPlainObject(
 }
 
 /**
- * Deep-clones plain objects, arrays, and Dates so builder state never shares
- * mutable references with caller-owned values. Other value types (including
- * class instances) are returned as-is.
+ * Deep-clones plain objects, arrays, and Dates so builder state never shares mutable references with caller-owned values. Other value types (including class instances) are returned as-is.
  */
 export function cloneValue<TValue>(value: TValue): TValue {
   if (Array.isArray(value)) {

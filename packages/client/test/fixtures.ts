@@ -25,7 +25,9 @@ interface Actor {
   role: "admin" | "viewer";
 }
 
-/** The resource fixture shared by the client's unit and integration tests. */
+/**
+ * The resource fixture shared by the client's unit and integration tests.
+ */
 export function createPostResource(): Resource {
   return defineResource("post", {
     fields: {
@@ -36,7 +38,9 @@ export function createPostResource(): Resource {
   });
 }
 
-/** A tiny in-memory `ResourceAdapter`, mirroring `@verikit/server`'s own test fixture. */
+/**
+ * A tiny in-memory `ResourceAdapter`, mirroring `@verikit/server`'s own test fixture.
+ */
 export function createInMemoryAdapter(
   initial: readonly Post[] = [],
 ): ResourceAdapter<Post> {
@@ -105,10 +109,7 @@ export function createInMemoryAdapter(
 }
 
 /**
- * Wires a real `createServer()` handler (post resource + in-memory adapter +
- * a role-gated `publish` action that requires confirmation) and returns it as
- * a `typeof fetch`, so the client under test can be pointed at a real server
- * contract instead of hand-rolled mock responses.
+ * Wires a real `createServer()` handler (post resource + in-memory adapter + a role-gated `publish` action that requires confirmation) and returns it as a `typeof fetch`, so the client under test can be pointed at a real server contract instead of hand-rolled mock responses.
  */
 export function createTestServerFetch(initial: readonly Post[] = []): {
   fetch: typeof fetch;
@@ -116,10 +117,9 @@ export function createTestServerFetch(initial: readonly Post[] = []): {
 } {
   const adapter = createInMemoryAdapter(initial);
 
-  // Permissions are fail-closed: every operation without an explicit rule is
-  // denied, so CRUD reads/creates/updates must be allowed explicitly even
-  // though this fixture's real goal is gating `delete` and the `publish`
-  // action to admins (to exercise 403/404/409 paths from the client).
+  // Permissions are fail-closed: every operation without an explicit rule is denied,
+  // so CRUD reads/creates/updates must be allowed explicitly even though this
+  // fixture's real goal is gating `delete` and the `publish` action to admins (to exercise 403/404/409 paths from the client).
   const permissions = definePermissions<Actor>()
     .can("create", () => true)
     .can("read", () => true)

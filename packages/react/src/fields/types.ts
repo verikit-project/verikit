@@ -5,7 +5,9 @@ import type { ComponentType, ReactNode } from "react";
 export interface VerikitFieldComponentProps<TValue = unknown> {
   /** Schema metadata for the field being rendered. */
   field: FieldSchema;
-  /** Explicit input id. Defaults to a stable id derived from the field name. */
+  /**
+   * Explicit input id. Defaults to a stable id derived from the field name.
+   */
   id?: string;
   /** HTML form field name. Defaults to the schema field name. */
   name?: string;

@@ -76,11 +76,9 @@ export async function handleAction(
     record,
   });
 
-  // A denied actor with a resolved recordId gets the same 404 as a missing
-  // one: returning 403 here would let them distinguish "doesn't exist" from
-  // "exists but I can't run this action on it" (an existence oracle) for a
-  // record we've already confirmed is real. With no recordId there's no
-  // record to leak the existence of, so a plain 403 is fine.
+  // A denied actor with a resolved recordId gets the same 404 as a missing one:
+  // returning 403 here would let them distinguish "doesn't exist" from "exists but I
+  // can't run this action on it" (an existence oracle) for a record we've already confirmed is real. With no recordId there's no record to leak the existence of, so a plain 403 is fine.
   if (!permission.allowed) {
     return record !== undefined
       ? notFoundResponse(`Record "${body.recordId}" not found.`)

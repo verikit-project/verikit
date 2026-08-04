@@ -18,39 +18,37 @@ import { buildRouteTable, resolveRoute } from "./routing/route-table.js";
 export interface ServerResourceConfig<TActor = unknown> {
   resource: Resource;
   adapter: ResourceAdapter;
-  /** Route segment this resource is mounted at; defaults to `resource.name` verbatim (no auto-pluralization). */
+  /**
+   * Route segment this resource is mounted at; defaults to `resource.name` verbatim (no auto-pluralization).
+   */
   path?: string;
   /**
-   * Named runtime actions (`@verikit/runtime`'s `action(...)`) exposed as
-   * `POST {base}/actions/:name`. Form/record/result type params are erased
-   * here since actions of differing shapes share one array; `runAction`
-   * recovers them per-action when the server invokes it.
+   * Named runtime actions (`@verikit/runtime`'s `action(...)`) exposed as `POST {base}/actions/:name`. Form/record/result type params are erased here since actions of differing shapes share one array; `runAction` recovers them per-action when the server invokes it.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
   actions?: ActionBuilder<string, any, TActor, any, any>[];
-  /** Resource-level CRUD gate; omit to leave the resource unguarded (see `maybeCheckResourceOperation`). */
+  /**
+   * Resource-level CRUD gate; omit to leave the resource unguarded (see `maybeCheckResourceOperation`).
+   */
   permissions?: PermissionsBuilder<TActor, unknown>;
 }
 
 export interface CreateServerOptions<TActor = unknown> {
   resources: ServerResourceConfig<TActor>[];
-  /** Derives the actor used for permission checks from the incoming request. */
+  /**
+   * Derives the actor used for permission checks from the incoming request.
+   */
   context?: (request: Request) => TActor | Promise<TActor>;
-  /** Prefix every resource is mounted under, e.g. `"/api"`. Defaults to `""`. */
+  /**
+   * Prefix every resource is mounted under, e.g. `"/api"`. Defaults to `""`.
+   */
   basePath?: string;
 }
 
 const DEFAULT_SEARCH_PAGE_SIZE = 10;
 
 /**
- * Derives a web-standard `(Request) => Promise<Response>` handler from a set
- * of resources: CRUD, a search alias, and named-action routes, each wired
- * through `@verikit/core` permissions/validation and `@verikit/runtime`'s
- * `runAction`. Storage is never touched directly  every operation goes
- * through the resource's `ResourceAdapter`.
- *
- * @throws {Error} If two resources resolve to the same route, or a resource
- * declares two actions with the same name  checked once, at creation time.
+ * Derives a web-standard `(Request) => Promise<Response>` handler from a set of resources: CRUD, a search alias, and named-action routes, each wired through `@verikit/core` permissions/validation and `@verikit/runtime`'s `runAction`. Storage is never touched directly every operation goes through the resource's `ResourceAdapter`. @throws {Error} If two resources resolve to the same route, or a resource declares two actions with the same name checked once, at creation time.
  */
 export function createServer<TActor = unknown>(
   options: CreateServerOptions<TActor>,
@@ -97,11 +95,9 @@ export function createServer<TActor = unknown>(
           return await handleAction(ctx, action.name);
       }
     } catch {
-      // Adapter (or other handler) exceptions shouldn't surface as an
-      // unhandled rejection or a raw error to the caller  map them to the
-      // package's own JSON error envelope. The underlying error is
-      // intentionally not included in the response; it may carry storage
-      // internals a client shouldn't see.
+      // Adapter (or other handler) exceptions shouldn't surface as an unhandled rejection
+      // or a raw error to the caller map them to the package's own JSON error envelope.
+      // The underlying error is intentionally not included in the response; it may carry storage internals a client shouldn't see.
       return errorResponse(500, "Internal server error.");
     }
   };

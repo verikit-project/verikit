@@ -5,8 +5,7 @@ import {
 } from "./shared/relationship-builder.js";
 
 /**
- * Schema describing a belongs-to relationship.
- * This resource stores the foreign key to the target resource.
+ * Schema describing a belongs-to relationship. This resource stores the foreign key to the target resource.
  */
 export interface BelongsToRelationshipSchema {
   /** Literal "relationship" discriminator for discriminated unions. */
@@ -28,8 +27,7 @@ export interface BelongsToRelationshipSchema {
 }
 
 /**
- * Fluent builder for belongs-to relationships: this resource holds the
- * foreign key.
+ * Fluent builder for belongs-to relationships: this resource holds the foreign key.
  */
 export class BelongsToRelationshipBuilder<
   TResource extends Resource = Resource,
@@ -56,9 +54,7 @@ export class BelongsToRelationshipBuilder<
 }
 
 /**
- * Creates a belongs-to relationship.
- * The target is provided as a thunk so resources can reference each other
- * before both are fully defined.
+ * Creates a belongs-to relationship. The target is provided as a thunk so resources can reference each other before both are fully defined.
  */
 export function belongsTo<TResource extends Resource>(
   target: () => TResource,

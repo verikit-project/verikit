@@ -10,16 +10,14 @@ export interface FileConstraints extends FieldSchema {
 }
 
 /**
- * Widens a single-file value type to its array form for `.multiple()`,
- * preserving `null`/`undefined` as field-level (not per-element) optionality.
+ * Widens a single-file value type to its array form for `.multiple()`, preserving `null`/`undefined` as field-level (not per-element) optionality.
  */
 export type ToMultipleFileValue<TValue> = TValue extends null | undefined
   ? TValue
   : TValue[];
 
 /**
- * Narrows an array-of-files value type back to a single value for
- * `.multiple(false)`, preserving `null`/`undefined` field-level optionality.
+ * Narrows an array-of-files value type back to a single value for `.multiple(false)`, preserving `null`/`undefined` field-level optionality.
  */
 export type ToSingleFileValue<TValue> = TValue extends (infer TItem)[]
   ? TItem

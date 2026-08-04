@@ -16,8 +16,7 @@ export interface FileFieldSchema extends FileConstraints {
 }
 
 /**
- * Fluent builder for file upload fields. Storage strategy, upload transport,
- * and persistence are intentionally left to adapters.
+ * Fluent builder for file upload fields. Storage strategy, upload transport, and persistence are intentionally left to adapters.
  */
 export class FileFieldBuilder<
   TValue = string | null | undefined,

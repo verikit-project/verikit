@@ -14,8 +14,7 @@ export interface EmailFieldSchema extends StringLengthConstraints {
 }
 
 /**
- * Fluent builder for email fields. Attach `.validation()` for stricter
- * runtime checks than the field type alone communicates.
+ * Fluent builder for email fields. Attach `.validation()` for stricter runtime checks than the field type alone communicates.
  */
 export class EmailFieldBuilder<
   TValue = string | null | undefined,

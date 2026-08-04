@@ -10,7 +10,9 @@ export interface VerikitProviderProps {
   children?: ReactNode;
 }
 
-/** Supplies a `VerikitClient` instance to `useVerikitClient()` for its subtree. */
+/**
+ * Supplies a `VerikitClient` instance to `useVerikitClient()` for its subtree.
+ */
 export function VerikitProvider({ client, children }: VerikitProviderProps) {
   return (
     <VerikitClientContext.Provider value={client}>

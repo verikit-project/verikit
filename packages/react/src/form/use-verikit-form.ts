@@ -149,10 +149,9 @@ export function useVerikitForm<TResult = unknown>({
         },
         onValueChange: (value) => {
           form.setFieldValue(name, value);
-          // Functional update: two `onValueChange` calls in the same tick
-          // would otherwise both close over the same stale `fieldErrors`
-          // snapshot, so the second call's `setFieldErrors` would silently
-          // undo the first call's removal.
+          // Functional update: two `onValueChange` calls in the same tick would otherwise both
+          // close over the same stale `fieldErrors` snapshot, so the second call's
+          // `setFieldErrors` would silently undo the first call's removal.
           setFieldErrors((current) => omitFieldError(current, name));
         },
       };

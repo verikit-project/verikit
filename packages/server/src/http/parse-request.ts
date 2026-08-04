@@ -22,9 +22,7 @@ function parsePositiveInt(
 }
 
 /**
- * Parses `page`/`pageSize`/`sort`/`order`/`search` (or `q`) query params into
- * `ResourceListParams`. Shared by the list and search routes; the search
- * route passes a smaller `defaultPageSize` suited to combobox-style lookups.
+ * Parses `page`/`pageSize`/`sort`/`order`/`search` (or `q`) query params into `ResourceListParams`. Shared by the list and search routes; the search route passes a smaller `defaultPageSize` suited to combobox-style lookups.
  */
 export function parseListParams(
   url: URL,
@@ -57,9 +55,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Safely reads and parses a JSON object body. An empty body is treated as
- * `{}`. Resolves `{ ok: false }` for invalid JSON or a non-object payload
- * (arrays/primitives), so handlers can respond 400 without a try/catch.
+ * Safely reads and parses a JSON object body. An empty body is treated as `{}`. Resolves `{ ok: false }` for invalid JSON or a non-object payload (arrays/primitives), so handlers can respond 400 without a try/catch.
  */
 export async function parseJsonObjectBody(
   request: Request,

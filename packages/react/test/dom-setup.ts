@@ -1,13 +1,7 @@
 import { JSDOM } from "jsdom";
 
 /**
- * Installs a minimal jsdom environment on `globalThis` so `react-dom/client`'s
- * `createRoot` can mount into a real container and actually reconcile state
- * updates. Only the small set of interactive tests that need to observe a
- * `useState` functional updater actually run (which a one-shot
- * `renderToStaticMarkup` never triggers) should use this  every other test
- * in this package needs no DOM at all. Returns a cleanup function that
- * restores whatever was there before.
+ * Installs a minimal jsdom environment on `globalThis` so `react-dom/client`'s `createRoot` can mount into a real container and actually reconcile state updates. Only the small set of interactive tests that need to observe a `useState` functional updater actually run (which a one-shot `renderToStaticMarkup` never triggers) should use this every other test in this package needs no DOM at all. Returns a cleanup function that restores whatever was there before.
  */
 export function installJsdom(): () => void {
   const dom = new JSDOM("<!doctype html><body></body>");

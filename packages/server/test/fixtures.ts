@@ -29,7 +29,9 @@ export function createPostResource(): Resource {
   });
 }
 
-/** A tiny in-memory `ResourceAdapter` used across the server package's tests. */
+/**
+ * A tiny in-memory `ResourceAdapter` used across the server package's tests.
+ */
 export function createInMemoryAdapter(
   initial: readonly Post[] = [],
 ): ResourceAdapter<Post> & { records: Post[] } {

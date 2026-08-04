@@ -5,8 +5,7 @@ import {
 } from "./shared/relationship-builder.js";
 
 /**
- * Schema describing a has-many relationship.
- * The target resource stores the foreign key to this resource.
+ * Schema describing a has-many relationship. The target resource stores the foreign key to this resource.
  */
 export interface HasManyRelationshipSchema {
   /** Literal "relationship" discriminator for discriminated unions. */
@@ -21,15 +20,16 @@ export interface HasManyRelationshipSchema {
   label?: string;
   /** Name of the corresponding relationship field on the target resource. */
   inverse?: string;
-  /** Foreign key column (on the target resource) used to find matching rows. */
+  /**
+   * Foreign key column (on the target resource) used to find matching rows.
+   */
   foreignKey?: unknown;
   /** Field on the target resource shown when this relationship is rendered. */
   displayField?: string;
 }
 
 /**
- * Fluent builder for has-many relationships.
- * The target resource stores the foreign key to this resource.
+ * Fluent builder for has-many relationships. The target resource stores the foreign key to this resource.
  */
 export class HasManyRelationshipBuilder<
   TResource extends Resource = Resource,
@@ -62,9 +62,7 @@ export type InferHasMany<TRelationship> =
     : never;
 
 /**
- * Creates a has-many relationship.
- * The target is provided as a thunk so resources can reference each other
- * before both are fully defined.
+ * Creates a has-many relationship. The target is provided as a thunk so resources can reference each other before both are fully defined.
  */
 export function hasMany<TResource extends Resource>(
   target: () => TResource,

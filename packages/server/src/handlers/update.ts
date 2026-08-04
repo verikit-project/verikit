@@ -29,10 +29,9 @@ export async function handleUpdate(
     { actor, record: existing },
   );
 
-  // A denied actor gets the same 404 as a missing record: returning 403 here
-  // would let them distinguish "doesn't exist" from "exists but I can't
-  // update it" (an existence oracle) for a record we've already confirmed is
-  // real.
+  // A denied actor gets the same 404 as a missing record: returning 403 here would let
+  // them distinguish "doesn't exist" from "exists but I can't update it" (an existence
+  // oracle) for a record we've already confirmed is real.
   if (!permission.allowed) {
     return notFoundResponse();
   }
@@ -43,11 +42,9 @@ export async function handleUpdate(
     return errorResponse(400, "Invalid JSON body.");
   }
 
-  // PATCH is partial: only validate fields actually present in the body, so
-  // a `required()`/`default()` field already set on the record doesn't force
-  // every unrelated update to resupply it (core's `shouldValidateField`
-  // checks required/default fields unconditionally, which is right for
-  // `create`'s full payload but wrong for a partial `update`).
+  // PATCH is partial: only validate fields actually present in the body, so a
+  // `required()`/`default()` field already set on the record doesn't force every
+  // unrelated update to resupply it (core's `shouldValidateField` checks required/default fields unconditionally, which is right for `create`'s full payload but wrong for a partial `update`).
   const submittedFields = Object.fromEntries(
     Object.entries(entry.fields).filter(([name]) =>
       Object.hasOwn(body.value, name),

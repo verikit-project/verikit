@@ -21,14 +21,7 @@ function resourcePath(
 }
 
 /**
- * Builds the per-resource route table once at `createServer()` time, sorted
- * by base-segment length (longest first) so a nested custom `path` is tried
- * before a shorter one that would otherwise swallow its prefix. Also
- * finalizes each resource's field schemas once, since they never change
- * per request.
- *
- * @throws {Error} If two resources resolve to the same base route, or a
- * resource declares two actions with the same name.
+ * Builds the per-resource route table once at `createServer()` time, sorted by base-segment length (longest first) so a nested custom `path` is tried before a shorter one that would otherwise swallow its prefix. Also finalizes each resource's field schemas once, since they never change per request. @throws {Error} If two resources resolve to the same base route, or a resource declares two actions with the same name.
  */
 export function buildRouteTable<TActor>(
   resources: readonly ServerResourceConfig<TActor>[],
@@ -72,9 +65,7 @@ export interface ResolvedRoute<TActor = unknown> {
 }
 
 /**
- * Finds the resource whose base path prefixes `pathname` (tried longest-base
- * first) and resolves the action within it. Returns `undefined` if no
- * resource's base matches at all.
+ * Finds the resource whose base path prefixes `pathname` (tried longest-base first) and resolves the action within it. Returns `undefined` if no resource's base matches at all.
  */
 export function resolveRoute<TActor>(
   table: readonly RouteTableEntry<TActor>[],

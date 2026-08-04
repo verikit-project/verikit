@@ -7,7 +7,9 @@ import {
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
 
-/** Handles both `GET {base}` (list) and `GET {base}/search` (a smaller-page-size alias). */
+/**
+ * Handles both `GET {base}` (list) and `GET {base}/search` (a smaller-page-size alias).
+ */
 export async function handleList(
   ctx: HandlerContext,
   options: { defaultPageSize?: number } = {},
@@ -26,10 +28,9 @@ export async function handleList(
 
   const { sort, ...rest } = parseListParams(url, options);
 
-  // `sort.field` is caller-controlled and reaches the adapter verbatim.
-  // Dropping anything outside the resource's own field names keeps an
-  // adapter that builds a raw `ORDER BY <field>` (or similar) from having to
-  // defend against arbitrary identifiers itself.
+  // `sort.field` is caller-controlled and reaches the adapter verbatim. Dropping
+  // anything outside the resource's own field names keeps an adapter that builds a raw
+  // `ORDER BY <field>` (or similar) from having to defend against arbitrary identifiers itself.
   const params = {
     ...rest,
     ...(sort && Object.hasOwn(entry.fields, sort.field) && { sort }),

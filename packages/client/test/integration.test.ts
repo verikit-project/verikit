@@ -5,10 +5,9 @@ import { VerikitClientError } from "../src/errors.js";
 import { createTestServerFetch, type Post } from "./fixtures.js";
 
 /**
- * Exercises the client against a real `createServer()` handler (not a mock),
- * confirming the request shape the client builds actually matches what the
- * server expects.
- */
+ * Exercises the client against a real `createServer()`
+ * handler (not a mock), confirming the request shape the client builds actually matches what the server expects.
+ *  */
 
 function clientAs(fetchImpl: typeof fetch, role: "admin" | "viewer") {
   return createClient({

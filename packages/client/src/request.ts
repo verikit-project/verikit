@@ -5,7 +5,9 @@ import type {
   ValidationIssueLike,
 } from "./types.js";
 
-/** Serializes `ListParams` the same way `parseListParams` on the server reads them back. */
+/**
+ * Serializes `ListParams` the same way `parseListParams` on the server reads them back.
+ */
 export function buildListQuery(params: ListParams): URLSearchParams {
   const query = new URLSearchParams();
 
@@ -114,9 +116,7 @@ export interface SendRequestParams {
 }
 
 /**
- * Builds the URL, resolves headers, serializes the body, sends the request,
- * and either returns the parsed JSON body (`undefined` for a 204) or throws a
- * `VerikitClientError` built from the server's error envelope.
+ * Builds the URL, resolves headers, serializes the body, sends the request, and either returns the parsed JSON body (`undefined` for a 204) or throws a `VerikitClientError` built from the server's error envelope.
  */
 export async function sendRequest(params: SendRequestParams): Promise<unknown> {
   const hasBody = params.body !== undefined;

@@ -17,7 +17,9 @@ export interface FieldShellProps {
   children: ReactNode;
 }
 
-/** Renders a label, description, error message, and field control wrapper. */
+/**
+ * Renders a label, description, error message, and field control wrapper.
+ */
 export function FieldShell({
   field,
   id,

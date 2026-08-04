@@ -14,10 +14,7 @@ import {
 } from "./columns.js";
 
 /**
- * Structural union of the drizzle database clients this adapter can drive.
- * All three dialects expose the same `select`/`insert`/`update`/`delete`
- * entry points; only their generic parameters differ, which is why this is a
- * type union rather than a shared base class.
+ * Structural union of the drizzle database clients this adapter can drive. All three dialects expose the same `select`/`insert`/`update`/`delete` entry points; only their generic parameters differ, which is why this is a type union rather than a shared base class.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any -- dialect-specific generics vary per driver; only the shared query-builder surface is used */
 export type AnyDrizzleDatabase =
@@ -27,20 +24,7 @@ export type AnyDrizzleDatabase =
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
- * Builds a `ResourceAdapter` backed by a drizzle table, so `@verikit/server`
- * never has to import drizzle-orm itself: `createServer()` only ever talks
- * to the `ResourceAdapter` interface, and this is the piece that turns that
- * interface into real queries.
- *
- * Column mapping: a field maps to the same-named table column by default, or
- * to an explicit one via `from(column).as(field())` when the names differ.
- * The row's id always comes from the table's own primary key column; a
- * resource doesn't need to declare an "id" field for this to work.
- *
- * @throws {Error} If `resource.table` is missing, the table doesn't declare
- * exactly one primary key column, or the table is a MySQL table (MySQL has
- * no `RETURNING` support, so `create`/`update` can't be implemented on it
- * yet).
+ * Builds a `ResourceAdapter` backed by a drizzle table, so `@verikit/server` never has to import drizzle-orm itself: `createServer()` only ever talks to the `ResourceAdapter` interface, and this is the piece that turns that interface into real queries. Column mapping: a field maps to the same-named table column by default, or to an explicit one via `from(column).as(field())` when the names differ. The row's id always comes from the table's own primary key column; a resource doesn't need to declare an "id" field for this to work. @throws {Error} If `resource.table` is missing, the table doesn't declare exactly one primary key column, or the table is a MySQL table (MySQL has no `RETURNING` support, so `create`/`update` can't be implemented on it yet).
  */
 export function createDrizzleAdapter<
   TFields extends FieldMap,
@@ -78,12 +62,9 @@ export function createDrizzleAdapter<
         );
       }
 
-      // searchCondition() builds a lower(...) like lower(...) comparison,
-      // which only Postgres/MySQL/SQLite agree on for text columns. On a
-      // non-text column, Postgres and MySQL throw at query time (SQLite's
-      // loose typing masks it by silently no-opping instead). `.searchable()`
-      // has no type restriction in @verikit/core, so this has to be a
-      // runtime check here rather than a compile-time one.
+      // searchCondition() builds a lower(...) like lower(...) comparison, which only
+      // Postgres/MySQL/SQLite agree on for text columns. On a non-text column, Postgres
+      // and MySQL throw at query time (SQLite's loose typing masks it by silently no-opping instead). `.searchable()` has no type restriction in @verikit/core, so this has to be a runtime check here rather than a compile-time one.
       if (resolved.column.dataType !== "string") {
         throw new Error(
           `@verikit/drizzle: resource "${resource.name}"'s searchable field "${name}" maps to a non-text column (dataType "${resolved.column.dataType}"). Search only supports text columns.`,
@@ -106,10 +87,9 @@ export function createDrizzleAdapter<
     return record;
   }
 
-  // Builds the row-fetch and count queries for `list()` against whichever
-  // client `tx` is  the outer transaction wrapper, either dialect's own
-  // client  so both queries always run against the same snapshot instead
-  // of two independent reads that a concurrent write could land between.
+  // Builds the row-fetch and count queries for `list()` against whichever client `tx`
+  // is the outer transaction wrapper, either dialect's own client so both queries
+  // always run against the same snapshot instead of two independent reads that a concurrent write could land between.
   function buildListQueries(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- same dialect-erased client shape as `client` above
     tx: any,
@@ -155,12 +135,9 @@ export function createDrizzleAdapter<
         ? searchCondition(searchableColumns, params.search)
         : undefined;
 
-      // better-sqlite3 is fully synchronous: its native `transaction()`
-      // wrapper throws "Transaction function cannot return a promise" if the
-      // callback is `async`, so the row and count queries have to run via
-      // their synchronous `.all()` method inside a plain callback instead of
-      // `await`-ing them. Every other drizzle dialect's `transaction()` is
-      // genuinely async and supports the `await Promise.all([...])` form.
+      // better-sqlite3 is fully synchronous: its native `transaction()` wrapper throws
+      // "Transaction function cannot return a promise" if the callback is `async`, so the
+      // row and count queries have to run via their synchronous `.all()` method inside a plain callback instead of `await`-ing them. Every other drizzle dialect's `transaction()` is genuinely async and supports the `await Promise.all([...])` form.
       if (client.resultKind === "sync") {
         return client.transaction(() => {
           const { rowsQuery, totalQuery } = buildListQueries(
@@ -216,10 +193,9 @@ export function createDrizzleAdapter<
 
       const row = mapValuesToRow(values, columnsByField);
 
-      // An empty payload (or one whose fields all mapped to no column) is a
-      // legitimate no-op: the caller already confirmed the record exists, so
-      // this returns it unchanged rather than sending drizzle a `set({})`,
-      // which throws "No values to set" instead of updating zero columns.
+      // An empty payload (or one whose fields all mapped to no column) is a legitimate
+      // no-op: the caller already confirmed the record exists, so this returns it
+      // unchanged rather than sending drizzle a `set({})`, which throws "No values to set" instead of updating zero columns.
       if (Object.keys(row).length === 0) {
         const record = await selectById(value);
 

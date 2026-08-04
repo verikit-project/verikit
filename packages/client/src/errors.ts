@@ -4,13 +4,8 @@ export interface VerikitClientErrorOptions {
   issues?: ValidationIssueLike[];
   extra?: Record<string, unknown>;
 }
-
-/**
- * Thrown for any non-2xx, non-204 response. Mirrors `@verikit/server`'s single
- * generic error envelope (`{ error: { message, issues?, ...extra } }`) rather
- * than a class-per-status-code hierarchy callers distinguish cases via
- * `status`/`extra`, not `instanceof`.
- */
+// Thrown for any non-2xx, non-204 response. Mirrors `@verikit/server`'s generic
+// error envelope. Distinguish cases via `status` and `extra`, not `instanceof`.
 export class VerikitClientError extends Error {
   readonly status: number;
   readonly issues?: ValidationIssueLike[];

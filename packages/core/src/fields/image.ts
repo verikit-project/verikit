@@ -16,8 +16,7 @@ export interface ImageFieldSchema extends FileConstraints {
 }
 
 /**
- * Fluent builder for image upload fields.
- * Upload transport and storage are handled by adapters.
+ * Fluent builder for image upload fields. Upload transport and storage are handled by adapters.
  */
 export class ImageFieldBuilder<
   TValue = string | null | undefined,

@@ -11,15 +11,9 @@ function defaultDeniedMessage(field: string): string {
 }
 
 /**
- * Validates values against a resource's field schemas the same way
- * `validateResourceAsync` does, but first checks write access for each
- * field via `checkFieldAccess`.
- *
- * A field the actor cannot write to is reported as a single validation issue
- * (using the denying rule's `reason` if it provided one) instead of being
- * run through its normal constraint and attached-validator checks  being
- * unwritable takes precedence over whether the given value would otherwise
- * be valid.
+ * Validates values against a resource's field schemas the
+ *  same way `validateResourceAsync` does,
+ * but first checks write access for each field via `checkFieldAccess`. A field the actor cannot write to is reported as a single validation issue (using the denying rule's `reason` if it provided one) instead of being run through its normal constraint and attached-validator checks being unwritable takes precedence over whether the given value would otherwise be valid.
  */
 export async function validateWritableFields<TActor, TRecord>(
   fields: Record<string, FieldSchema>,

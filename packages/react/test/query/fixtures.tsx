@@ -27,10 +27,7 @@ export interface FakeResourceCalls {
 }
 
 /**
- * A hand-rolled fake `VerikitClient` (single resource, call-counting)
- * mirrors the fake-fetch/in-memory-adapter pattern `@verikit/client`'s own
- * tests use, so these hook tests stay fast and deterministic without a real
- * server or network path.
+ * A hand-rolled fake `VerikitClient` (single resource, call-counting) mirrors the fake-fetch/in-memory-adapter pattern `@verikit/client`'s own tests use, so these hook tests stay fast and deterministic without a real server or network path.
  */
 export interface FakeClientFailures {
   update?: boolean;
@@ -43,14 +40,12 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   client: VerikitClient;
   calls: FakeResourceCalls;
   records: FakeRecord[];
-  /** Set a flag to `true` to make the next matching call reject once, then reset itself. */
+  /**
+   * Set a flag to `true` to make the next matching call reject once, then reset itself.
+   */
   failNext: FakeClientFailures;
   /**
-   * Makes the next call to `method` wait until the returned function is
-   * invoked, so a test can observe cache state while a "network" call is
-   * still in flight (e.g. to prove an optimistic update landed before the
-   * server responded, or that a hook with no built-in optimism left the
-   * cache untouched while waiting).
+   * Makes the next call to `method` wait until the returned function is invoked, so a test can observe cache state while a "network" call is still in flight (e.g. to prove an optimistic update landed before the server responded, or that a hook with no built-in optimism left the cache untouched while waiting).
    */
   block: (method: FakeMethod) => () => void;
 } {
@@ -191,7 +186,9 @@ export interface TestHarness {
   cleanup: () => void;
 }
 
-/** Mounts `client` under `VerikitProvider` + a fresh, no-retry `QueryClientProvider`. */
+/**
+ * Mounts `client` under `VerikitProvider` + a fresh, no-retry `QueryClientProvider`.
+ */
 export function setupHarness(client: VerikitClient): TestHarness {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -229,7 +226,9 @@ export function setupHarness(client: VerikitClient): TestHarness {
   };
 }
 
-/** Polls `predicate`, flushing React/microtask work between attempts, until it's true or `timeout` elapses. */
+/**
+ * Polls `predicate`, flushing React/microtask work between attempts, until it's true or `timeout` elapses.
+ */
 export async function waitFor(
   predicate: () => boolean,
   {

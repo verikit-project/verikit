@@ -6,7 +6,9 @@ export type AdapterForeignKeyReference = object;
 export type RelationshipForeignKey =
   FieldReference<string> | AdapterForeignKeyReference;
 
-/** State shared by every relationship builder, one slot per fluent setter. */
+/**
+ * State shared by every relationship builder, one slot per fluent setter.
+ */
 export interface RelationshipBuilderState {
   label?: string;
   inverse?: string;
@@ -20,8 +22,7 @@ type BuilderConstructor<TBuilder, TResource extends Resource, TState> = new (
 ) => TBuilder;
 
 /**
- * Base class for relationship builders using immutable state cloning,
- * mirroring the FieldBuilder pattern.
+ * Base class for relationship builders using immutable state cloning, mirroring the FieldBuilder pattern.
  */
 export abstract class RelationshipBuilder<
   TResource extends Resource = Resource,
@@ -36,8 +37,7 @@ export abstract class RelationshipBuilder<
   }
 
   /**
-   * Creates a new instance of the current concrete builder (via
-   * `this.constructor`) so subclass setters stay available after chaining.
+   * Creates a new instance of the current concrete builder (via `this.constructor`) so subclass setters stay available after chaining.
    */
   protected withState(patch: Partial<TState>): this {
     const Builder = this.constructor as BuilderConstructor<
@@ -65,12 +65,7 @@ export abstract class RelationshipBuilder<
   }
 
   /**
-   * Sets the foreign key used to look up matching rows.
-   *
-   * Pass `resource.field("name")` or the field helper from
-   * `defineResource({ relationships: (field) => ... })` for compile-time
-   * checked resource field names. Adapter-specific column reference objects
-   * are also accepted.
+   * Sets the foreign key used to look up matching rows. Pass `resource.field("name")` or the field helper from `defineResource({ relationships: (field) => ... })` for compile-time checked resource field names. Adapter-specific column reference objects are also accepted.
    */
   via(foreignKey: RelationshipForeignKey): this {
     return this.withState({ foreignKey } as Partial<TState>);

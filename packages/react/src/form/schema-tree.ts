@@ -27,7 +27,9 @@ import {
   VerikitResourceSubmitResult,
 } from "./submission.js";
 
-/** Options for inferring, validating, and submitting schema tree form values. */
+/**
+ * Options for inferring, validating, and submitting schema tree form values.
+ */
 export interface SubmitVerikitSchemaTreeFormOptions<TResult = unknown> {
   /** Schema nodes that describe the rendered form tree. */
   tree: readonly SchemaNode[];
@@ -47,7 +49,9 @@ export interface SubmitVerikitSchemaTreeActionFormOptions<
 > {
   /** Runtime action whose form should infer, validate, and execute. */
   action: ActionBuilder<TName, TForm, TContext, TRecord, TResult>;
-  /** Action request without input; inferred tree values are supplied as input. */
+  /**
+   * Action request without input; inferred tree values are supplied as input.
+   */
   request: Omit<ActionRunRequest<TContext, TRecord>, "input">;
   /** Schema tree form values containing the action input at `path`. */
   values: VerikitFormValues;
@@ -108,11 +112,9 @@ function shouldValidateTreeField(
 ): boolean {
   const key = String(path[path.length - 1]);
 
-  // An object literal with a computed key always creates that key, even when
-  // the value is `undefined`  so `{ [key]: getValueAtPath(...) }` would
-  // report every field as "present" regardless of whether `values` actually
-  // has an entry there. Only include the key when it's genuinely present, so
-  // `shouldValidateField`'s `Object.hasOwn` check reflects reality.
+  // An object literal with a computed key always creates that key, even when the value
+  // is `undefined` so `{ [key]: getValueAtPath(...) }` would report every field as
+  // "present" regardless of whether `values` actually has an entry there. Only include the key when it's genuinely present, so `shouldValidateField`'s `Object.hasOwn` check reflects reality.
   const wrapper = hasValueAtPath(values, path)
     ? { [key]: getValueAtPath(values, path) }
     : {};
@@ -162,7 +164,9 @@ function treeFieldIssues(
   );
 }
 
-/** Writes each entry's value at its path. Callers must have already confirmed every entry succeeded. */
+/**
+ * Writes each entry's value at its path. Callers must have already confirmed every entry succeeded.
+ */
 function applySuccessfulResults(
   base: VerikitFormValues,
   entries: readonly TreeFieldResult[],
@@ -178,7 +182,9 @@ function applySuccessfulResults(
   );
 }
 
-/** Infers, validates, and submits values for fields nested in a schema tree. */
+/**
+ * Infers, validates, and submits values for fields nested in a schema tree.
+ */
 export async function submitVerikitSchemaTreeForm<TResult = undefined>({
   tree,
   values,
@@ -232,7 +238,9 @@ export async function submitVerikitSchemaTreeForm<TResult = undefined>({
   };
 }
 
-/** Infers and validates schema tree values without calling a submit callback. */
+/**
+ * Infers and validates schema tree values without calling a submit callback.
+ */
 export async function inferAndValidateSchemaTree(
   tree: readonly SchemaNode[],
   values: VerikitFormValues,
@@ -244,7 +252,9 @@ export async function inferAndValidateSchemaTree(
     : { success: false, issues: result.issues };
 }
 
-/** Extracts nested action input values from a schema tree and runs the action. */
+/**
+ * Extracts nested action input values from a schema tree and runs the action.
+ */
 export async function submitVerikitSchemaTreeActionForm<
   TName extends string = string,
   TForm extends ActionFormMap = ActionFormMap,

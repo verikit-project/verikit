@@ -4,11 +4,15 @@ import {
   ResourceSchema,
 } from "../resource/resource.js";
 
-/** A single problem found while compiling a set of resources against each other. */
+/**
+ * A single problem found while compiling a set of resources against each other.
+ */
 export interface CompileIssue {
   /** Name of the resource whose declaration needs fixing. */
   resource: string;
-  /** Name of the offending relationship, if the issue is relationship-scoped. */
+  /**
+   * Name of the offending relationship, if the issue is relationship-scoped.
+   */
   relationship?: string;
   message: string;
 }
@@ -18,7 +22,9 @@ export interface CompiledGraph {
   resources: Record<string, ResourceSchema>;
 }
 
-/** Result of compiling a set of resources; mirrors the ValidationResult shape used elsewhere. */
+/**
+ * Result of compiling a set of resources; mirrors the ValidationResult shape used elsewhere.
+ */
 export type CompileResult =
   | { success: true; graph: CompiledGraph }
   | { success: false; issues: CompileIssue[] };
@@ -111,11 +117,9 @@ function checkRelationship(
     }
   }
 
-  // belongsToMany foreign keys are frequently adapter-specific join
-  // descriptors (e.g. `{ left, right }`) rather than a single field on
-  // either side. Even string references are ambiguous without knowing whether
-  // they point at the owner, target, or join resource, so only the through
-  // resource's existence is checked here.
+  // belongsToMany foreign keys are frequently adapter-specific join descriptors (e.g.
+  // `{ left, right }`) rather than a single field on either side. Even string
+  // references are ambiguous without knowing whether they point at the owner, target, or join resource, so only the through resource's existence is checked here.
   if (
     relationship.relationshipType === "belongsToMany" &&
     relationship.through !== undefined &&
@@ -132,11 +136,8 @@ function checkRelationship(
 }
 
 /**
- * Compiles a set of resources together, cross-checking each relationship's
- * target resource, foreign key field, and (for belongsToMany) through
- * resource against the other resources in the same set. Each resource is
- * already valid on its own via `.toSchema()`; this only catches problems
- * that only exist once resources are considered together.
+ * Compiles a set of resources together, cross-checking each
+ *  relationship's target resource, foreign key field, and (for belongsToMany) through resource against the other resources in the same set. Each resource is already valid on its own via `.toSchema()`; this only catches problems that only exist once resources are considered together.
  */
 export function compile(resources: readonly Resource[]): CompileResult {
   const duplicateIssues = findDuplicateNames(resources);

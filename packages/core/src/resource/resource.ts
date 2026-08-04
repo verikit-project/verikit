@@ -25,8 +25,7 @@ export type RelationshipSchema =
 export type RelationshipNode = RelationshipSchema;
 
 /**
- * Structural shape shared by belongsTo/hasMany/belongsToMany, whose concrete
- * builders/objects have no common base class  only `toSchema` is uniform.
+ * Structural shape shared by belongsTo/hasMany/belongsToMany, whose concrete builders/objects have no common base class only `toSchema` is uniform.
  */
 export interface AnyRelationshipBuilder {
   toSchema(name?: string): RelationshipSchema;
@@ -38,8 +37,7 @@ export type RelationshipMap = Record<string, AnyRelationshipBuilder>;
 declare const fieldReferenceBrand: unique symbol;
 
 /**
- * Branded string reference to a resource field. It serializes as the field
- * name, while preserving compile-time checks at `.via(...)` call sites.
+ * Branded string reference to a resource field. It serializes as the field name, while preserving compile-time checks at `.via(...)` call sites.
  */
 export type FieldReference<TName extends string = string> = TName & {
   readonly [fieldReferenceBrand]: "field";
@@ -83,7 +81,9 @@ export interface WizardNode {
   }[];
 }
 
-/** A repeatable group of layout children (e.g. a dynamic list of entries). */
+/**
+ * A repeatable group of layout children (e.g. a dynamic list of entries).
+ */
 export interface RepeaterNode {
   type: "repeater";
   name: string;
@@ -98,7 +98,9 @@ export interface ActionNode {
   input?: SchemaNode[];
 }
 
-/** Discriminated union of every node type that can appear in a layout tree. */
+/**
+ * Discriminated union of every node type that can appear in a layout tree.
+ */
 export type SchemaNode =
   | FieldNode
   | RelationshipNode
@@ -145,7 +147,9 @@ export interface ResourceConfig<
   meta?: Record<string, unknown>;
 }
 
-/** Extracts the plain value shape of a resource's fields (e.g. for form values). */
+/**
+ * Extracts the plain value shape of a resource's fields (e.g. for form values).
+ */
 export type InferResourceFields<TResource> =
   TResource extends Resource<string, infer TFields, unknown, RelationshipMap>
     ? {
@@ -171,7 +175,9 @@ export type InferResourceRelationships<TRelationships extends RelationshipMap> =
         [K in keyof TRelationships]: InferRelationship<TRelationships[K]>;
       };
 
-/** Infers the plain runtime shape of a resource: its fields merged with its relationship values. */
+/**
+ * Infers the plain runtime shape of a resource: its fields merged with its relationship values.
+ */
 export type InferResource<TResource> =
   TResource extends Resource<
     string,
@@ -220,8 +226,7 @@ function resolveRelationships<
 }
 
 /**
- * Immutable resource definition.
- * Finalize with `.toSchema()` to produce a serializable resource schema.
+ * Immutable resource definition. Finalize with `.toSchema()` to produce a serializable resource schema.
  */
 export class Resource<
   TName extends string = string,
@@ -235,18 +240,16 @@ export class Resource<
   readonly relationships: TRelationships;
   readonly meta?: Record<string, unknown>;
 
-  // Stored with the builder parameters erased to `any` so TFields/TRelationships
-  // do not appear in a contravariant position here; otherwise it would make
-  // Resource invariant in those params and break inference for callers (e.g.
-  // relationship builders) that accept `Resource` generically.
+  // Stored with the builder parameters erased to `any` so TFields/TRelationships do
+  // not appear in a contravariant position here; otherwise it would make Resource
+  // invariant in those params and break inference for callers (e.g. relationship builders) that accept `Resource` generically.
   private readonly formFactory?: (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
     builder: ResourceLayoutBuilder<any, any>,
   ) => SchemaNode[];
 
   /**
-   * @throws {Error} If the resource name is empty, or if a field and
-   * relationship share the same name.
+   * @throws {Error} If the resource name is empty, or if a field and relationship share the same name.
    */
   constructor(
     name: TName,
@@ -279,7 +282,9 @@ export class Resource<
     this.formFactory = formFactory;
   }
 
-  /** Returns a compile-time checked reference to one of this resource's fields. */
+  /**
+   * Returns a compile-time checked reference to one of this resource's fields.
+   */
   field<TName extends keyof TFields & string>(
     name: TName,
   ): FieldReference<TName> {
@@ -305,9 +310,7 @@ export class Resource<
   }
 
   /**
-   * Finalizes fields and relationships into schemas and builds the layout
-   * tree (via the form factory if `.form()` was called, otherwise a flat
-   * list of fields in declaration order).
+   * Finalizes fields and relationships into schemas and builds the layout tree (via the form factory if `.form()` was called, otherwise a flat list of fields in declaration order).
    */
   toSchema(): ResourceSchema<TName, TFields, TRelationships> {
     const fields = Object.fromEntries(
@@ -337,15 +340,16 @@ export class Resource<
   }
 }
 
-/** A layout child: a field/relationship name to resolve, or a literal node. */
+/**
+ * A layout child: a field/relationship name to resolve, or a literal node.
+ */
 export type LayoutChild<
   TFields extends FieldMap,
   TRelationships extends RelationshipMap,
 > = (keyof TFields & string) | (keyof TRelationships & string) | SchemaNode;
 
 /**
- * Builder passed into `.form()` factories; resolves field/relationship
- * names into schema nodes and assembles them into layout tree nodes.
+ * Builder passed into `.form()` factories; resolves field/relationship names into schema nodes and assembles them into layout tree nodes.
  */
 export class ResourceLayoutBuilder<
   TFields extends FieldMap,
@@ -374,7 +378,9 @@ export class ResourceLayoutBuilder<
     this.relationships = relationships;
   }
 
-  /** Returns the finalized field node for `name`. @throws {Error} If unknown. */
+  /**
+   * Returns the finalized field node for `name`. @throws {Error} If unknown.
+   */
   field<TName extends keyof TFields & string>(name: TName): FieldNode {
     if (!Object.hasOwn(this.fields, name)) {
       throw new Error(`Unknown field "${name}" in resource layout.`);
@@ -383,7 +389,9 @@ export class ResourceLayoutBuilder<
     return this.fields[name] as FieldNode;
   }
 
-  /** Returns the finalized relationship node for `name`. @throws {Error} If unknown. */
+  /**
+   * Returns the finalized relationship node for `name`. @throws {Error} If unknown.
+   */
   relationship<TName extends keyof TRelationships & string>(
     name: TName,
   ): RelationshipNode {

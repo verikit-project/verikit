@@ -117,9 +117,8 @@ test("submitVerikitSchemaTreeForm treats an empty repeater as having no rows to 
 
 test("submitVerikitSchemaTreeForm skips a truly absent optional field instead of validating it as undefined", async () => {
   // `shouldValidateTreeField` used to build `{ [key]: getValueAtPath(...) }`
-  // unconditionally  an object literal with a computed key always creates
-  // that key, even when the value is `undefined`, so every optional field
-  // looked "present" and its custom validator ran against `undefined`.
+  // unconditionally an object literal with a computed key always creates that key,
+  // even when the value is `undefined`, so every optional field looked "present" and its custom validator ran against `undefined`.
   const nickname = text()
     .optional()
     .validation({

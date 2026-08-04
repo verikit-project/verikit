@@ -1,19 +1,27 @@
-/** A validation issue as serialized by `@verikit/server`'s error envelope. */
+/**
+ * A validation issue as serialized by `@verikit/server`'s error envelope.
+ */
 export interface ValidationIssueLike {
   path: (string | number)[];
   message: string;
 }
 
-/** Resolved fresh before every request, so e.g. a refreshed auth token is picked up. */
+/**
+ * Resolved fresh before every request, so e.g. a refreshed auth token is picked up.
+ */
 export type HeadersSource =
   HeadersInit | (() => HeadersInit | Promise<HeadersInit>);
 
 export interface ClientOptions {
-  /** Prefix every resource path is built under, e.g. `"/api"` or `"https://api.example.com"`. */
+  /**
+   * Prefix every resource path is built under, e.g. `"/api"` or `"https://api.example.com"`.
+   */
   baseUrl: string;
   /** Static headers, or a function re-resolved before every request. */
   headers?: HeadersSource;
-  /** Overrides the Fetch implementation used to send requests; defaults to the global `fetch`. */
+  /**
+   * Overrides the Fetch implementation used to send requests; defaults to the global `fetch`.
+   */
   fetch?: typeof fetch;
 }
 

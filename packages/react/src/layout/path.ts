@@ -13,10 +13,7 @@ export function getValueAtPath(source: unknown, path: SchemaPath): unknown {
 }
 
 /**
- * Reports whether `path` resolves to an own, explicitly present key
- * distinct from `getValueAtPath` returning `undefined`, which is also what
- * a truly absent path returns. Needed to tell "the field was cleared to
- * undefined" apart from "the field was never touched."
+ * Reports whether `path` resolves to an own, explicitly present key distinct from `getValueAtPath` returning `undefined`, which is also what a truly absent path returns. Needed to tell "the field was cleared to undefined" apart from "the field was never touched."
  */
 export function hasValueAtPath(source: unknown, path: SchemaPath): boolean {
   if (path.length === 0) {
@@ -40,7 +37,9 @@ export function pathKey(path: SchemaPath): string {
   return path.join(".");
 }
 
-/** Immutably sets `value` at `path`, cloning only the containers along the way. */
+/**
+ * Immutably sets `value` at `path`, cloning only the containers along the way.
+ */
 export function setValueAtPath(
   source: unknown,
   path: SchemaPath,

@@ -4,13 +4,17 @@ export type ResourceOperation = "create" | "read" | "update" | "delete";
 /** Access modes a field-level rule can gate. */
 export type FieldAccess = "read" | "write";
 
-/** Context passed to a permission rule: who is acting, and optionally on what record. */
+/**
+ * Context passed to a permission rule: who is acting, and optionally on what record.
+ */
 export interface PermissionContext<TActor = unknown, TRecord = unknown> {
   actor: TActor;
   record?: TRecord;
 }
 
-/** Outcome of a permission check; the boolean shorthand widens to the object form. */
+/**
+ * Outcome of a permission check; the boolean shorthand widens to the object form.
+ */
 export type PermissionResult =
   | boolean
   | {
@@ -35,7 +39,9 @@ export function normalizePermissionResult(result: PermissionResult): {
   return typeof result === "boolean" ? { allowed: result } : result;
 }
 
-/** Normalizes a rule input (boolean shorthand or predicate) to a callable rule. */
+/**
+ * Normalizes a rule input (boolean shorthand or predicate) to a callable rule.
+ */
 export function normalizePermissionRule<TActor = unknown, TRecord = unknown>(
   input: PermissionRuleInput<TActor, TRecord>,
 ): PermissionRule<TActor, TRecord> {

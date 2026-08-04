@@ -26,11 +26,7 @@ export interface ActionState<TContext, TRecord, TInput, TResult> {
 }
 
 /**
- * Immutable runtime action builder.
- *
- * The builder covers identity, presentation, availability, permissions,
- * confirmation, optional form input, execution, result metadata, and
- * lifecycle hooks.
+ * Immutable runtime action builder. The builder covers identity, presentation, availability, permissions, confirmation, optional form input, execution, result metadata, and lifecycle hooks.
  */
 export class ActionBuilder<
   TName extends string,
@@ -147,9 +143,7 @@ export class ActionBuilder<
   }
 
   /**
-   * Attaches a permissions definition; `runAction` denies execution with
-   * `reason: "forbidden"` when `checkAction(permissions, name, ...)` denies
-   * this action's name, checked before availability and form validation.
+   * Attaches a permissions definition; `runAction` denies execution with `reason: "forbidden"` when `checkAction(permissions, name, ...)` denies this action's name, checked before availability and form validation.
    */
   permissions<TNextContext = TContext, TNextRecord = TRecord>(
     permissions: PermissionsBuilder<TNextContext, TNextRecord>,

@@ -17,7 +17,9 @@ export const posts = sqliteTable("posts", {
   published: integer("published", { mode: "boolean" }).notNull().default(false),
 });
 
-/** A table whose PK/column names don't match the resource's field names, to exercise `from(column).as(...)`. */
+/**
+ * A table whose PK/column names don't match the resource's field names, to exercise `from(column).as(...)`.
+ */
 export const legacyPosts = sqliteTable("legacy_posts", {
   postId: sqliteText("post_id")
     .primaryKey()
@@ -25,7 +27,9 @@ export const legacyPosts = sqliteTable("legacy_posts", {
   headline: sqliteText("headline").notNull(),
 });
 
-/** A table with a numeric (not text) primary key, to exercise `coerceId`'s numeric-column path. */
+/**
+ * A table with a numeric (not text) primary key, to exercise `coerceId`'s numeric-column path.
+ */
 export const counters = sqliteTable("counters", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   label: sqliteText("label").notNull(),

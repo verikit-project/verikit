@@ -23,7 +23,9 @@ function issues(list: ValidationIssue[]): ValidationResult {
   return { success: false, issues: list };
 }
 
-/** Flattens StandardSchema path segments (which may be `{ key }` objects) to strings/numbers. */
+/**
+ * Flattens StandardSchema path segments (which may be `{ key }` objects) to strings/numbers.
+ */
 function normalizeIssuePath(
   path: readonly unknown[] = [],
 ): (string | number)[] {
@@ -107,9 +109,7 @@ function rejectAsyncValidator<TValue>(
 }
 
 /**
- * Validates a value against a finalized `FieldSchema`: built-in constraint
- * checks first, then any attached `.validation()` validator. Reports an
- * issue if that validator resolves asynchronously; use `validateFieldAsync`.
+ * Validates a value against a finalized `FieldSchema`: built-in constraint checks first, then any attached `.validation()` validator. Reports an issue if that validator resolves asynchronously; use `validateFieldAsync`.
  */
 export function validateField(
   schema: FieldSchema,
@@ -143,8 +143,7 @@ export function validateField(
 }
 
 /**
- * Async counterpart to `validateField`, for `.validation()` validators whose
- * `parse` or `~standard.validate` resolves via a Promise.
+ * Async counterpart to `validateField`, for `.validation()` validators whose `parse` or `~standard.validate` resolves via a Promise.
  */
 export async function validateFieldAsync(
   schema: FieldSchema,

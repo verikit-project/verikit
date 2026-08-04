@@ -129,9 +129,7 @@ function inferByType(schema: FieldSchema, value: unknown): ValidationResult {
 }
 
 /**
- * Converts a raw value into the runtime type expected by a field schema.
- * Empty strings are normalized to `undefined`. Validation is performed
- * separately by `validateField`.
+ * Converts a raw value into the runtime type expected by a field schema. Empty strings are normalized to `undefined`. Validation is performed separately by `validateField`.
  */
 export function inferField(
   schema: FieldSchema,

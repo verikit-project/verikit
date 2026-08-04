@@ -19,7 +19,9 @@ export type UseCreateResourceOptions<TRecord> = Omit<
   "mutationFn"
 >;
 
-/** Creates a resource record, invalidating that resource's list/search queries on success. */
+/**
+ * Creates a resource record, invalidating that resource's list/search queries on success.
+ */
 export function useCreateResource<TRecord = Record<string, unknown>>(
   name: string,
   options?: UseCreateResourceOptions<TRecord>,
@@ -54,11 +56,7 @@ interface UpdateResourceContext {
 }
 
 /**
- * Updates a resource record. Optimistically merges `input` into the cached
- * `find(id)` record and any matching row in a cached list, rolling back to
- * the pre-mutation snapshot on error; invalidates its list/search and
- * find(id) queries on success (so any field the server computed, not just
- * what was sent, ends up correct).
+ * Updates a resource record. Optimistically merges `input` into the cached `find(id)` record and any matching row in a cached list, rolling back to the pre-mutation snapshot on error; invalidates its list/search and find(id) queries on success (so any field the server computed, not just what was sent, ends up correct).
  */
 export function useUpdateResource<TRecord = Record<string, unknown>>(
   name: string,
@@ -123,11 +121,7 @@ interface DeleteResourceContext {
 }
 
 /**
- * Deletes a resource record by id. Optimistically removes it from any
- * cached list and evicts its `find(id)` cache entry outright, rolling back
- * to the pre-mutation snapshot on error; on success, invalidates list/search
- * queries and (redundantly but harmlessly) re-evicts `find(id)`, since
- * refetching a known-deleted record would just 404.
+ * Deletes a resource record by id. Optimistically removes it from any cached list and evicts its `find(id)` cache entry outright, rolling back to the pre-mutation snapshot on error; on success, invalidates list/search queries and (redundantly but harmlessly) re-evicts `find(id)`, since refetching a known-deleted record would just 404.
  */
 export function useDeleteResource(
   name: string,
@@ -178,7 +172,9 @@ export type UseActionResourceOptions<TResult> = Omit<
   "mutationFn"
 >;
 
-/** Runs a named runtime action, invalidating the resource's cached queries on success. */
+/**
+ * Runs a named runtime action, invalidating the resource's cached queries on success.
+ */
 export function useActionResource<TResult = unknown>(
   name: string,
   actionName: string,

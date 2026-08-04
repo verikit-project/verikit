@@ -102,10 +102,9 @@ test("validateResourceInput uses plain validation when no permissions are config
 
 test("validateResourceInput gates per-field write access when permissions are configured", async () => {
   const fields = createPostResource().toSchema().fields;
-  // "published" has a default, so `shouldValidateField` always checks its
-  // write access even when absent from the submitted values (permissions
-  // fail closed per-field, see [[permissions-module-notes]])  grant it here
-  // so this test isolates the "title" gating it's actually about.
+  // "published" has a default, so `shouldValidateField` always checks its write access
+  // even when absent from the submitted values (permissions fail closed per-field, see
+  // [[permissions-module-notes]]) grant it here so this test isolates the "title" gating it's actually about.
   const permissions = definePermissions<Actor>()
     .field("title", { write: ({ actor }) => actor.role === "admin" })
     .field("published", { write: true });

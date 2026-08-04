@@ -26,7 +26,9 @@ interface ListEnvelope<T> {
   meta: { total: number; page: number; pageSize: number };
 }
 
-/** Implements the seven routes `@verikit/server`'s `createServer()` exposes per resource. */
+/**
+ * Implements the seven routes `@verikit/server`'s `createServer()` exposes per resource.
+ */
 export function createResourceClient<TRecord = Record<string, unknown>>(
   deps: ResourceClientDeps,
 ): ResourceClient<TRecord> {

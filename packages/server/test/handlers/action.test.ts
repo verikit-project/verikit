@@ -163,10 +163,9 @@ test("handleAction returns 404 (not 403) when a resource-level rule denies acces
 });
 
 test("handleAction denies an action with no resource-level rule once the resource has permissions configured", async () => {
-  // Fails closed like `checkResourceOperation`: attaching a permissions
-  // builder to the resource gates every action, even ones the builder
-  // never mentions via `.action()` and even though the action itself
-  // declares no `.permissions()` of its own.
+  // Fails closed like `checkResourceOperation`: attaching a permissions builder to the
+  // resource gates every action, even ones the builder never mentions via `.action()`
+  // and even though the action itself declares no `.permissions()` of its own.
   const permissions = definePermissions<Actor>().can("read", () => true);
   const publish = action("publish").execute(() => "published");
 

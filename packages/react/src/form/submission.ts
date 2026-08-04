@@ -55,7 +55,9 @@ export type VerikitActionSubmitResult<TResult = unknown> =
   | (ActionRunResult<TResult> & { fieldErrors: VerikitFieldErrors })
   | VerikitValidationFailure;
 
-/** Options for inferring, validating, and optionally submitting a resource form. */
+/**
+ * Options for inferring, validating, and optionally submitting a resource form.
+ */
 export interface SubmitVerikitResourceFormOptions<TResult = unknown> {
   /** Field schema map used for inference and validation. */
   fields: VerikitFormFields;
@@ -80,7 +82,9 @@ export interface SubmitVerikitActionFormOptions<
   values: VerikitFormValues;
 }
 
-/** Groups validation issues by their first path segment for field rendering. */
+/**
+ * Groups validation issues by their first path segment for field rendering.
+ */
 export function validationIssuesToFieldErrors(
   issues: readonly ValidationIssue[],
 ): VerikitFieldErrors {
@@ -177,7 +181,9 @@ export async function submitVerikitResourceForm<TResult = undefined>({
   };
 }
 
-/** Infers action input values and runs the action with mapped field errors. */
+/**
+ * Infers action input values and runs the action with mapped field errors.
+ */
 export async function submitVerikitActionForm<
   TForm extends ActionFormMap = ActionFormMap,
   TContext = unknown,

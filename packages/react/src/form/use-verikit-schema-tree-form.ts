@@ -32,7 +32,9 @@ export interface UseVerikitSchemaTreeFormOptions<TResult = unknown> {
   onSubmit?: (values: VerikitFormValues) => TResult | Promise<TResult>;
 }
 
-/** Props from the schema tree hook that can be spread onto the tree renderer. */
+/**
+ * Props from the schema tree hook that can be spread onto the tree renderer.
+ */
 export type VerikitSchemaTreeRenderProps = Pick<
   SchemaRenderProps,
   | "values"
@@ -84,11 +86,9 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
 }: UseVerikitSchemaTreeFormOptions<TResult>): UseVerikitSchemaTreeFormResult<TResult> {
   const tree = useMemo(() => resolveVerikitTree(resource), [resource]);
   const [fieldErrors, setFieldErrors] = useState<VerikitFieldErrors>({});
-  // Stable per-row ids for repeater rows, keyed by the repeater's own path.
-  // Grown lazily (per index, as `getRepeaterRowKey` is called during render)
-  // to cover rows that arrived some other way than `onRepeaterAdd` (e.g.
-  // pre-populated `defaultValues`); shrunk explicitly by `onRepeaterRemove`,
-  // which is the only place that knows which index was actually removed.
+  // Stable per-row ids for repeater rows, keyed by the repeater's own path. Grown
+  // lazily (per index, as `getRepeaterRowKey` is called during render) to cover rows
+  // that arrived some other way than `onRepeaterAdd` (e.g. pre-populated `defaultValues`); shrunk explicitly by `onRepeaterRemove`, which is the only place that knows which index was actually removed.
   const repeaterRowKeysRef = useRef<Map<string, string[]>>(new Map());
   const form = useForm({
     defaultValues,
@@ -136,10 +136,9 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
     (path: SchemaPath, value: unknown) => {
       form.setFieldValue(pathKey(path), value);
       const key = pathKey(path);
-      // Functional update: two `onFieldChange` calls in the same tick (e.g.
-      // rapid edits to different fields before a re-render) would otherwise
-      // both close over the same stale `fieldErrors` snapshot, so the second
-      // call's `setFieldErrors` would silently undo the first call's removal.
+      // Functional update: two `onFieldChange` calls in the same tick (e.g. rapid edits to
+      // different fields before a re-render) would otherwise both close over the same
+      // stale `fieldErrors` snapshot, so the second call's `setFieldErrors` would silently undo the first call's removal.
       setFieldErrors((current) => omitFieldError(current, key));
     },
     [form],
