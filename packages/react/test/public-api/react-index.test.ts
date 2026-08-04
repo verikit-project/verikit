@@ -35,6 +35,7 @@ test("react package exposes its public entrypoint", async () => {
     "omitFieldError",
     "pathKey",
     "resolveVerikitFields",
+    "resourceQueryKeys",
     "setValueAtPath",
     "submitVerikitActionForm",
     "submitVerikitResourceForm",

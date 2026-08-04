@@ -17,3 +17,5 @@ export type {
   ActionResourceVariables,
   UseActionResourceOptions,
 } from "./use-resource-mutations.js";
+export { resourceQueryKeys } from "./query-keys.js";
+export type { ResourceQueryKeys } from "./query-keys.js";
