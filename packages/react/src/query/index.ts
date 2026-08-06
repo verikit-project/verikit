@@ -25,3 +25,9 @@ export type {
   UseResourceFormResult,
   UseResourceFormSource,
 } from "./use-resource-form.js";
+export { useResourceTable } from "./use-resource-table.js";
+export type {
+  UseResourceTableOptions,
+  UseResourceTableResult,
+  UseResourceTableSource,
+} from "./use-resource-table.js";

@@ -48,6 +48,8 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
    * Makes the next call to `method` wait until the returned function is invoked, so a test can observe cache state while a "network" call is still in flight (e.g. to prove an optimistic update landed before the server responded, or that a hook with no built-in optimism left the cache untouched while waiting).
    */
   block: (method: FakeMethod) => () => void;
+  /** The `ListParams` most recently passed to `list`/`search`, for asserting what a caller actually requested. */
+  lastListParams: ListParams | undefined;
 } {
   const records: FakeRecord[] = initial.map((record) => ({ ...record }));
   const calls: FakeResourceCalls = {
@@ -60,6 +62,9 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   };
   const failNext: FakeClientFailures = {};
   const gates = new Map<FakeMethod, Promise<void>>();
+  const state: { lastListParams: ListParams | undefined } = {
+    lastListParams: undefined,
+  };
 
   function block(method: FakeMethod): () => void {
     let release = () => {};
@@ -81,10 +86,11 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
 
   const resourceClient: ResourceClient<FakeRecord> = {
     async list(
-      _params?: ListParams,
+      params?: ListParams,
       _options?: RequestOptions,
     ): Promise<ListResponse<FakeRecord>> {
       calls.list += 1;
+      state.lastListParams = params;
       await waitForGate("list");
       return {
         records: [...records],
@@ -177,7 +183,16 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     },
   };
 
-  return { client, calls, records, failNext, block };
+  return {
+    client,
+    calls,
+    records,
+    failNext,
+    block,
+    get lastListParams() {
+      return state.lastListParams;
+    },
+  };
 }
 
 export interface TestHarness {
