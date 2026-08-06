@@ -30,6 +30,7 @@ export interface FakeResourceCalls {
  * A hand-rolled fake `VerikitClient` (single resource, call-counting) mirrors the fake-fetch/in-memory-adapter pattern `@verikit/client`'s own tests use, so these hook tests stay fast and deterministic without a real server or network path.
  */
 export interface FakeClientFailures {
+  list?: boolean;
   update?: boolean;
   delete?: boolean;
 }
@@ -92,6 +93,12 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       calls.list += 1;
       state.lastListParams = params;
       await waitForGate("list");
+
+      if (failNext.list) {
+        failNext.list = false;
+        throw new Error("Simulated list failure.");
+      }
+
       return {
         records: [...records],
         total: records.length,
@@ -197,6 +204,8 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
 
 export interface TestHarness {
   queryClient: QueryClient;
+  /** The mounted container, for querying rendered DOM in interactive tests. */
+  container: HTMLElement;
   render: (node: ReactElement) => Promise<void>;
   cleanup: () => void;
 }
@@ -227,6 +236,7 @@ export function setupHarness(client: VerikitClient): TestHarness {
 
   return {
     queryClient,
+    container,
     render: (node) =>
       act(async () => {
         root.render(<Providers>{node}</Providers>);

@@ -18,6 +18,8 @@ test("react package exposes its public entrypoint", async () => {
     "RenderField",
     "RenderSchemaNode",
     "RenderSchemaTree",
+    "ResourceForm",
+    "ResourceTable",
     "SelectField",
     "TextField",
     "TextareaField",

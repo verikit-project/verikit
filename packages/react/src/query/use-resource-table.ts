@@ -16,7 +16,7 @@ import type { Resource, ResourceSchema } from "@verikit/core";
 import { resolveVerikitFields } from "../form/use-verikit-form.js";
 import { useListResource } from "./use-resource-queries.js";
 
-// Registered once, outside the hook, per TanStack's own guidance — the row
+// Registered once, outside the hook, per TanStack's own guidance  the row
 // model stays purely server-driven since no sorted/paginated/filtered row
 // model factory is registered here, only the state/handler slices.
 // `columnFilteringFeature` is required by `globalFilteringFeature` itself
@@ -30,7 +30,7 @@ const resourceTableFeatures = tableFeatures({
 
 type ResourceTableFeatures = typeof resourceTableFeatures;
 
-/** A resource builder or its finalized schema — either carries its own name. */
+/** A resource builder or its finalized schema  either carries its own name. */
 export type UseResourceTableSource = Resource | ResourceSchema;
 
 /** Options for creating a resource-backed table. */
@@ -43,7 +43,7 @@ export interface UseResourceTableOptions {
 export interface UseResourceTableResult<
   TRecord extends RowData = Record<string, unknown>,
 > {
-  /** The TanStack Table instance — headless: render your own markup from it. */
+  /** The TanStack Table instance  headless: render your own markup from it. */
   table: Table<ResourceTableFeatures, TRecord>;
   /** Whether the current page's initial fetch is still in flight. */
   isLoading: boolean;
@@ -56,7 +56,7 @@ export interface UseResourceTableResult<
 /**
  * The single resource-backed table hook: takes a `Resource` (or its
  * `ResourceSchema`) and wires a headless TanStack Table instance straight to
- * `useListResource` — its own name and fields are the one source of truth
+ * `useListResource`  its own name and fields are the one source of truth
  * for both the columns and which resource to page/sort/search against, so
  * there's no separate column list or name to keep in sync with it. Sorting,
  * pagination, and the search box all drive the server request directly
