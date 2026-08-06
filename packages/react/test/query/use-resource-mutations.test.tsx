@@ -259,7 +259,7 @@ test("useUpdateResource's failed rollback is followed by a forced refetch, so a 
   });
 
   // onError's rollback only writes the pre-mutation snapshot back into the
-  // cache (no network call) — it can't tell whether that snapshot is still
+  // cache (no network call)  it can't tell whether that snapshot is still
   // current. Without a forced refetch on settle, a background write that
   // landed while this mutation was in flight would stay silently reverted.
   // Asserting the query re-fetches (not just that its value looks right) is

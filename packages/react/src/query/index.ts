@@ -23,4 +23,5 @@ export { useResourceForm } from "./use-resource-form.js";
 export type {
   UseResourceFormOptions,
   UseResourceFormResult,
+  UseResourceFormSource,
 } from "./use-resource-form.js";

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
-import { text, type FieldSchema } from "@verikit/core";
+import { defineResource, text } from "@verikit/core";
 import { act } from "react";
 import { installJsdom } from "../dom-setup.js";
 import { useResourceForm } from "../../src/query/index.js";
@@ -11,9 +11,9 @@ import {
   type FakeRecord,
 } from "./fixtures.js";
 
-const fields: Record<string, FieldSchema> = {
-  title: text().required().toSchema("title"),
-};
+const postResource = defineResource("posts", {
+  fields: { title: text().required() },
+});
 
 let uninstallJsdom: () => void;
 
@@ -35,8 +35,7 @@ test("useResourceForm creates a record with no id, and reports it via onSuccess"
   const onSuccessCalls: FakeRecord[] = [];
 
   function Probe() {
-    form = useResourceForm<FakeRecord>("posts", {
-      fields,
+    form = useResourceForm<FakeRecord>(postResource, {
       onSuccess: (record) => onSuccessCalls.push(record),
     });
     return null;
@@ -61,7 +60,7 @@ test("useResourceForm updates the given id instead of creating a new record", as
   let form: ReturnType<typeof useResourceForm<FakeRecord>> | undefined;
 
   function Probe() {
-    form = useResourceForm<FakeRecord>("posts", { fields, id: "1" });
+    form = useResourceForm<FakeRecord>(postResource, { id: "1" });
     return null;
   }
 
@@ -82,7 +81,7 @@ test("useResourceForm's validation failure prevents any create/update call", asy
   let form: ReturnType<typeof useResourceForm<FakeRecord>> | undefined;
 
   function Probe() {
-    form = useResourceForm<FakeRecord>("posts", { fields });
+    form = useResourceForm<FakeRecord>(postResource);
     return null;
   }
 
@@ -103,7 +102,7 @@ test("useResourceForm's isSubmitting reflects the underlying mutation while it's
   let form: ReturnType<typeof useResourceForm<FakeRecord>> | undefined;
 
   function Probe() {
-    form = useResourceForm<FakeRecord>("posts", { fields });
+    form = useResourceForm<FakeRecord>(postResource);
     return null;
   }
 
@@ -136,7 +135,7 @@ test("useResourceForm's submitError surfaces a failed mutation", async () => {
   let form: ReturnType<typeof useResourceForm<FakeRecord>> | undefined;
 
   function Probe() {
-    form = useResourceForm<FakeRecord>("posts", { fields, id: "1" });
+    form = useResourceForm<FakeRecord>(postResource, { id: "1" });
     return null;
   }
 

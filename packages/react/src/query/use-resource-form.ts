@@ -1,7 +1,5 @@
-import type {
-  UseVerikitFormResult,
-  VerikitFormSource,
-} from "../form/use-verikit-form.js";
+import type { Resource, ResourceSchema } from "@verikit/core";
+import type { UseVerikitFormResult } from "../form/use-verikit-form.js";
 import { useVerikitForm } from "../form/use-verikit-form.js";
 import type { VerikitFormValues } from "../form/submission.js";
 import {
@@ -9,10 +7,11 @@ import {
   useUpdateResource,
 } from "./use-resource-mutations.js";
 
+/** A resource builder or its finalized schema  either carries its own name. */
+export type UseResourceFormSource = Resource | ResourceSchema;
+
 /** Options for creating a resource-backed form that submits over `@verikit/client`. */
 export interface UseResourceFormOptions<TRecord> {
-  /** Fields, resource builder, or resource schema backing the form. */
-  fields: VerikitFormSource;
   /** Updates the record with this id instead of creating a new one. */
   id?: string;
   /** Initial values passed to TanStack Form. */
@@ -32,20 +31,23 @@ export interface UseResourceFormResult<
 }
 
 /**
- * Wires `useVerikitForm` directly to a resource's create/update mutation
- * hooks, so submitting infers, validates, and sends the request in one
- * step rather than leaving that plumbing to a hand-written `onSubmit`.
- * Creates when no `id` is given, updates that record's id otherwise.
+ * The single resource-backed form hook: takes a `Resource` (or its
+ * `ResourceSchema`) and wires `useVerikitForm` straight to its create/update
+ * mutation hooks  its own name is the one source of truth for both the
+ * fields and which resource to submit to, so there's no separate `name`
+ * string or raw field map to keep in sync with it. Submitting infers,
+ * validates, and sends the request in one step. Creates when no `id` option
+ * is given, updates that record's id otherwise.
  */
 export function useResourceForm<TRecord = Record<string, unknown>>(
-  name: string,
-  { fields, id, defaultValues, onSuccess }: UseResourceFormOptions<TRecord>,
+  resource: UseResourceFormSource,
+  { id, defaultValues, onSuccess }: UseResourceFormOptions<TRecord> = {},
 ): UseResourceFormResult<TRecord> {
-  const create = useCreateResource<TRecord>(name);
-  const update = useUpdateResource<TRecord>(name);
+  const create = useCreateResource<TRecord>(resource.name);
+  const update = useUpdateResource<TRecord>(resource.name);
 
   const form = useVerikitForm<TRecord>({
-    fields,
+    fields: resource,
     defaultValues,
     onSubmit: async (values) => {
       const record = id
