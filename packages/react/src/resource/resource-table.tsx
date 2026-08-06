@@ -23,7 +23,7 @@ export interface ResourceTableProps<
   /** The resource (or its schema) whose fields drive columns, sorting, and paging. */
   resource: UseResourceTableSource;
   /**
-   * Renders per-row actions (e.g. edit/delete buttons). Omit to render none 
+   * Renders per-row actions (e.g. edit/delete buttons). Omit to render none
    * this component makes no decision about which actions an actor may see;
    * that stays the consumer's call.
    */

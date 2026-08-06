@@ -55,7 +55,7 @@ export function installJsdom(): () => void {
  * A real dispatched event doesn't work in this test environment: `react-dom`
  * decides once, at module-evaluation time, whether the native `input` event
  * is "supported" (`isInputEventSupported`, cached in a module-scope
- * variable). That check runs the first time anything imports `react-dom` 
+ * variable). That check runs the first time anything imports `react-dom`
  * before any test file's `before()` hook has called `installJsdom()`, so
  * there's no `document` yet at all  and permanently caches `false`. Every
  * dispatched `input` event then falls back to a legacy IE `attachEvent`-based
