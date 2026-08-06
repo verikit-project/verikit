@@ -19,3 +19,8 @@ export type {
 } from "./use-resource-mutations.js";
 export { resourceQueryKeys } from "./query-keys.js";
 export type { ResourceQueryKeys } from "./query-keys.js";
+export { useResourceForm } from "./use-resource-form.js";
+export type {
+  UseResourceFormOptions,
+  UseResourceFormResult,
+} from "./use-resource-form.js";

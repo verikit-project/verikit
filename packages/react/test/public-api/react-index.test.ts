@@ -46,6 +46,7 @@ test("react package exposes its public entrypoint", async () => {
     "useDeleteResource",
     "useListResource",
     "useResourceFind",
+    "useResourceForm",
     "useUpdateResource",
     "useVerikitClient",
     "useVerikitForm",
