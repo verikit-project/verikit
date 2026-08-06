@@ -103,9 +103,19 @@ export function useUpdateResource<TRecord = Record<string, unknown>>(
     },
     // `keys.all` is a prefix of `keys.find(id)`, so this one call already
     // invalidates both the resource's lists and that specific find(id) entry.
-    onSuccess: (...args) => {
+    // Runs in onSettled (not onSuccess) so a failed mutation also forces a
+    // refetch: onError's rollback restores a pre-mutation snapshot, which can
+    // be stale if a background refetch wrote fresher data while this
+    // mutation was in flight.
+    onSettled: (data, error, variables, onMutateResult, mutationContext) => {
       void queryClient.invalidateQueries({ queryKey: keys.all });
-      return options?.onSuccess?.(...args);
+      return options?.onSettled?.(
+        data,
+        error,
+        variables,
+        onMutateResult?.caller,
+        mutationContext,
+      );
     },
   });
 }
@@ -156,9 +166,22 @@ export function useDeleteResource(
       );
     },
     onSuccess: (data, id, ...rest) => {
-      void queryClient.invalidateQueries({ queryKey: keys.all });
       queryClient.removeQueries({ queryKey: keys.find(id) });
       return options?.onSuccess?.(data, id, ...rest);
+    },
+    // Runs regardless of outcome so a failed delete also forces a refetch:
+    // onError's rollback restores a pre-mutation snapshot, which can be
+    // stale if a background refetch wrote fresher data while this mutation
+    // was in flight, and this is what corrects that afterward.
+    onSettled: (data, error, id, onMutateResult, mutationContext) => {
+      void queryClient.invalidateQueries({ queryKey: keys.all });
+      return options?.onSettled?.(
+        data,
+        error,
+        id,
+        onMutateResult?.caller,
+        mutationContext,
+      );
     },
   });
 }

@@ -225,6 +225,61 @@ test("useUpdateResource rolls back its optimistic merge when the mutation fails"
   harness.cleanup();
 });
 
+test("useUpdateResource's failed rollback is followed by a forced refetch, so a stale snapshot can't be the final word", async () => {
+  const { client, calls, failNext } = createFakeClient([
+    { id: "1", title: "Hello" },
+  ]);
+  const harness = setupHarness(client);
+
+  let list: ReturnType<typeof useListResource<FakeRecord>> | undefined;
+  let find: ReturnType<typeof useResourceFind<FakeRecord>> | undefined;
+  let update: ReturnType<typeof useUpdateResource<FakeRecord>> | undefined;
+  const onSettledCalls: unknown[] = [];
+
+  function Probe() {
+    list = useListResource<FakeRecord>("posts");
+    find = useResourceFind<FakeRecord>("posts", "1");
+    update = useUpdateResource<FakeRecord>("posts", {
+      onSettled: (data, error, variables) =>
+        onSettledCalls.push({ data, hasError: error !== null, variables }),
+    });
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => list?.status === "success" && find?.status === "success");
+  assert.equal(calls.list, 1);
+  assert.equal(calls.find, 1);
+
+  failNext.update = true;
+  await act(async () => {
+    await assert.rejects(() =>
+      update!.mutateAsync({ id: "1", input: { title: "Will fail" } }),
+    );
+  });
+
+  // onError's rollback only writes the pre-mutation snapshot back into the
+  // cache (no network call) — it can't tell whether that snapshot is still
+  // current. Without a forced refetch on settle, a background write that
+  // landed while this mutation was in flight would stay silently reverted.
+  // Asserting the query re-fetches (not just that its value looks right) is
+  // what actually distinguishes the fix from onError's rollback alone.
+  await waitFor(() => calls.find === 2 && calls.list === 2);
+  assert.equal(
+    harness.queryClient.getQueryData<FakeRecord>(findKey("1"))?.title,
+    "Hello",
+  );
+  assert.deepEqual(onSettledCalls, [
+    {
+      data: undefined,
+      hasError: true,
+      variables: { id: "1", input: { title: "Will fail" } },
+    },
+  ]);
+
+  harness.cleanup();
+});
+
 test("useDeleteResource deletes a record, invalidates lists, and removes (not just invalidates) its find(id) cache entry", async () => {
   const { client, calls } = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(client);
@@ -364,6 +419,53 @@ test("useDeleteResource rolls back its optimistic removal when the mutation fail
       .length,
     1,
   );
+
+  harness.cleanup();
+});
+
+test("useDeleteResource's failed rollback is followed by a forced refetch, so a stale snapshot can't be the final word", async () => {
+  const { client, calls, failNext } = createFakeClient([
+    { id: "1", title: "Hello" },
+  ]);
+  const harness = setupHarness(client);
+
+  let list: ReturnType<typeof useListResource<FakeRecord>> | undefined;
+  let find: ReturnType<typeof useResourceFind<FakeRecord>> | undefined;
+  let del: ReturnType<typeof useDeleteResource> | undefined;
+  const onSettledCalls: unknown[] = [];
+
+  function Probe() {
+    list = useListResource<FakeRecord>("posts");
+    find = useResourceFind<FakeRecord>("posts", "1");
+    del = useDeleteResource("posts", {
+      onSettled: (data, error, id) =>
+        onSettledCalls.push({ data, hasError: error !== null, id }),
+    });
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => list?.status === "success" && find?.status === "success");
+  assert.equal(calls.list, 1);
+  assert.equal(calls.find, 1);
+
+  failNext.delete = true;
+  await act(async () => {
+    await assert.rejects(() => del!.mutateAsync("1"));
+  });
+
+  // Same reasoning as update's rollback: onError only replays the
+  // pre-mutation snapshot into the cache, with no way to know whether
+  // something fresher landed while the delete was in flight. The forced
+  // refetch on settle is what a rollback alone can't provide.
+  await waitFor(() => calls.find === 2 && calls.list === 2);
+  assert.deepEqual(harness.queryClient.getQueryData<FakeRecord>(findKey("1")), {
+    id: "1",
+    title: "Hello",
+  });
+  assert.deepEqual(onSettledCalls, [
+    { data: undefined, hasError: true, id: "1" },
+  ]);
 
   harness.cleanup();
 });
