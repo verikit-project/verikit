@@ -91,11 +91,12 @@ export function createServer<TActor = unknown>(
       return methodNotAllowedResponse();
     }
 
-    const actor = (await options.context?.(request)) as TActor;
-    const ctx = { entry: resolved.entry, actor, request, url };
     const { action } = resolved.resolution;
 
     try {
+      const actor = (await options.context?.(request)) as TActor;
+      const ctx = { entry: resolved.entry, actor, request, url };
+
       switch (action.kind) {
         case "list":
           return await handleList(ctx);

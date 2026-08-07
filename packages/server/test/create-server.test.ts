@@ -238,6 +238,38 @@ test("createServer still returns the 500 envelope when onError itself throws", a
   assert.equal(typeof body.error.message, "string");
 });
 
+test("createServer maps a throwing context hook to the same 500 envelope and onError as a handler/adapter exception", async () => {
+  const observed: unknown[] = [];
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter([{ ...post }]),
+        permissions: "open",
+      },
+    ],
+    context: () => {
+      throw new Error("session lookup failed");
+    },
+    onError: (error, request, route) => {
+      observed.push({ error, url: request.url, route });
+    },
+  });
+
+  const response = await handler(new Request("https://x/post/1"));
+  const body = await response.json();
+
+  assert.equal(response.status, 500);
+  assert.equal(typeof body.error.message, "string");
+  assert.doesNotMatch(body.error.message, /session lookup failed/);
+  assert.equal(observed.length, 1);
+  assert.deepEqual(observed[0], {
+    error: new Error("session lookup failed"),
+    url: "https://x/post/1",
+    route: { resource: "post", action: { kind: "find", id: "1" } },
+  });
+});
+
 test("createServer throws at construction time on a duplicate resource route", () => {
   assert.throws(() =>
     createServer({
