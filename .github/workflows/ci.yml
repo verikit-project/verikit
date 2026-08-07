@@ -30,3 +30,9 @@ jobs:
       - run: pnpm typecheck
 
       - run: pnpm test:coverage
+
+      - run: pnpm build
+
+      - run: pnpm docs:api
+
+      - run: pnpm smoke-test
