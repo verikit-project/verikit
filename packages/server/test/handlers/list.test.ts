@@ -19,7 +19,13 @@ function ctxFor(
   permissions?: ReturnType<typeof definePermissions<Actor>>,
 ) {
   const [entry] = buildRouteTable(
-    [{ resource: createPostResource(), adapter, permissions }],
+    [
+      {
+        resource: createPostResource(),
+        adapter,
+        permissions: permissions ?? "open",
+      },
+    ],
     "",
   );
   return {
@@ -56,7 +62,7 @@ test("handleList applies the search query param", async () => {
   assert.equal(body.data[0].id, "2");
 });
 
-test("handleList is unguarded when no permissions are configured", async () => {
+test("handleList is unguarded when the resource is marked open", async () => {
   const ctx = ctxFor(createInMemoryAdapter(samplePosts), "https://x/post");
   const response = await handleList(ctx);
   assert.equal(response.status, 200);

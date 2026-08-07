@@ -15,7 +15,13 @@ function ctxFor(
   permissions?: ReturnType<typeof definePermissions<Actor>>,
 ) {
   const [entry] = buildRouteTable(
-    [{ resource: createPostResource(), adapter, permissions }],
+    [
+      {
+        resource: createPostResource(),
+        adapter,
+        permissions: permissions ?? "open",
+      },
+    ],
     "",
   );
   const request = new Request("https://x/post", {

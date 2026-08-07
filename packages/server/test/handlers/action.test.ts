@@ -27,7 +27,14 @@ function ctxFor(
   permissions?: ReturnType<typeof definePermissions<Actor>>,
 ) {
   const [entry] = buildRouteTable(
-    [{ resource: createPostResource(), adapter, actions, permissions }],
+    [
+      {
+        resource: createPostResource(),
+        adapter,
+        actions,
+        permissions: permissions ?? "open",
+      },
+    ],
     "",
   );
   const request = new Request("https://x/post/actions/publish", {
@@ -67,6 +74,7 @@ test("handleAction returns 400 for an invalid JSON body", async () => {
         resource: createPostResource(),
         adapter: createInMemoryAdapter(),
         actions: [publish],
+        permissions: "open",
       },
     ],
     "",

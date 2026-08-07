@@ -20,7 +20,12 @@ test("createServer exposes list/search/create/find/update/delete/action routes",
   const publish = action("publish").execute(() => "published");
   const handler = createServer({
     resources: [
-      { resource: createPostResource(), adapter, actions: [publish] },
+      {
+        resource: createPostResource(),
+        adapter,
+        actions: [publish],
+        permissions: "open",
+      },
     ],
   });
 
@@ -73,7 +78,11 @@ test("createServer exposes list/search/create/find/update/delete/action routes",
 test("createServer returns 404 for an unmatched path and 405 for a wrong method", async () => {
   const handler = createServer({
     resources: [
-      { resource: createPostResource(), adapter: createInMemoryAdapter() },
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter(),
+        permissions: "open",
+      },
     ],
   });
 
@@ -96,6 +105,7 @@ test("createServer honors a custom path and a basePath prefix together", async (
         resource: createPostResource(),
         adapter: createInMemoryAdapter([{ ...post }]),
         path: "posts",
+        permissions: "open",
       },
     ],
     basePath: "/api",
@@ -151,7 +161,13 @@ test("createServer maps an adapter exception to a 500 JSON error envelope", asyn
     },
   };
   const handler = createServer({
-    resources: [{ resource: createPostResource(), adapter: throwingAdapter }],
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: throwingAdapter,
+        permissions: "open",
+      },
+    ],
   });
 
   const response = await handler(new Request("https://x/post/1"));
@@ -167,8 +183,16 @@ test("createServer throws at construction time on a duplicate resource route", (
   assert.throws(() =>
     createServer({
       resources: [
-        { resource: createPostResource(), adapter: createInMemoryAdapter() },
-        { resource: createPostResource(), adapter: createInMemoryAdapter() },
+        {
+          resource: createPostResource(),
+          adapter: createInMemoryAdapter(),
+          permissions: "open",
+        },
+        {
+          resource: createPostResource(),
+          adapter: createInMemoryAdapter(),
+          permissions: "open",
+        },
       ],
     }),
   );
@@ -182,8 +206,18 @@ test("createServer routes multiple distinct resources independently", async () =
 
   const handler = createServer({
     resources: [
-      { resource: createPostResource(), adapter: posts, path: "posts" },
-      { resource: createPostResource(), adapter: pages, path: "pages" },
+      {
+        resource: createPostResource(),
+        adapter: posts,
+        path: "posts",
+        permissions: "open",
+      },
+      {
+        resource: createPostResource(),
+        adapter: pages,
+        path: "pages",
+        permissions: "open",
+      },
     ],
   });
 

@@ -13,8 +13,8 @@ interface Actor {
   role: "admin" | "viewer";
 }
 
-test("maybeCheckResourceOperation allows everything when no permissions are configured", async () => {
-  const result = await maybeCheckResourceOperation(undefined, "read", {
+test("maybeCheckResourceOperation allows everything when the resource is marked open", async () => {
+  const result = await maybeCheckResourceOperation("open", "read", {
     actor: { role: "viewer" },
   });
   assert.deepEqual(result, { allowed: true });
@@ -54,9 +54,9 @@ test("maybeCheckResourceOperation surfaces the denying rule's reason", async () 
   );
 });
 
-test("unreadableFieldNames is empty when no permissions are configured", async () => {
+test("unreadableFieldNames is empty when the resource is marked open", async () => {
   const fields = createPostResource().toSchema().fields;
-  const hidden = await unreadableFieldNames(fields, undefined, {
+  const hidden = await unreadableFieldNames(fields, "open", {
     actor: { role: "viewer" },
   });
   assert.deepEqual(hidden, new Set());
@@ -83,20 +83,17 @@ test("redactFields removes hidden keys, and returns the same object when nothing
   });
 });
 
-test("validateResourceInput uses plain validation when no permissions are configured", async () => {
+test("validateResourceInput uses plain validation when the resource is marked open", async () => {
   const fields = createPostResource().toSchema().fields;
 
-  const missingRequired = await validateResourceInput(fields, {}, undefined, {
+  const missingRequired = await validateResourceInput(fields, {}, "open", {
     actor: { role: "viewer" },
   });
   assert.equal(missingRequired.success, false);
 
-  const valid = await validateResourceInput(
-    fields,
-    { title: "Hi" },
-    undefined,
-    { actor: { role: "viewer" } },
-  );
+  const valid = await validateResourceInput(fields, { title: "Hi" }, "open", {
+    actor: { role: "viewer" },
+  });
   assert.equal(valid.success, true);
 });
 

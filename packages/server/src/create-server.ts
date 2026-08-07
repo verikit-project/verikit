@@ -28,9 +28,13 @@ export interface ServerResourceConfig<TActor = unknown> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
   actions?: ActionBuilder<string, any, TActor, any, any>[];
   /**
-   * Resource-level CRUD gate; omit to leave the resource unguarded (see `maybeCheckResourceOperation`).
+   * Resource-level CRUD/field/action gate. Required so a resource can never end up unguarded
+   * by accident — pass a real `PermissionsBuilder`, or the literal `"open"` to explicitly opt this
+   * resource out of permission checks entirely (see `maybeCheckResourceOperation`). `"open"` is
+   * loud and greppable on purpose: `grep -rn 'permissions: "open"'` finds every intentionally
+   * unguarded resource in a codebase.
    */
-  permissions?: PermissionsBuilder<TActor, unknown>;
+  permissions: PermissionsBuilder<TActor, unknown> | "open";
 }
 
 export interface CreateServerOptions<TActor = unknown> {

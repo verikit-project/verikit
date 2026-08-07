@@ -17,14 +17,14 @@ export interface PermissionCheckOutcome {
 }
 
 /**
- * Runs `checkResourceOperation` only when `permissions` is configured for the resource; unguarded (always allowed) otherwise. Mirrors `runAction`'s own convention of only invoking `checkAction` when a `PermissionsBuilder` is actually attached.
+ * Runs `checkResourceOperation` unless the resource is explicitly marked `"open"`. Mirrors `runAction`'s own convention of only invoking `checkAction` when a `PermissionsBuilder` is actually attached.
  */
 export async function maybeCheckResourceOperation<TActor, TRecord>(
-  permissions: PermissionsBuilder<TActor, TRecord> | undefined,
+  permissions: PermissionsBuilder<TActor, TRecord> | "open",
   operation: ResourceOperation,
   context: PermissionContext<TActor, TRecord>,
 ): Promise<PermissionCheckOutcome> {
-  if (!permissions) {
+  if (permissions === "open") {
     return { allowed: true };
   }
 
@@ -33,14 +33,14 @@ export async function maybeCheckResourceOperation<TActor, TRecord>(
 }
 
 /**
- * Runs `checkAction` only when `permissions` is configured for the resource; unguarded (always allowed) otherwise. Mirrors `maybeCheckResourceOperation` so a named action gets the same resource-level gate as CRUD operations, independent of any permissions the action itself may declare via `.permissions()`.
+ * Runs `checkAction` unless the resource is explicitly marked `"open"`. Mirrors `maybeCheckResourceOperation` so a named action gets the same resource-level gate as CRUD operations, independent of any permissions the action itself may declare via `.permissions()`.
  */
 export async function maybeCheckAction<TActor, TRecord>(
-  permissions: PermissionsBuilder<TActor, TRecord> | undefined,
+  permissions: PermissionsBuilder<TActor, TRecord> | "open",
   action: string,
   context: PermissionContext<TActor, TRecord>,
 ): Promise<PermissionCheckOutcome> {
-  if (!permissions) {
+  if (permissions === "open") {
     return { allowed: true };
   }
 
@@ -53,10 +53,10 @@ export async function maybeCheckAction<TActor, TRecord>(
  */
 export async function unreadableFieldNames<TActor, TRecord>(
   fields: Record<string, FieldSchema>,
-  permissions: PermissionsBuilder<TActor, TRecord> | undefined,
+  permissions: PermissionsBuilder<TActor, TRecord> | "open",
   context: PermissionContext<TActor, TRecord>,
 ): Promise<Set<string>> {
-  if (!permissions) {
+  if (permissions === "open") {
     return new Set();
   }
 
@@ -88,15 +88,15 @@ export function redactFields(
 }
 
 /**
- * Validates a create/update body: gated per-field via `validateWritableFields` when `permissions` is configured for the resource, plain `validateResourceAsync` otherwise.
+ * Validates a create/update body: gated per-field via `validateWritableFields` unless the resource is explicitly marked `"open"`, in which case it falls back to plain `validateResourceAsync`.
  */
 export function validateResourceInput<TActor, TRecord>(
   fields: Record<string, FieldSchema>,
   values: Record<string, unknown>,
-  permissions: PermissionsBuilder<TActor, TRecord> | undefined,
+  permissions: PermissionsBuilder<TActor, TRecord> | "open",
   context: PermissionContext<TActor, TRecord>,
 ): Promise<ValidationResult<Record<string, unknown>>> {
-  return permissions
-    ? validateWritableFields(fields, values, permissions, context)
-    : validateResourceAsync(fields, values);
+  return permissions === "open"
+    ? validateResourceAsync(fields, values)
+    : validateWritableFields(fields, values, permissions, context);
 }

@@ -9,7 +9,13 @@ import { createInMemoryAdapter, createPostResource } from "../fixtures.js";
 
 test("buildRouteTable defaults each resource's route to its name", () => {
   const table = buildRouteTable(
-    [{ resource: createPostResource(), adapter: createInMemoryAdapter() }],
+    [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter(),
+        permissions: "open",
+      },
+    ],
     "",
   );
 
@@ -23,6 +29,7 @@ test("buildRouteTable honors a custom path override", () => {
         resource: createPostResource(),
         adapter: createInMemoryAdapter(),
         path: "posts",
+        permissions: "open",
       },
     ],
     "",
@@ -33,7 +40,13 @@ test("buildRouteTable honors a custom path override", () => {
 
 test("buildRouteTable prepends basePath to every resource", () => {
   const table = buildRouteTable(
-    [{ resource: createPostResource(), adapter: createInMemoryAdapter() }],
+    [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter(),
+        permissions: "open",
+      },
+    ],
     "/api",
   );
 
@@ -45,10 +58,15 @@ test("buildRouteTable throws on two resources resolving to the same route", () =
     () =>
       buildRouteTable(
         [
-          { resource: createPostResource(), adapter: createInMemoryAdapter() },
           {
             resource: createPostResource(),
             adapter: createInMemoryAdapter(),
+            permissions: "open",
+          },
+          {
+            resource: createPostResource(),
+            adapter: createInMemoryAdapter(),
+            permissions: "open",
           },
         ],
         "",
@@ -66,6 +84,7 @@ test("buildRouteTable throws on two actions sharing a name on one resource", () 
             resource: createPostResource(),
             adapter: createInMemoryAdapter(),
             actions: [action("publish"), action("publish")],
+            permissions: "open",
           },
         ],
         "",
@@ -81,11 +100,13 @@ test("buildRouteTable sorts longer base paths before shorter ones", () => {
         resource: createPostResource(),
         adapter: createInMemoryAdapter(),
         path: "shop",
+        permissions: "open",
       },
       {
         resource: createPostResource(),
         adapter: createInMemoryAdapter(),
         path: "shop/featured",
+        permissions: "open",
       },
     ],
     "",
@@ -104,11 +125,13 @@ test("resolveRoute matches the longest base first so a nested path isn't swallow
         resource: createPostResource(),
         adapter: createInMemoryAdapter(),
         path: "shop",
+        permissions: "open",
       },
       {
         resource: createPostResource(),
         adapter: createInMemoryAdapter(),
         path: "shop/featured",
+        permissions: "open",
       },
     ],
     "",
@@ -127,7 +150,13 @@ test("resolveRoute matches the longest base first so a nested path isn't swallow
 
 test("resolveRoute returns undefined when no resource's base matches", () => {
   const table = buildRouteTable(
-    [{ resource: createPostResource(), adapter: createInMemoryAdapter() }],
+    [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter(),
+        permissions: "open",
+      },
+    ],
     "",
   );
 
