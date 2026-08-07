@@ -177,7 +177,12 @@ export function createDrizzleAdapter<
     },
 
     async create(values: Record<string, unknown>) {
-      const row = mapValuesToRow(values, columnsByField);
+      const row = mapValuesToRow(
+        resource.name,
+        values,
+        schema.fields,
+        columnsByField,
+      );
       const [record] = await client.insert(table).values(row).returning();
       return record;
     },
@@ -191,11 +196,16 @@ export function createDrizzleAdapter<
         );
       }
 
-      const row = mapValuesToRow(values, columnsByField);
+      const row = mapValuesToRow(
+        resource.name,
+        values,
+        schema.fields,
+        columnsByField,
+      );
 
-      // An empty payload (or one whose fields all mapped to no column) is a legitimate
-      // no-op: the caller already confirmed the record exists, so this returns it
-      // unchanged rather than sending drizzle a `set({})`, which throws "No values to set" instead of updating zero columns.
+      // An empty payload (or one whose keys are all undeclared, non-field extras) is a
+      // legitimate no-op: the caller already confirmed the record exists, so this
+      // returns it unchanged rather than sending drizzle a `set({})`, which throws "No values to set" instead of updating zero columns.
       if (Object.keys(row).length === 0) {
         const record = await selectById(value);
 

@@ -64,6 +64,43 @@ test("update with only unmapped fields returns the record unchanged instead of t
   assert.deepEqual(updated, created);
 });
 
+test("create throws when a value is submitted for a declared field with no matching column", async () => {
+  const db = createTestDb();
+  const resource = defineResource("post", {
+    table: posts,
+    fields: {
+      title: text().required(),
+      // "nickname" is a declared resource field but `posts` has no such column
+      // and there's no from(column).as(...) mapping for it either.
+      nickname: text(),
+    },
+  });
+  const adapter = createDrizzleAdapter(db, resource);
+
+  await assert.rejects(
+    () => adapter.create({ title: "Hello", nickname: "Nick" }),
+    /field "nickname" has no matching column/,
+  );
+});
+
+test("update throws when a value is submitted for a declared field with no matching column", async () => {
+  const db = createTestDb();
+  const resource = defineResource("post", {
+    table: posts,
+    fields: {
+      title: text().required(),
+      nickname: text(),
+    },
+  });
+  const adapter = createDrizzleAdapter(db, resource);
+  const created = await adapter.create({ title: "Hello" });
+
+  await assert.rejects(
+    () => adapter.update(created.id, { nickname: "Nick" }),
+    /field "nickname" has no matching column/,
+  );
+});
+
 test("update throws for an unknown id", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());

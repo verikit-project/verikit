@@ -47,10 +47,12 @@ export function resolveFieldColumns(
 }
 
 /**
- * Translates a create/update payload (keyed by resource field name) into a row object keyed by the table's own JS column keys, dropping any field with no resolvable column.
+ * Translates a create/update payload (keyed by resource field name) into a row object keyed by the table's own JS column keys. A key that isn't one of the resource's declared fields is dropped silently, since `ResourceAdapter.create`/`update` accept a plain `Record<string, unknown>`, so a caller that doesn't route through `@verikit/server`'s field-filtered validation (e.g. calling the adapter directly, as this package's own tests do) can send extras that were never meant to reach storage. A key that *is* a declared field but has no resolvable column is a resource misconfiguration instead (a typo, or a forgotten `from(column).as(...)`), so that case throws rather than silently discarding a value the schema promised to persist. @throws {Error} If `values` has a key naming a declared field with no resolvable column.
  */
 export function mapValuesToRow(
+  resourceName: string,
   values: Record<string, unknown>,
+  fields: Record<string, FieldSchema>,
   columnsByField: Map<string, ResolvedColumn>,
 ): Record<string, unknown> {
   const row: Record<string, unknown> = {};
@@ -60,6 +62,13 @@ export function mapValuesToRow(
 
     if (resolved) {
       row[resolved.jsKey] = value;
+      continue;
+    }
+
+    if (Object.hasOwn(fields, name)) {
+      throw new Error(
+        `@verikit/drizzle: resource "${resourceName}"'s field "${name}" has no matching column, so its value can't be persisted. Add a same-named column, or map one via from(column).as(...).`,
+      );
     }
   }
 
