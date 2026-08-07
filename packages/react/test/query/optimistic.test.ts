@@ -82,6 +82,60 @@ test("patchCachedListRecord patches only the matching record, leaving others unt
   });
 });
 
+test("patchCachedListRecord matches a numeric record id against the string mutation id (e.g. a Prisma autoincrement key)", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+
+  queryClient.setQueryData(keys.list(), {
+    records: [
+      { id: 1, title: "Hello" },
+      { id: 2, title: "World" },
+    ],
+    total: 2,
+    page: 1,
+    pageSize: 25,
+  });
+
+  patchCachedListRecord(queryClient, keys, "1", (record) => ({
+    ...(record as { id: number; title: string }),
+    title: "Changed",
+  }));
+
+  assert.deepEqual(queryClient.getQueryData(keys.list()), {
+    records: [
+      { id: 1, title: "Changed" },
+      { id: 2, title: "World" },
+    ],
+    total: 2,
+    page: 1,
+    pageSize: 25,
+  });
+});
+
+test("removeCachedListRecord matches a numeric record id against the string mutation id (e.g. a Prisma autoincrement key)", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+
+  queryClient.setQueryData(keys.list(), {
+    records: [
+      { id: 1, title: "Hello" },
+      { id: 2, title: "World" },
+    ],
+    total: 2,
+    page: 1,
+    pageSize: 25,
+  });
+
+  removeCachedListRecord(queryClient, keys, "1");
+
+  assert.deepEqual(queryClient.getQueryData(keys.list()), {
+    records: [{ id: 2, title: "World" }],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  });
+});
+
 test("patchCachedListRecord leaves a record with no matching/string id untouched", () => {
   const queryClient = createClient();
   const keys = resourceQueryKeys("posts");

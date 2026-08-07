@@ -26,16 +26,30 @@ export function restoreResourceQueries(
   }
 }
 
+// Adapters return whatever id type their storage uses (e.g. Prisma/drizzle's
+// numeric autoincrement primary keys), while the mutation-side `id` this is
+// matched against is always the string path segment from `ResourceAdapter`'s
+// contract, so stringify a numeric id here rather than letting a numeric-id
+// resource silently never match anything in cache.
 function recordId(record: unknown): string | undefined {
   const value = (record as { id?: unknown } | null)?.id;
-  return typeof value === "string" ? value : undefined;
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  return undefined;
 }
 
 const isListQuery = (query: { queryKey: QueryKey }): boolean =>
   query.queryKey[2] === "list";
 
 /**
- * Optimistically patches a record by id across every cached list page. A record whose `id` doesn't match (or that has no string `id` at all) is left untouched the eventual `invalidateQueries` on success still resolves any list this can't safely predict.
+ * Optimistically patches a record by id across every cached list page. A record whose `id` doesn't match (or that has no string/numeric `id` at all) is left untouched the eventual `invalidateQueries` on success still resolves any list this can't safely predict.
  */
 export function patchCachedListRecord<TRecord>(
   queryClient: QueryClient,
