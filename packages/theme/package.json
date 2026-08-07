@@ -1,6 +1,6 @@
 {
   "name": "@verikit/theme",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "Shared Tailwind CSS and shadcn theme tokens for Verikit UI packages.",
   "type": "module",
   "keywords": [
