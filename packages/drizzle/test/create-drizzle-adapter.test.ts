@@ -30,6 +30,7 @@ test("create/find/update/delete round-trip through the real table", async () => 
   assert.deepEqual(found, created);
 
   const updated = await adapter.update(created.id, { title: "Updated" });
+  assert.ok(updated);
   assert.equal(updated.title, "Updated");
   assert.equal(updated.body, "World");
 
@@ -101,18 +102,31 @@ test("update throws when a value is submitted for a declared field with no match
   );
 });
 
-test("update throws for an unknown id", async () => {
+test("update returns undefined for an unknown id, instead of throwing", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());
 
-  await assert.rejects(() => adapter.update("missing", { title: "x" }));
+  assert.equal(await adapter.update("missing", { title: "x" }), undefined);
 });
 
-test("update with an empty payload throws for an unknown id", async () => {
+test("update with an empty payload returns undefined for an unknown id, instead of throwing", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());
 
-  await assert.rejects(() => adapter.update("missing", {}));
+  assert.equal(await adapter.update("missing", {}), undefined);
+});
+
+test("update returns undefined for a valid id whose record was deleted first, matching find's existence-check-isn't-atomic case", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+  const created = await adapter.create({ title: "Hello" });
+
+  await adapter.delete(created.id);
+
+  assert.equal(
+    await adapter.update(created.id, { title: "Too late" }),
+    undefined,
+  );
 });
 
 test("delete is a no-op for an unknown id", async () => {
@@ -130,7 +144,7 @@ test("find/update/delete treat a non-numeric id against a numeric id column as m
   assert.equal((await adapter.find(String(created.id)))?.label, "A");
 
   assert.equal(await adapter.find("not-a-number"), undefined);
-  await assert.rejects(() => adapter.update("not-a-number", { label: "B" }));
+  assert.equal(await adapter.update("not-a-number", { label: "B" }), undefined);
   await adapter.delete("not-a-number");
 });
 

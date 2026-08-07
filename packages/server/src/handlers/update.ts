@@ -65,5 +65,13 @@ export async function handleUpdate(
   }
 
   const record = await entry.config.adapter.update(id, validated.value);
+
+  // The record existed and was permission-checked above, but that check and the update
+  // itself aren't atomic: a concurrent delete can still land in between, which the
+  // adapter reports the same way `find` reports "missing": `undefined`, not a thrown error.
+  if (!record) {
+    return notFoundResponse();
+  }
+
   return dataResponse(record);
 }

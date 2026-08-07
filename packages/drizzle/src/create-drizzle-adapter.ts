@@ -190,10 +190,12 @@ export function createDrizzleAdapter<
     async update(id: string, values: Record<string, unknown>) {
       const value = coerceId(idColumn, id);
 
+      // No record can have this id (a non-numeric id against a numeric column), or the
+      // record was deleted between the caller's own existence check and this call. Either
+      // way, matches `find`'s "missing" signal (`undefined`) rather than throwing, so
+      // `@verikit/server` can map it to a 404 instead of an opaque 500.
       if (value === undefined) {
-        throw new Error(
-          `@verikit/drizzle: no record with id "${id}" to update.`,
-        );
+        return undefined;
       }
 
       const row = mapValuesToRow(
@@ -207,15 +209,7 @@ export function createDrizzleAdapter<
       // legitimate no-op: the caller already confirmed the record exists, so this
       // returns it unchanged rather than sending drizzle a `set({})`, which throws "No values to set" instead of updating zero columns.
       if (Object.keys(row).length === 0) {
-        const record = await selectById(value);
-
-        if (!record) {
-          throw new Error(
-            `@verikit/drizzle: no record with id "${id}" to update.`,
-          );
-        }
-
-        return record;
+        return selectById(value);
       }
 
       const [record] = await client
@@ -223,12 +217,6 @@ export function createDrizzleAdapter<
         .set(row)
         .where(eq(idColumn, value))
         .returning();
-
-      if (!record) {
-        throw new Error(
-          `@verikit/drizzle: no record with id "${id}" to update.`,
-        );
-      }
 
       return record;
     },

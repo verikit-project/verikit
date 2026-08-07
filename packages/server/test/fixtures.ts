@@ -88,10 +88,13 @@ export function createInMemoryAdapter(
       return post;
     },
 
-    async update(id: string, values: Record<string, unknown>): Promise<Post> {
+    async update(
+      id: string,
+      values: Record<string, unknown>,
+    ): Promise<Post | undefined> {
       const index = records.findIndex((post) => post.id === id);
       if (index === -1) {
-        throw new Error(`No post with id "${id}".`);
+        return undefined;
       }
       records[index] = { ...records[index], ...values } as Post;
       return records[index];

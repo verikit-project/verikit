@@ -76,6 +76,23 @@ test("handleUpdate returns 400 with issues when a submitted field fails its own 
   assert.ok(body.error.issues.length > 0);
 });
 
+test("handleUpdate returns 404 when the adapter's update() reports the record gone, even though find() (checked earlier) still saw it", async () => {
+  // Simulates a race between handleUpdate's own existence/permission check and the
+  // adapter's actual update call (e.g. a concurrent delete landing in between): find()
+  // still sees the record, but update() reports it missing, matching find's own
+  // `undefined`-for-missing signal rather than throwing.
+  const adapter = {
+    ...createInMemoryAdapter([{ ...post }]),
+    async update(): Promise<Post | undefined> {
+      return undefined;
+    },
+  };
+  const ctx = ctxFor(adapter, { title: "x" });
+
+  const response = await handleUpdate(ctx, "1");
+  assert.equal(response.status, 404);
+});
+
 test("handleUpdate returns 404 (not 403) when the actor lacks update access, so existence isn't leaked", async () => {
   const permissions = definePermissions<Actor>().can(
     "update",
