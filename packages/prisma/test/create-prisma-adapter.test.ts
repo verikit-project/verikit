@@ -1,0 +1,469 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { boolean, defineResource, text } from "@verikit/core";
+import {
+  createPrismaAdapter,
+  type PrismaModelDelegate,
+} from "../src/create-prisma-adapter.js";
+import {
+  createCounterAdapter,
+  createLegacyPostAdapter,
+  createPostAdapter,
+  createPostResource,
+  createTestDb,
+} from "./fixtures.js";
+
+test("create/find/update/delete round-trip through a real Prisma client", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  const created = await adapter.create({ title: "Hello", body: "World" });
+  assert.equal(created.title, "Hello");
+  assert.equal(typeof created.id, "string");
+
+  const found = await adapter.find(created.id);
+  assert.deepEqual(found, created);
+
+  const updated = await adapter.update(created.id, { title: "Updated" });
+  assert.ok(updated);
+  assert.equal(updated.title, "Updated");
+  assert.equal(updated.body, "World");
+
+  await adapter.delete(created.id);
+  assert.equal(await adapter.find(created.id), undefined);
+});
+
+test("find returns undefined for an unknown id", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  assert.equal(await adapter.find("missing"), undefined);
+});
+
+test("update with an empty payload succeeds and returns the record unchanged", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  const created = await adapter.create({ title: "Hello", body: "World" });
+  const updated = await adapter.update(created.id, {});
+  assert.deepEqual(updated, created);
+});
+
+test("update with only unmapped fields returns the record unchanged", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  const created = await adapter.create({ title: "Hello", body: "World" });
+  const updated = await adapter.update(created.id, { notAField: "x" });
+  assert.deepEqual(updated, created);
+});
+
+test("update returns undefined for an unknown id, instead of throwing", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  assert.equal(await adapter.update("missing", { title: "x" }), undefined);
+});
+
+test("update returns undefined (P2025) for a valid id whose record was deleted first, matching find's existence-check-isn't-atomic case", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+  const created = await adapter.create({ title: "Hello" });
+
+  await adapter.delete(created.id);
+
+  assert.equal(
+    await adapter.update(created.id, { title: "Too late" }),
+    undefined,
+  );
+});
+
+test("delete is idempotent (P2025) for an unknown id", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  await adapter.delete("missing");
+});
+
+test("delete is idempotent for a record already deleted by a concurrent caller", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+  const created = await adapter.create({ title: "Hello" });
+
+  await db.post.delete({ where: { id: created.id } });
+
+  await adapter.delete(created.id);
+});
+
+test("update rethrows a non-P2025 error instead of swallowing it", async () => {
+  const conflict = Object.assign(new Error("Unique constraint failed"), {
+    code: "P2002",
+  });
+  const model: PrismaModelDelegate = {
+    findMany: async () => [],
+    count: async () => 0,
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => {
+      throw conflict;
+    },
+    delete: async () => ({}),
+  };
+
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+
+  await assert.rejects(
+    () => adapter.update("1", { title: "x" }),
+    (error) => error === conflict,
+  );
+});
+
+test("delete rethrows a non-P2025 error instead of swallowing it", async () => {
+  const dbLocked = Object.assign(new Error("Database is locked"), {
+    code: "P2034",
+  });
+  const model: PrismaModelDelegate = {
+    findMany: async () => [],
+    count: async () => 0,
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => {
+      throw dbLocked;
+    },
+  };
+
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+
+  await assert.rejects(
+    () => adapter.delete("1"),
+    (error) => error === dbLocked,
+  );
+});
+
+test("find/update/delete treat a non-numeric id against a numeric id field as missing, without querying", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createCounterAdapter(db);
+
+  const created = await adapter.create({ label: "A" });
+  assert.equal((await adapter.find(created.id))?.label, "A");
+
+  assert.equal(await adapter.find("not-a-number"), undefined);
+  assert.equal(await adapter.update("not-a-number", { label: "B" }), undefined);
+  await adapter.delete("not-a-number");
+});
+
+test("list paginates and reports the total across all pages", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  for (let i = 0; i < 5; i++) {
+    await adapter.create({ title: `Post ${i}`, body: "" });
+  }
+
+  const page1 = await adapter.list({ page: 1, pageSize: 2 });
+  assert.equal(page1.records.length, 2);
+  assert.equal(page1.total, 5);
+
+  const page3 = await adapter.list({ page: 3, pageSize: 2 });
+  assert.equal(page3.records.length, 1);
+});
+
+test("list searches across every searchable field, case-insensitively on SQLite", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  await adapter.create({ title: "Hello world", body: "" });
+  await adapter.create({ title: "Nothing", body: "contains WORLD here" });
+  await adapter.create({ title: "Unrelated", body: "" });
+
+  const result = await adapter.list({ page: 1, pageSize: 10, search: "world" });
+  assert.equal(result.total, 2);
+});
+
+test("a literal percent sign in the search term is interpreted as a SQL wildcard, unlike @verikit/drizzle's escaped search", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  await adapter.create({ title: "50% off", body: "" });
+  await adapter.create({ title: "50000 off", body: "" });
+
+  // Prisma's `contains` filter has no escape-character option, so it can't neutralize
+  // `%`/`_` in a search term the way @verikit/drizzle's hand-built `LIKE ... ESCAPE '\'`
+  // does. "50%" matches both rows here: literally against the first, and as a "50" then
+  // anything then nothing wildcard against the second. This is a documented adapter-parity
+  // gap (see `PrismaAdapterOptions.provider`'s docstring), not the intended search UX.
+  const result = await adapter.list({ page: 1, pageSize: 10, search: "50%" });
+  assert.equal(result.total, 2);
+});
+
+test("list with a search term returns zero results for a resource with no searchable fields, without querying", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createLegacyPostAdapter(db);
+
+  await adapter.create({ title: "Hello" });
+
+  const result = await adapter.list({ page: 1, pageSize: 10, search: "hello" });
+  assert.deepEqual(result, { records: [], total: 0 });
+});
+
+test("list sorts by the requested field and direction", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  await adapter.create({ title: "B", body: "" });
+  await adapter.create({ title: "A", body: "" });
+  await adapter.create({ title: "C", body: "" });
+
+  const ascending = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    sort: { field: "title", direction: "asc" },
+  });
+  assert.deepEqual(
+    ascending.records.map((r) => r.title),
+    ["A", "B", "C"],
+  );
+
+  const descending = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    sort: { field: "title", direction: "desc" },
+  });
+  assert.deepEqual(
+    descending.records.map((r) => r.title),
+    ["C", "B", "A"],
+  );
+});
+
+test("list ignores a sort field with no matching Prisma mapping instead of throwing", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  await adapter.create({ title: "Only", body: "" });
+
+  const result = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    sort: { field: "nonexistent", direction: "asc" },
+  });
+  assert.equal(result.records.length, 1);
+});
+
+test("fields maps a resource field to a differently-named Prisma scalar", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createLegacyPostAdapter(db);
+
+  const created = await adapter.create({ title: "Legacy" });
+  assert.deepEqual(created, { id: created.id, title: "Legacy" });
+
+  const found = await adapter.find(created.id);
+  assert.deepEqual(found, { id: created.id, title: "Legacy" });
+});
+
+test("adapter results expose only resource fields and canonical id, never an undeclared column", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+  const created = await adapter.create({ title: "Hello", body: "World" });
+
+  await db.post.update({
+    where: { id: created.id },
+    data: { secret: "do not expose" },
+  });
+
+  assert.deepEqual(await adapter.find(created.id), {
+    id: created.id,
+    title: "Hello",
+    body: "World",
+    published: false,
+  });
+  assert.deepEqual(await adapter.list({ page: 1, pageSize: 10 }), {
+    records: [
+      { id: created.id, title: "Hello", body: "World", published: false },
+    ],
+    total: 1,
+  });
+});
+
+test("boolean fields round-trip as real booleans, not 0/1", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  const created = await adapter.create({
+    title: "Flagged",
+    body: "",
+    published: true,
+  });
+  assert.equal(created.published, true);
+});
+
+test("throws at construction when fields is missing a mapping for a declared resource field", () => {
+  const resource = defineResource("post", {
+    fields: {
+      title: text().required(),
+      nickname: text(),
+    },
+  });
+
+  assert.throws(
+    () =>
+      createPrismaAdapter(resource, {
+        model: {} as PrismaModelDelegate,
+        fields: { title: "title" } as never,
+        id: { field: "id" },
+      }),
+    /has no Prisma field mapping for: nickname/,
+  );
+});
+
+test("throws at construction when a searchable field's fieldType isn't text-like", () => {
+  const resource = defineResource("post", {
+    fields: {
+      title: text().required(),
+      published: boolean().searchable(),
+    },
+  });
+
+  assert.throws(
+    () =>
+      createPrismaAdapter(resource, {
+        model: {} as PrismaModelDelegate,
+        fields: { title: "title", published: "published" },
+        id: { field: "id" },
+      }),
+    /Search only supports text fields/,
+  );
+});
+
+test("list runs findMany and count exactly once each per call, with the same where filter", async () => {
+  const calls: { method: string; args: unknown }[] = [];
+  const model: PrismaModelDelegate = {
+    findMany: async (args) => {
+      calls.push({ method: "findMany", args });
+      return [{ id: "1", title: "Hello" }];
+    },
+    count: async (args) => {
+      calls.push({ method: "count", args });
+      return 1;
+    },
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+
+  await adapter.list({ page: 1, pageSize: 10, search: "hello" });
+
+  const findManyCalls = calls.filter((c) => c.method === "findMany");
+  const countCalls = calls.filter((c) => c.method === "count");
+  assert.equal(findManyCalls.length, 1);
+  assert.equal(countCalls.length, 1);
+  assert.deepEqual(
+    (findManyCalls[0]!.args as { where: unknown }).where,
+    (countCalls[0]!.args as { where: unknown }).where,
+  );
+});
+
+test("never sends an `include`, only a `select` scoped to the configured fields and id", async () => {
+  let selectSeen: unknown;
+  let includeSeen = false;
+  const model: PrismaModelDelegate = {
+    findMany: async () => [],
+    count: async () => 0,
+    findUnique: async (args) => {
+      selectSeen = args.select;
+      includeSeen = "include" in args;
+      return { id: "1", title: "Hi", body: null, published: false };
+    },
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+
+  await adapter.find("1");
+
+  assert.equal(includeSeen, false);
+  assert.deepEqual(selectSeen, {
+    id: true,
+    title: true,
+    body: true,
+    published: true,
+  });
+});
+
+test('provider: "postgresql" adds mode: "insensitive" to the search filter; the default omits it', async () => {
+  let lastWhere: unknown;
+  const model: PrismaModelDelegate = {
+    findMany: async (args) => {
+      lastWhere = args.where;
+      return [];
+    },
+    count: async () => 0,
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+
+  const sqliteAdapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+  await sqliteAdapter.list({ page: 1, pageSize: 10, search: "hi" });
+  assert.deepEqual(lastWhere, {
+    OR: [{ title: { contains: "hi" } }, { body: { contains: "hi" } }],
+  });
+
+  const postgresAdapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+    provider: "postgresql",
+  });
+  await postgresAdapter.list({ page: 1, pageSize: 10, search: "hi" });
+  assert.deepEqual(lastWhere, {
+    OR: [
+      { title: { contains: "hi", mode: "insensitive" } },
+      { body: { contains: "hi", mode: "insensitive" } },
+    ],
+  });
+});

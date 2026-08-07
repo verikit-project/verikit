@@ -424,7 +424,8 @@ test("list uses an async transaction on a non-sync drizzle client", async () => 
     // Marks this client as one of Postgres/MySQL's genuinely async
     // dialects, unlike better-sqlite3's synchronous "sync" resultKind.
     resultKind: "async",
-    select: (fields?: unknown) => makeQuery(fields ? totalRows : rows),
+    select: (fields?: Record<string, unknown>) =>
+      makeQuery(fields && "value" in fields ? totalRows : rows),
     transaction: async (fn: (tx: unknown) => unknown) => {
       transactionCalled = true;
       return fn(fakeDb);

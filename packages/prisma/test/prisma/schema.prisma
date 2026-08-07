@@ -1,0 +1,41 @@
+// Test-only schema: generates a real @prisma/client used by this package's own
+// integration tests. Mirrors packages/drizzle/test/fixtures.ts's table shapes
+// (same field-mismatch and numeric-id cases) so the two adapters' test suites
+// stay easy to compare.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+model Post {
+  id        String  @id @default(uuid())
+  title     String
+  body      String?
+  published Boolean @default(false)
+  // Deliberately undeclared by the "post" resource's `fields` mapping, to
+  // prove the adapter never leaks a column it wasn't told about.
+  secret    String?
+
+  @@map("posts")
+}
+
+// Column names deliberately differ from the resource's field names, to
+// exercise the adapter's `fields` (resource field -> Prisma scalar) mapping.
+model LegacyPost {
+  postId   String @id @default(uuid()) @map("post_id")
+  headline String
+
+  @@map("legacy_posts")
+}
+
+// A numeric (not string) primary key, to exercise `id.fromPath`/`id.toPath`.
+model Counter {
+  id    Int    @id @default(autoincrement())
+  label String
+
+  @@map("counters")
+}
