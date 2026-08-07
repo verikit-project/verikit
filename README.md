@@ -26,9 +26,9 @@ const post = defineResource("post", {
 });
 ```
 
-That one definition is what `@verikit/server` exposes over REST, `@verikit/drizzle` backs with a
-real database, `@verikit/client` calls from the browser, and `@verikit/react` renders as a table
-and form.
+That one definition is what `@verikit/server` exposes over REST, `@verikit/drizzle` or
+`@verikit/prisma` backs with a real database, `@verikit/client` calls from the browser, and
+`@verikit/react` renders as a table and form.
 
 ## Docs
 
