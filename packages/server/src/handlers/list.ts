@@ -18,7 +18,7 @@ export async function handleList(
 
   const permission = await maybeCheckResourceOperation(
     entry.config.permissions,
-    "read",
+    "list",
     { actor },
   );
 

@@ -78,9 +78,9 @@ test("handleList is unguarded when the resource is marked open", async () => {
   assert.equal(response.status, 200);
 });
 
-test("handleList returns 403 when the actor lacks resource-level read access", async () => {
+test("handleList returns 403 when the actor lacks resource-level list access", async () => {
   const permissions = definePermissions<Actor>().can(
-    "read",
+    "list",
     ({ actor }) => actor.role === "admin",
   );
   const ctx = ctxFor(
@@ -93,9 +93,21 @@ test("handleList returns 403 when the actor lacks resource-level read access", a
   assert.equal(response.status, 403);
 });
 
+test('handleList\'s resource-level gate is "list", not "read": a permissions builder that only attaches .can("read", ...) still denies list under fail-closed semantics', async () => {
+  const permissions = definePermissions<Actor>().can("read", true);
+  const ctx = ctxFor(
+    createInMemoryAdapter(samplePosts),
+    "https://x/post",
+    permissions,
+  );
+
+  const response = await handleList(ctx);
+  assert.equal(response.status, 403);
+});
+
 test("handleList redacts fields the actor cannot read from every record", async () => {
   const permissions = definePermissions<Actor>()
-    .can("read", true)
+    .can("list", true)
     .field("title", { read: true })
     .field("published", { read: true });
   // "body" is left ungated, so it's hidden under fail-closed permissions.

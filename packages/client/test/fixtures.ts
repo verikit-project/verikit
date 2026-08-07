@@ -122,6 +122,7 @@ export function createTestServerFetch(initial: readonly Post[] = []): {
   // fixture's real goal is gating `delete` and the `publish` action to admins (to exercise 403/404/409 paths from the client).
   const permissions = definePermissions<Actor>()
     .can("create", () => true)
+    .can("list", () => true)
     .can("read", () => true)
     .can("update", () => true)
     .can("delete", ({ actor }) => actor.role === "admin")
