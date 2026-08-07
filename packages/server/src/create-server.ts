@@ -13,6 +13,13 @@ import {
   notFoundResponse,
 } from "./http/responses.js";
 import { buildRouteTable, resolveRoute } from "./routing/route-table.js";
+import type { RouteAction } from "./routing/match-route.js";
+
+/** The resource and action a request resolved to, passed to `onError` for diagnostics. */
+export interface ServerErrorRoute {
+  resource: string;
+  action: RouteAction;
+}
 
 /** One resource registered with `createServer()`. */
 export interface ServerResourceConfig<TActor = unknown> {
@@ -47,6 +54,15 @@ export interface CreateServerOptions<TActor = unknown> {
    * Prefix every resource is mounted under, e.g. `"/api"`. Defaults to `""`.
    */
   basePath?: string;
+  /**
+   * Called whenever a handler or adapter throws, right before the generic 500 envelope is
+   * returned to the client the response body never includes `error`'s details (it may carry
+   * storage internals a client shouldn't see), so this is the only way to observe what actually
+   * failed. Errors thrown by `onError` itself are caught and ignored, so a broken logger can't
+   * turn a handled failure into an unhandled rejection see `runAction`'s `error` hook in
+   * `@verikit/runtime` for the same convention.
+   */
+  onError?: (error: unknown, request: Request, route: ServerErrorRoute) => void;
 }
 
 const DEFAULT_SEARCH_PAGE_SIZE = 10;
@@ -98,10 +114,18 @@ export function createServer<TActor = unknown>(
         case "action":
           return await handleAction(ctx, action.name);
       }
-    } catch {
+    } catch (error) {
       // Adapter (or other handler) exceptions shouldn't surface as an unhandled rejection
       // or a raw error to the caller map them to the package's own JSON error envelope.
       // The underlying error is intentionally not included in the response; it may carry storage internals a client shouldn't see.
+      try {
+        options.onError?.(error, request, {
+          resource: resolved.entry.config.resource.name,
+          action,
+        });
+      } catch {
+        // Ignore errors from onError so a broken logger doesn't mask the original failure.
+      }
       return errorResponse(500, "Internal server error.");
     }
   };

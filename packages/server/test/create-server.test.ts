@@ -179,6 +179,65 @@ test("createServer maps an adapter exception to a 500 JSON error envelope", asyn
   assert.doesNotMatch(body.error.message, /connection reset/);
 });
 
+test("createServer's onError hook observes the underlying error, request, and resolved route", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const throwingAdapter = {
+    ...adapter,
+    find(): Promise<Post | undefined> {
+      throw new Error("connection reset");
+    },
+  };
+  const observed: unknown[] = [];
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: throwingAdapter,
+        permissions: "open",
+      },
+    ],
+    onError: (error, request, route) => {
+      observed.push({ error, url: request.url, route });
+    },
+  });
+
+  const response = await handler(new Request("https://x/post/1"));
+  assert.equal(response.status, 500);
+  assert.equal(observed.length, 1);
+  assert.deepEqual(observed[0], {
+    error: new Error("connection reset"),
+    url: "https://x/post/1",
+    route: { resource: "post", action: { kind: "find", id: "1" } },
+  });
+});
+
+test("createServer still returns the 500 envelope when onError itself throws", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const throwingAdapter = {
+    ...adapter,
+    find(): Promise<Post | undefined> {
+      throw new Error("connection reset");
+    },
+  };
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: throwingAdapter,
+        permissions: "open",
+      },
+    ],
+    onError: () => {
+      throw new Error("logger is down");
+    },
+  });
+
+  const response = await handler(new Request("https://x/post/1"));
+  const body = await response.json();
+  assert.equal(response.status, 500);
+  assert.equal(typeof body.error.message, "string");
+});
+
 test("createServer throws at construction time on a duplicate resource route", () => {
   assert.throws(() =>
     createServer({
