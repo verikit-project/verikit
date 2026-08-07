@@ -29,11 +29,13 @@ export async function handleList(
   const { sort, ...rest } = parseListParams(url, options);
 
   // `sort.field` is caller-controlled and reaches the adapter verbatim. Dropping
-  // anything outside the resource's own field names keeps an adapter that builds a raw
-  // `ORDER BY <field>` (or similar) from having to defend against arbitrary identifiers itself.
+  // anything outside the resource's own `.sortable()` field names keeps an adapter that
+  // builds a raw `ORDER BY <field>` (or similar) from having to defend against arbitrary
+  // or unintended-cost identifiers itself, since a field only reaches the adapter here
+  // if the schema explicitly opted it in for sorting, not just because it exists.
   const params = {
     ...rest,
-    ...(sort && Object.hasOwn(entry.fields, sort.field) && { sort }),
+    ...(sort && entry.fields[sort.field]?.sortable && { sort }),
   };
 
   const result = await entry.config.adapter.list(params);

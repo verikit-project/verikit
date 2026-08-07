@@ -22,7 +22,7 @@ export interface Post extends Record<string, unknown> {
 export function createPostResource(): Resource {
   return defineResource("post", {
     fields: {
-      title: text().required().searchable(),
+      title: text().required().searchable().sortable(),
       body: textarea(),
       published: boolean().default(false),
     },

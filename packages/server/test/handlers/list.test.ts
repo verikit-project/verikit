@@ -113,6 +113,23 @@ test("handleList applies a sort field that's part of the resource's schema", asy
   );
 });
 
+test("handleList drops a sort field that's a real schema field but isn't marked .sortable()", async () => {
+  // "body" exists on the schema (so the old "part of the resource's schema" check would
+  // have let it through) but has no .sortable(), so it must still be dropped: otherwise
+  // an adapter that maps sort straight to a query (e.g. Prisma's orderBy) would let any
+  // declared field drive potentially expensive or unintended sorting.
+  const ctx = ctxFor(
+    createInMemoryAdapter(samplePosts),
+    "https://x/post?sort=body&order=desc",
+  );
+  const body = await (await handleList(ctx)).json();
+
+  assert.deepEqual(
+    body.data.map((post: Post) => post.id),
+    ["1", "2"],
+  );
+});
+
 test("handleList drops a sort field that isn't part of the resource's schema", async () => {
   // `sort` reaches the adapter verbatim, so an unrecognized (or injection-like)
   // field name must never get there  a naive adapter building a raw
