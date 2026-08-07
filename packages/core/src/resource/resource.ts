@@ -176,7 +176,7 @@ export type InferResourceRelationships<TRelationships extends RelationshipMap> =
       };
 
 /**
- * Infers the plain runtime shape of a resource: its fields merged with its relationship values.
+ * Infers the plain runtime shape of a resource: its fields merged with its relationship values. This is a schema-authoring type only (form values, layout typing, etc.): it describes what a *fully populated* resource instance would look like, not what any adapter or server route currently returns. `@verikit/server`'s `ResourceAdapter` (see `packages/server/src/adapter.ts`) is deliberately storage-agnostic and returns flat records: it has no `include`/`select` mechanism, and permissions' field redaction only understands top-level fields, not nested relationship shapes. A resource with relationships still round-trips correctly through the server today (relationships are metadata for `@verikit/react`'s consumer-supplied `renderRelationship`, not something the server populates) but nothing currently fetches or writes nested relationship data over HTTP. Don't take this type's inclusion of relationship values as a signal that an adapter (present or future, e.g. a Prisma adapter using Prisma's own `include`) should start populating them without first deliberately extending the server contract (request shape, redaction, pagination-per-relation) to match.
  */
 export type InferResource<TResource> =
   TResource extends Resource<
