@@ -9,7 +9,12 @@
     "noEmit": false,
     "outDir": ".test-dist",
     "rootDir": ".",
-    "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo"
+    "tsBuildInfoFile": ".test-dist/tsconfig.test.tsbuildinfo",
+    // Prisma 7's "prisma-client" generator ships raw .ts source (not precompiled JS) whose
+    // own relative imports use a .ts extension (e.g. "./internal/class.ts"). Without this,
+    // tsc leaves that extension untouched in emitted JS, which Node's ESM loader then can't
+    // resolve at runtime.
+    "rewriteRelativeImportExtensions": true
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],
   "exclude": ["dist", ".test-dist", "node_modules"]

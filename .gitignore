@@ -23,6 +23,9 @@ coverage/
 .nyc_output/
 .test-dist/
 
+# Prisma's generated client output (test/generated in @verikit/prisma)
+generated/
+
 # TypeScript
 *.tsbuildinfo
 

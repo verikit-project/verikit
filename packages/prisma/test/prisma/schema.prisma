@@ -3,12 +3,14 @@
 // (same field-mismatch and numeric-id cases) so the two adapters' test suites
 // stay easy to compare.
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../generated/client"
 }
 
+// No `url`: Prisma 7 connects exclusively through a driver adapter passed to the
+// `PrismaClient` constructor (see fixtures.ts), not a datasource connection string.
 datasource db {
   provider = "sqlite"
-  url      = "file:./test.db"
 }
 
 model Post {

@@ -1,20 +1,18 @@
 import { boolean, defineResource, text, textarea } from "@verikit/core";
-import { PrismaClient } from "@prisma/client";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import path from "node:path";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaClient } from "./generated/client/client.js";
 import { createPrismaAdapter } from "../src/create-prisma-adapter.js";
 
 /**
- * A fresh SQLite-backed `PrismaClient` per call, schema created via raw SQL rather than
- * `prisma migrate`/`db push` so tests don't shell out to the CLI. Table/column shapes mirror
- * `packages/drizzle/test/fixtures.ts` (same field-mismatch and numeric-id cases) so the two
- * adapters' test suites stay easy to compare.
+ * A fresh, isolated in-memory `PrismaClient` per call (via the `better-sqlite3` driver
+ * adapter, which Prisma 7 requires in place of a datasource connection string), schema
+ * created via raw SQL rather than `prisma migrate`/`db push` so tests don't shell out to the
+ * CLI. Table/column shapes mirror `packages/drizzle/test/fixtures.ts` (same field-mismatch
+ * and numeric-id cases) so the two adapters' test suites stay easy to compare.
  */
 export async function createTestDb(): Promise<PrismaClient> {
-  const dir = await mkdtemp(path.join(tmpdir(), "verikit-prisma-"));
   const prisma = new PrismaClient({
-    datasourceUrl: `file:${path.join(dir, "test.db")}`,
+    adapter: new PrismaBetterSqlite3({ url: ":memory:" }),
   });
 
   await prisma.$executeRawUnsafe(`

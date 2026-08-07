@@ -44,6 +44,7 @@
     "@verikit/server": "workspace:*"
   },
   "devDependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@types/node": "^26.1.1",
     "prisma": "^7.9.1",
