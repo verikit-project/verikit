@@ -36,7 +36,7 @@ export interface ServerResourceConfig<TActor = unknown> {
   actions?: ActionBuilder<string, any, TActor, any, any>[];
   /**
    * Resource-level CRUD/field/action gate. Required so a resource can never end up unguarded
-   * by accident — pass a real `PermissionsBuilder`, or the literal `"open"` to explicitly opt this
+   * by accident  pass a real `PermissionsBuilder`, or the literal `"open"` to explicitly opt this
    * resource out of permission checks entirely (see `maybeCheckResourceOperation`). `"open"` is
    * loud and greppable on purpose: `grep -rn 'permissions: "open"'` finds every intentionally
    * unguarded resource in a codebase.

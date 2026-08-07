@@ -1,45 +1,43 @@
 # Verikit
 
-Validation, Entities, Resources & Interfaces Toolkit.
+![Verikit  TypeScript-first resource framework for building web applications](img/social-card.jpg)
 
-Verikit is a TypeScript toolkit for defining reusable resource schemas.
-
-- Website and docs: [verikit.dev](https://verikit.dev)
-
-## Packages
-
-- `@verikit/core`
-- `@verikit/runtime`
-- `@verikit/react`
-- `@verikit/theme`
-- `@verikit/server`
-- `@verikit/drizzle`
-- `@verikit/client`
+**Define a resource once, get the rest for free.** Verikit is a TypeScript framework for
+CRUD-heavy apps: declare a resource's fields, validation, and permissions in one place, and derive
+a REST API, a typed client, and ready-made table/form UI from it  instead of hand-writing the same
+shape across your database, API, and frontend.
 
 ## Install
 
 ```sh
 pnpm add @verikit/core @verikit/runtime
-pnpm add @verikit/react @verikit/theme
 ```
 
-## Development
+## Example
 
-Requires Node.js 24 and pnpm 11 — pinned by `.nvmrc`/`.node-version` (Node) and the root
-`package.json`'s `packageManager` field (pnpm, via Corepack). Run `corepack enable` once per
-machine, then a version manager that reads `.nvmrc`/`.node-version` (nvm, fnm, mise, ...) will
-pick up the right Node version automatically.
+```ts
+import { boolean, defineResource, text } from "@verikit/core";
 
-```sh
-corepack enable
-nvm use           # or: fnm use / mise install
-pnpm install
-pnpm test
-pnpm typecheck
-pnpm lint
-pnpm verify
+const post = defineResource("post", {
+  fields: {
+    title: text().required(),
+    published: boolean().default(false),
+  },
+});
 ```
+
+That one definition is what `@verikit/server` exposes over REST, `@verikit/drizzle` backs with a
+real database, `@verikit/client` calls from the browser, and `@verikit/react` renders as a table
+and form.
+
+## Docs
+
+Guides and API reference: [verikit.dev](https://verikit.dev)
 
 ## Status
 
 Verikit is under active development. APIs may change before a stable release.
+
+---
+
+Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup.
