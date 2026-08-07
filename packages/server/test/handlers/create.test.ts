@@ -84,3 +84,20 @@ test("handleCreate enforces per-field write access when permissions are configur
   const response = await handleCreate(ctx);
   assert.equal(response.status, 400);
 });
+
+test("handleCreate returns only fields readable by the actor", async () => {
+  const adapter = createInMemoryAdapter();
+  const create = adapter.create;
+  adapter.create = async (values) => ({
+    ...(await create(values)),
+    passwordHash: "never expose this",
+  });
+  const permissions = definePermissions<Actor>()
+    .can("create", true)
+    .field("title", { read: true, write: true })
+    .field("published", { write: true });
+  const ctx = ctxFor(adapter, { title: "Hi" }, permissions);
+
+  const body = await (await handleCreate(ctx)).json();
+  assert.deepEqual(body.data, { id: adapter.records[0]!.id, title: "Hi" });
+});

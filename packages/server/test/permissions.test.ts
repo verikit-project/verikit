@@ -3,6 +3,7 @@ import test from "node:test";
 import { definePermissions } from "@verikit/core";
 import {
   maybeCheckResourceOperation,
+  presentRecord,
   redactFields,
   unreadableFieldNames,
   validateResourceInput,
@@ -78,6 +79,21 @@ test("redactFields removes hidden keys, and returns the same object when nothing
 
   assert.equal(redactFields(record, new Set()), record);
   assert.deepEqual(redactFields(record, new Set(["body"])), {
+    id: "1",
+    title: "Hi",
+  });
+});
+
+test("presentRecord allow-lists canonical id and declared readable fields", () => {
+  const fields = createPostResource().toSchema().fields;
+  const record = {
+    id: "1",
+    title: "Hi",
+    body: "text",
+    passwordHash: "never expose this",
+  };
+
+  assert.deepEqual(presentRecord(record, fields, new Set(["body"])), {
     id: "1",
     title: "Hi",
   });

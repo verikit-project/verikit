@@ -27,6 +27,12 @@ export interface ResourceListResult<TRecord = Record<string, unknown>> {
 /**
  * Storage abstraction a resource is bound to when registered with `createServer()`. Deliberately storage-agnostic: `@verikit/server` never imports an ORM, and `id` is always the raw string path segment an adapter implementation (e.g. `@verikit/drizzle`) owns any coercion to its own key type.
  *
+ * Every returned record is an API record, not an ORM row: it must expose a canonical string
+ * `id` and only keys declared as resource fields. In particular, an adapter must map storage
+ * names back to resource field names and must project away undeclared columns. The server
+ * enforces the same allow-list before responding as defence in depth, but adapters must keep
+ * this contract for direct callers as well.
+ *
  * `TRecord` is always a flat record. Relationships declared on a `Resource` (`belongsTo`/`hasMany`/
  * `belongsToMany`) are schema metadata only: there's no `include`/`select` param on `list`/`find`,
  * no nested-write support on `create`/`update`, and permissions' field redaction only understands

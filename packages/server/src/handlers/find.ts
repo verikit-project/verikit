@@ -1,7 +1,7 @@
 import { dataResponse, notFoundResponse } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
-  redactFields,
+  presentRecord,
   unreadableFieldNames,
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
@@ -41,5 +41,5 @@ export async function handleFind(
     },
   );
 
-  return dataResponse(redactFields(record, hidden));
+  return dataResponse(presentRecord(record, entry.fields, hidden));
 }

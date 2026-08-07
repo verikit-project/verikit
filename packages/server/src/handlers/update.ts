@@ -6,6 +6,8 @@ import {
 } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
+  presentRecord,
+  unreadableFieldNames,
   validateResourceInput,
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
@@ -73,5 +75,12 @@ export async function handleUpdate(
     return notFoundResponse();
   }
 
-  return dataResponse(record);
+  const publicRecord = record as Record<string, unknown>;
+  const hidden = await unreadableFieldNames(
+    entry.fields,
+    entry.config.permissions,
+    { actor, record: publicRecord },
+  );
+
+  return dataResponse(presentRecord(publicRecord, entry.fields, hidden));
 }

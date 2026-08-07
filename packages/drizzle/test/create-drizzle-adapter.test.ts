@@ -289,10 +289,33 @@ test("from(column).as(...) maps a field to a differently-named column", async ()
   const adapter = createDrizzleAdapter(db, createLegacyPostResource());
 
   const created = await adapter.create({ title: "Legacy" });
-  assert.equal(created.headline, "Legacy");
+  assert.deepEqual(created, { id: created.id, title: "Legacy" });
 
-  const found = await adapter.find(created.postId);
-  assert.equal(found?.headline, "Legacy");
+  const found = await adapter.find(created.id);
+  assert.deepEqual(found, { id: created.id, title: "Legacy" });
+});
+
+test("adapter results expose only resource fields and canonical id", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+  const created = await adapter.create({ title: "Hello", body: "World" });
+
+  db.run(
+    sql`update posts set secret = 'do not expose' where id = ${created.id}`,
+  );
+
+  assert.deepEqual(await adapter.find(created.id), {
+    id: created.id,
+    title: "Hello",
+    body: "World",
+    published: false,
+  });
+  assert.deepEqual(await adapter.list({ page: 1, pageSize: 10 }), {
+    records: [
+      { id: created.id, title: "Hello", body: "World", published: false },
+    ],
+    total: 1,
+  });
 });
 
 test("throws when the resource has no table", () => {

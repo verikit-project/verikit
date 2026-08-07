@@ -2,7 +2,7 @@ import { parseListParams } from "../http/parse-request.js";
 import { dataResponse, forbiddenResponse } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
-  redactFields,
+  presentRecord,
   unreadableFieldNames,
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
@@ -48,7 +48,7 @@ export async function handleList(
   );
 
   const records = result.records.map((record) =>
-    redactFields(record as Record<string, unknown>, hidden),
+    presentRecord(record as Record<string, unknown>, entry.fields, hidden),
   );
 
   return dataResponse(records, {

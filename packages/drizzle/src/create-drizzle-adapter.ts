@@ -23,6 +23,12 @@ export type AnyDrizzleDatabase =
   | MySqlDatabase<any, any, any, any>;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+/** A canonical API record returned by the Drizzle adapter. */
+export interface DrizzleResourceRecord extends Record<string, unknown> {
+  /** String form of the table's single primary key, suitable for resource URLs. */
+  id: string;
+}
+
 /**
  * Builds a `ResourceAdapter` backed by a drizzle table, so `@verikit/server` never has to import drizzle-orm itself: `createServer()` only ever talks to the `ResourceAdapter` interface, and this is the piece that turns that interface into real queries. Column mapping: a field maps to the same-named table column by default, or to an explicit one via `from(column).as(field())` when the names differ. The row's id always comes from the table's own primary key column; a resource doesn't need to declare an "id" field for this to work. @throws {Error} If `resource.table` is missing, the table doesn't declare exactly one primary key column, or the table is a MySQL table (MySQL has no `RETURNING` support, so `create`/`update` can't be implemented on it yet).
  */
@@ -33,7 +39,7 @@ export function createDrizzleAdapter<
 >(
   db: AnyDrizzleDatabase,
   resource: Resource<string, TFields, TTable, TRelationships>,
-): ResourceAdapter<TTable["$inferSelect"]> {
+): ResourceAdapter<DrizzleResourceRecord> {
   const { table } = resource;
 
   if (!table) {
@@ -51,6 +57,21 @@ export function createDrizzleAdapter<
   const schema = resource.toSchema();
   const idColumn = resolveIdColumn(table, resource.name);
   const columnsByField = resolveFieldColumns(table, schema.fields);
+  // Query aliases are the resource's public field names, not drizzle's table
+  // property keys. This both supports `from(column).as(...)` and ensures ORM-only
+  // columns can never enter an adapter result.
+  const publicSelection = {
+    ...Object.fromEntries(
+      [...columnsByField.entries()]
+        .filter(([name]) => name !== "id")
+        .map(([name, resolved]) => [name, resolved.column]),
+    ),
+    id: idColumn,
+  };
+
+  function toPublicRecord(record: Record<string, unknown>) {
+    return { ...record, id: String(record.id) };
+  }
   const searchableColumns = Object.entries(schema.fields)
     .filter(([, field]) => field.searchable)
     .map(([name]) => {
@@ -79,12 +100,12 @@ export function createDrizzleAdapter<
 
   async function selectById(value: unknown) {
     const [record] = await client
-      .select()
+      .select(publicSelection)
       .from(table)
       .where(eq(idColumn, value))
       .limit(1);
 
-    return record;
+    return record ? toPublicRecord(record) : undefined;
   }
 
   // Builds the row-fetch and count queries for `list()` against whichever client `tx`
@@ -96,7 +117,7 @@ export function createDrizzleAdapter<
     params: ResourceListParams,
     where: ReturnType<typeof searchCondition>,
   ) {
-    let rowsQuery = tx.select().from(table);
+    let rowsQuery = tx.select(publicSelection).from(table);
     let totalQuery = tx.select({ value: count() }).from(table);
 
     if (where) {
@@ -151,7 +172,7 @@ export function createDrizzleAdapter<
           // dialect this adapter targets.
           const [{ value: total }] = totalQuery.all();
 
-          return { records, total };
+          return { records: records.map(toPublicRecord), total };
         });
       }
 
@@ -162,7 +183,7 @@ export function createDrizzleAdapter<
           totalQuery,
         ]);
 
-        return { records, total };
+        return { records: records.map(toPublicRecord), total };
       });
     },
 
@@ -183,8 +204,11 @@ export function createDrizzleAdapter<
         schema.fields,
         columnsByField,
       );
-      const [record] = await client.insert(table).values(row).returning();
-      return record;
+      const [record] = await client
+        .insert(table)
+        .values(row)
+        .returning(publicSelection);
+      return toPublicRecord(record);
     },
 
     async update(id: string, values: Record<string, unknown>) {
@@ -216,9 +240,9 @@ export function createDrizzleAdapter<
         .update(table)
         .set(row)
         .where(eq(idColumn, value))
-        .returning();
+        .returning(publicSelection);
 
-      return record;
+      return record ? toPublicRecord(record) : undefined;
     },
 
     async delete(id: string) {

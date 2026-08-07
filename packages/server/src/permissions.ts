@@ -88,6 +88,29 @@ export function redactFields(
 }
 
 /**
+ * Produces the only record shape the HTTP API may expose: the adapter's canonical
+ * string `id` plus declared resource fields that the actor is allowed to read.
+ *
+ * Adapters are required to return this shape themselves, but this server-side
+ * allow-list is a defence-in-depth boundary. It prevents an adapter accidentally
+ * leaking ORM-only columns (for example `passwordHash`) if it returns a whole
+ * storage row instead of a projection.
+ */
+export function presentRecord(
+  record: Record<string, unknown>,
+  fields: Record<string, FieldSchema>,
+  hidden: ReadonlySet<string>,
+): Record<string, unknown> {
+  const allowed = new Set(["id", ...Object.keys(fields)]);
+
+  return Object.fromEntries(
+    Object.entries(record).filter(
+      ([name]) => allowed.has(name) && !hidden.has(name),
+    ),
+  );
+}
+
+/**
  * Validates a create/update body: gated per-field via `validateWritableFields` unless the resource is explicitly marked `"open"`, in which case it falls back to plain `validateResourceAsync`.
  */
 export function validateResourceInput<TActor, TRecord>(

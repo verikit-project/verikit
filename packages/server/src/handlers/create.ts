@@ -6,6 +6,8 @@ import {
 } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
+  presentRecord,
+  unreadableFieldNames,
   validateResourceInput,
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
@@ -44,5 +46,14 @@ export async function handleCreate(ctx: HandlerContext): Promise<Response> {
   }
 
   const record = await entry.config.adapter.create(validated.value);
-  return dataResponse(record, { status: 201 });
+  const publicRecord = record as Record<string, unknown>;
+  const hidden = await unreadableFieldNames(
+    entry.fields,
+    entry.config.permissions,
+    { actor, record: publicRecord },
+  );
+
+  return dataResponse(presentRecord(publicRecord, entry.fields, hidden), {
+    status: 201,
+  });
 }

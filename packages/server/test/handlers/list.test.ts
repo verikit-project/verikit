@@ -51,6 +51,16 @@ test("handleList returns all records with pagination meta", async () => {
   assert.deepEqual(body.meta, { total: 2, page: 1, pageSize: 25 });
 });
 
+test("handleList excludes undeclared adapter fields even for open resources", async () => {
+  const adapter = createInMemoryAdapter([
+    { ...samplePosts[0]!, passwordHash: "never expose this" },
+  ]);
+  const ctx = ctxFor(adapter, "https://x/post");
+
+  const body = await (await handleList(ctx)).json();
+  assert.deepEqual(body.data[0], samplePosts[0]);
+});
+
 test("handleList applies the search query param", async () => {
   const ctx = ctxFor(
     createInMemoryAdapter(samplePosts),

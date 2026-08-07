@@ -107,3 +107,19 @@ test("handleUpdate returns 404 (not 403) when the actor lacks update access, so 
   const response = await handleUpdate(ctx, "1");
   assert.equal(response.status, 404);
 });
+
+test("handleUpdate returns only fields readable by the actor", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const update = adapter.update;
+  adapter.update = async (id, values) => {
+    const record = await update(id, values);
+    return record && { ...record, passwordHash: "never expose this" };
+  };
+  const permissions = definePermissions<Actor>()
+    .can("update", true)
+    .field("title", { read: true, write: true });
+  const ctx = ctxFor(adapter, { title: "Updated" }, permissions);
+
+  const body = await (await handleUpdate(ctx, "1")).json();
+  assert.deepEqual(body.data, { id: "1", title: "Updated" });
+});

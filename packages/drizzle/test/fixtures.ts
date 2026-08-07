@@ -15,6 +15,7 @@ export const posts = sqliteTable("posts", {
   title: sqliteText("title").notNull(),
   body: sqliteText("body"),
   published: integer("published", { mode: "boolean" }).notNull().default(false),
+  secret: sqliteText("secret"),
 });
 
 /**
@@ -45,6 +46,7 @@ export function createTestDb() {
       title text not null,
       body text,
       published integer not null default 0
+      , secret text
     )
   `);
 
