@@ -31,7 +31,7 @@
     "build": "pnpm clean && tsc -b",
     "prepack": "pnpm build",
     "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
-    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
   },
   "files": [
     "dist"
