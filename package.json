@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "docs:api": "pnpm build && typedoc --options typedoc.core.json && typedoc --options typedoc.runtime.json && typedoc --options typedoc.react.json && typedoc --options typedoc.server.json && typedoc --options typedoc.drizzle.json && typedoc --options typedoc.client.json",
+    "docs:api": "pnpm build && typedoc --options typedoc.core.json && typedoc --options typedoc.runtime.json && typedoc --options typedoc.react.json && typedoc --options typedoc.server.json && typedoc --options typedoc.drizzle.json && typedoc --options typedoc.prisma.json && typedoc --options typedoc.client.json",
     "verify": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test"
   },
   "keywords": [

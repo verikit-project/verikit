@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["packages/prisma/src/index.ts"],
+  "out": "docs/api/prisma",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "prisma",
+  "readme": "none"
+}
