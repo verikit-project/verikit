@@ -42,6 +42,9 @@ export async function handleList(
       ([name]) => !hidden.has(name),
     ),
   );
+  const searchFields = Object.entries(entry.fields)
+    .filter(([name, field]) => field.searchable && !hidden.has(name))
+    .map(([name]) => name);
 
   // `sort.field` is caller-controlled and reaches the adapter verbatim. Dropping
   // anything outside the resource's own `.sortable()` field names keeps an adapter that
@@ -52,7 +55,10 @@ export async function handleList(
     ...rest,
     ...(scope && { scope }),
     ...(Object.keys(filters).length > 0 && { filters }),
-    ...(sort && entry.fields[sort.field]?.sortable && { sort }),
+    ...(rest.search !== undefined && { searchFields }),
+    ...(sort &&
+      entry.fields[sort.field]?.sortable &&
+      !hidden.has(sort.field) && { sort }),
   };
 
   const result = await entry.config.adapter.list(params);

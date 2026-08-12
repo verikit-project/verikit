@@ -370,6 +370,25 @@ test("list searches across every searchable field, case-insensitively on SQLite"
   assert.equal(result.total, 2);
 });
 
+test("list restricts free-text search to server-authorized searchable fields", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  await adapter.create({ title: "Visible match", body: "" });
+  await adapter.create({ title: "Unrelated", body: "hidden match" });
+
+  const result = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    search: "match",
+    searchFields: ["title"],
+  });
+
+  assert.equal(result.total, 1);
+  assert.equal(result.records[0]?.title, "Visible match");
+});
+
 test("a literal percent sign in the search term is interpreted as a SQL wildcard, unlike @verikit/drizzle's escaped search", async (t) => {
   const db = await createTestDb();
   t.after(() => db.$disconnect());

@@ -23,7 +23,7 @@ export function createPostResource(): Resource {
   return defineResource("post", {
     fields: {
       title: text().required().searchable().sortable(),
-      body: textarea(),
+      body: textarea().searchable(),
       published: boolean().default(false),
     },
   });
@@ -70,8 +70,10 @@ export function createInMemoryAdapter(
         const term = params.search.toLowerCase();
         filtered = filtered.filter(
           (post) =>
-            post.title.toLowerCase().includes(term) ||
-            post.body.toLowerCase().includes(term),
+            (params.searchFields?.includes("title") !== false &&
+              post.title.toLowerCase().includes(term)) ||
+            (params.searchFields?.includes("body") !== false &&
+              post.body.toLowerCase().includes(term)),
         );
       }
 

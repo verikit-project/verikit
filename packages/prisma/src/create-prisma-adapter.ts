@@ -148,7 +148,7 @@ export function createPrismaAdapter<
         );
       }
 
-      return fields[name]!;
+      return [name, fields[name]!] as const;
     });
 
   const select = buildSelect(fields, id.field);
@@ -163,11 +163,11 @@ export function createPrismaAdapter<
       : undefined;
   }
 
-  function searchWhere(term: string) {
+  function searchWhere(term: string, searchable: readonly string[]) {
     const insensitive = options.provider === "postgresql";
 
     return {
-      OR: searchableScalars.map((scalar) => ({
+      OR: searchable.map((scalar) => ({
         [scalar]: insensitive
           ? { contains: term, mode: "insensitive" }
           : { contains: term },
@@ -221,13 +221,20 @@ export function createPrismaAdapter<
       // A search term against a resource with no searchable fields can never match
       // anything; treat it as an unsatisfiable filter (zero results), matching
       // @verikit/drizzle's convention for the same case.
-      if (params.search && searchableScalars.length === 0) {
+      const permittedSearchScalars = params.searchFields
+        ? searchableScalars
+            .filter(([name]) => params.searchFields!.includes(name))
+            .map(([, scalar]) => scalar)
+        : searchableScalars.map(([, scalar]) => scalar);
+      if (params.search && permittedSearchScalars.length === 0) {
         return { records: [], total: 0 };
       }
 
       const where = combinedWhere(
         params.scope,
-        params.search ? searchWhere(params.search) : undefined,
+        params.search
+          ? searchWhere(params.search, permittedSearchScalars)
+          : undefined,
         params.filters,
       );
       const sort = params.sort;

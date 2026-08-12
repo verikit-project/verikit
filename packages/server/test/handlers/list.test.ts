@@ -158,6 +158,41 @@ test("handleList drops filters for fields the actor cannot read", async () => {
   assert.equal("body" in body.data[0], false);
 });
 
+test("handleList prevents unreadable fields from affecting sort or free-text search", async () => {
+  const resource = defineResource("post", {
+    fields: {
+      title: text().required().searchable().sortable(),
+      body: textarea().searchable().sortable(),
+      published: boolean().default(false),
+    },
+  });
+  const permissions = definePermissions<Actor>()
+    .can("list", true)
+    .field("title", { read: true })
+    .field("published", { read: true });
+  const adapter = createInMemoryAdapter(samplePosts);
+
+  const search = await handleList(
+    ctxFor(adapter, "https://x/post?search=again", permissions, resource),
+  );
+  const searchBody = await search.json();
+  assert.equal(searchBody.meta.total, 0);
+
+  const sorted = await handleList(
+    ctxFor(
+      adapter,
+      "https://x/post?sort=body&order=desc",
+      permissions,
+      resource,
+    ),
+  );
+  const sortedBody = await sorted.json();
+  assert.deepEqual(
+    sortedBody.data.map((post: Post) => post.id),
+    ["1", "2"],
+  );
+});
+
 test("handleList applies a sort field that's part of the resource's schema", async () => {
   const ctx = ctxFor(
     createInMemoryAdapter(samplePosts),

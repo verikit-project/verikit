@@ -10,6 +10,12 @@ export interface ResourceListParams {
    * Free-text search term, present on the search route (and optionally on list).
    */
   search?: string;
+  /**
+   * Server-authored resource field names eligible for this free-text search.
+   * When present, adapters must search only this allow-list; an empty list is
+   * an intentionally unsatisfiable search.
+   */
+  searchFields?: readonly string[];
   /** Column to sort by and its direction. */
   sort?: {
     field: string;

@@ -341,6 +341,24 @@ test("list searches across every searchable field, case-insensitively", async ()
   assert.equal(result.total, 2);
 });
 
+test("list restricts free-text search to server-authorized searchable fields", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+
+  await adapter.create({ title: "Visible match", body: "" });
+  await adapter.create({ title: "Unrelated", body: "hidden match" });
+
+  const result = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    search: "match",
+    searchFields: ["title"],
+  });
+
+  assert.equal(result.total, 1);
+  assert.equal(result.records[0]?.title, "Visible match");
+});
+
 test("list escapes LIKE wildcards in the search term", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());

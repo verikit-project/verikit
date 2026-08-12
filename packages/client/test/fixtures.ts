@@ -80,8 +80,10 @@ export function createInMemoryAdapter(
 
       if (params.search) {
         const term = params.search.toLowerCase();
-        filtered = filtered.filter((post) =>
-          post.title.toLowerCase().includes(term),
+        filtered = filtered.filter(
+          (post) =>
+            params.searchFields?.includes("title") !== false &&
+            post.title.toLowerCase().includes(term),
         );
       }
 

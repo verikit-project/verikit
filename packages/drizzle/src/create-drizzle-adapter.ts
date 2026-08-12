@@ -150,7 +150,7 @@ export function createDrizzleAdapter<
         );
       }
 
-      return resolved.column;
+      return [name, resolved.column] as const;
     });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the query-builder chain's shape differs per dialect; conditionally built below regardless of which one `db` is
@@ -206,12 +206,17 @@ export function createDrizzleAdapter<
       // A search term against a resource with no searchable fields can never
       // match anything; treat it as an unsatisfiable filter (zero results),
       // not as "no filter" (which would return every row unfiltered).
-      if (params.search && searchableColumns.length === 0) {
+      const permittedSearchColumns = params.searchFields
+        ? searchableColumns
+            .filter(([name]) => params.searchFields!.includes(name))
+            .map(([, column]) => column)
+        : searchableColumns.map(([, column]) => column);
+      if (params.search && permittedSearchColumns.length === 0) {
         return { records: [], total: 0 };
       }
 
       const search = params.search
-        ? searchCondition(searchableColumns, params.search)
+        ? searchCondition(permittedSearchColumns, params.search)
         : undefined;
       const where = and(
         search,
