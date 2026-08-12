@@ -246,10 +246,10 @@ function withCors(response: Response, headers: Headers | undefined): Response {
 }
 
 function preflightResponse(
-  cors: ResolvedCors | undefined,
+  cors: ResolvedCors,
   request: Request,
 ): Response | undefined {
-  if (request.method !== "OPTIONS" || !cors) {
+  if (request.method !== "OPTIONS") {
     return undefined;
   }
 
@@ -305,10 +305,14 @@ export function createServer<TActor = unknown>(
       return withCors(methodNotAllowedResponse(), responseCorsHeaders);
     }
 
-    const preflight = preflightResponse(cors, request);
+    const preflight = cors ? preflightResponse(cors, request) : undefined;
 
     if (preflight) {
       return preflight;
+    }
+
+    if (request.method === "OPTIONS") {
+      return withCors(methodNotAllowedResponse(), responseCorsHeaders);
     }
 
     const { action } = resolved.resolution;

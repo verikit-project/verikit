@@ -113,6 +113,19 @@ test("parseJsonObjectBody rejects bodies over maxBodyBytes", async () => {
   });
 });
 
+test("parseJsonObjectBody rejects declared content-length over maxBodyBytes before reading", async () => {
+  const request = new Request("https://x/posts", {
+    method: "POST",
+    headers: { "content-length": "999" },
+    body: "{}",
+  });
+
+  assert.deepEqual(await parseJsonObjectBody(request, { maxBodyBytes: 8 }), {
+    ok: false,
+    reason: "too-large",
+  });
+});
+
 test("parseJsonObjectBody allows oversized bodies when maxBodyBytes is false", async () => {
   const request = new Request("https://x/posts", {
     method: "POST",

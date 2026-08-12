@@ -171,6 +171,69 @@ test("createServer handles configured CORS preflight requests", async () => {
   assert.equal(response.headers.get("vary"), "Origin");
 });
 
+test("createServer uses configured CORS allowed headers on preflight", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter(),
+        permissions: "open",
+      },
+    ],
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"],
+      allowedHeaders: ["authorization", "content-type"],
+    },
+  });
+
+  const response = await handler(
+    new Request("https://x/post", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://app.example",
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "x-ignored",
+      },
+    }),
+  );
+
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST");
+  assert.equal(
+    response.headers.get("access-control-allow-headers"),
+    "authorization, content-type",
+  );
+  assert.equal(response.headers.get("vary"), null);
+});
+
+test("createServer preflight defaults to GET and Content-Type when request hints are absent", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter(),
+        permissions: "open",
+      },
+    ],
+    cors: { origin: "*" },
+  });
+
+  const response = await handler(
+    new Request("https://x/post", {
+      method: "OPTIONS",
+      headers: { origin: "https://app.example" },
+    }),
+  );
+
+  assert.equal(response.status, 204);
+  assert.equal(
+    response.headers.get("access-control-allow-headers"),
+    "Content-Type",
+  );
+});
+
 test("createServer adds configured CORS headers to matching normal responses", async () => {
   const handler = createServer({
     resources: [
@@ -203,6 +266,56 @@ test("createServer adds configured CORS headers to matching normal responses", a
   );
 });
 
+test("createServer supports predicate CORS origins", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter([{ ...post }]),
+        permissions: "open",
+      },
+    ],
+    cors: {
+      origin: (origin) => origin.endsWith(".example"),
+    },
+  });
+
+  const allowed = await handler(
+    new Request("https://x/post", {
+      headers: { origin: "https://app.example" },
+    }),
+  );
+  assert.equal(
+    allowed.headers.get("access-control-allow-origin"),
+    "https://app.example",
+  );
+
+  const denied = await handler(
+    new Request("https://x/post", {
+      headers: { origin: "https://app.invalid" },
+    }),
+  );
+  assert.equal(denied.headers.get("access-control-allow-origin"), null);
+});
+
+test("createServer omits CORS headers when the request has no origin", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter([{ ...post }]),
+        permissions: "open",
+      },
+    ],
+    cors: { origin: "*" },
+  });
+
+  const response = await handler(new Request("https://x/post"));
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), null);
+});
+
 test("createServer omits CORS headers for disallowed origins", async () => {
   const handler = createServer({
     resources: [
@@ -225,6 +338,56 @@ test("createServer omits CORS headers for disallowed origins", async () => {
   assert.equal(response.headers.get("access-control-allow-origin"), null);
 });
 
+test("createServer omits CORS headers for origins outside an allowed origin list", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter([{ ...post }]),
+        permissions: "open",
+      },
+    ],
+    cors: { origin: ["https://app.example"] },
+  });
+
+  const response = await handler(
+    new Request("https://x/post", {
+      headers: { origin: "https://other.example" },
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), null);
+});
+
+test("createServer does not execute a disallowed CORS preflight as a resource request", async () => {
+  const adapter = createInMemoryAdapter();
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter,
+        permissions: "open",
+      },
+    ],
+    cors: { origin: "https://app.example" },
+  });
+
+  const response = await handler(
+    new Request("https://x/post", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://evil.example",
+        "access-control-request-method": "POST",
+      },
+    }),
+  );
+
+  assert.equal(response.status, 405);
+  assert.equal(response.headers.get("access-control-allow-origin"), null);
+  assert.equal(adapter.records.length, 0);
+});
+
 test("createServer validates unsafe CORS options at construction time", () => {
   assert.throws(
     () =>
@@ -239,6 +402,20 @@ test("createServer validates unsafe CORS options at construction time", () => {
         cors: { origin: "*", credentials: true },
       }),
     /cors\.credentials/,
+  );
+  assert.throws(
+    () =>
+      createServer({
+        resources: [
+          {
+            resource: createPostResource(),
+            adapter: createInMemoryAdapter(),
+            permissions: "open",
+          },
+        ],
+        cors: { origin: "https://app.example", maxAge: -1 },
+      }),
+    /cors\.maxAge/,
   );
 });
 

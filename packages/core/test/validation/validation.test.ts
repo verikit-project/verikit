@@ -545,9 +545,7 @@ test("validators exposing both ~standard and parse prefer standard schema for sy
           ],
         }),
       },
-      parse: () => {
-        throw new Error("raw parser error");
-      },
+      parse: assert.fail,
     })
     .toSchema("name");
 
@@ -671,9 +669,7 @@ test("validators exposing both ~standard and parse prefer standard schema for as
           ],
         }),
       },
-      parse: async () => {
-        throw new Error("raw async parser error");
-      },
+      parse: assert.fail,
     })
     .toSchema("slug");
 
