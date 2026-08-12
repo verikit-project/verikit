@@ -32,17 +32,14 @@ export async function handleUpload(
   }
   if (ctx.entry.config.permissions !== "open") {
     const permissions = ctx.entry.config.permissions;
-    // An upload has no record of its own yet — it's a prerequisite step for
-    // either a later create or a later update, so it's gated on being able to
-    // reach at least one of those flows rather than a single fixed operation.
-    // This mirrors the resource-level gate `create.ts`/`update.ts` already
-    // enforce instead of leaving uploads to field-level write access alone.
-    const [creatable, updatable] = await Promise.all([
-      maybeCheckResourceOperation(permissions, "create", { actor: ctx.actor }),
-      maybeCheckResourceOperation(permissions, "update", { actor: ctx.actor }),
-    ]);
-    if (!creatable.allowed && !updatable.allowed) {
-      return forbiddenResponse(updatable.message ?? creatable.message);
+    // Uploads have no record context, so only the record-less "create"
+    // permission can be evaluated here. "update" permissions may depend on
+    // the target record and are enforced by the resource update handler.
+    const creatable = await maybeCheckResourceOperation(permissions, "create", {
+      actor: ctx.actor,
+    });
+    if (!creatable.allowed) {
+      return forbiddenResponse(creatable.message);
     }
     const access = await checkFieldAccess(
       permissions.getRuntime(),
@@ -69,7 +66,7 @@ export async function handleUpload(
     method: ctx.request.method,
     headers,
     // `readRequestBytes` always allocates a fresh, exactly-sized buffer (never a
-    // SharedArrayBuffer), so this is the same bytes with no extra copy — unlike
+    // SharedArrayBuffer), so this is the same bytes with no extra copy  unlike
     // `new Uint8Array(body.value).buffer`, which would memcpy the whole upload.
     body: body.value.buffer as ArrayBuffer,
   });

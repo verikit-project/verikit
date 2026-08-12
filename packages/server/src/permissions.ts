@@ -127,31 +127,37 @@ export async function validateResourceInput<TActor, TRecord>(
   }
 
   // Server-owned fields (e.g. organizationId) must still be validated, but must
-  // not require a client write grant. Partition the fields once and validate
-  // each side exactly once: client fields through the permission-gated path,
-  // trusted fields through plain schema validation, then merge the results.
-  // (Each helper only reads `values[name]` for names in its own `fields`
-  // argument, so passing the full merged `values` to both is safe and avoids
-  // filtering it twice.)
-  const clientFields = Object.fromEntries(
-    Object.entries(fields).filter(
-      ([name]) => !Object.hasOwn(trustedValues, name),
-    ),
-  );
-  const trustedFields = Object.fromEntries(
-    Object.entries(fields).filter(([name]) =>
-      Object.hasOwn(trustedValues, name),
-    ),
-  );
+  // not require a client write grant. Partition the fields in one pass and
+  // validate each side exactly once: client fields through the permission-gated
+  // path, trusted fields through plain schema validation, then merge the
+  // results. (Each helper only reads `values[name]` for names in its own
+  // `fields` argument, so passing the full merged `values` to both is safe.)
+  const clientFields: Record<string, FieldSchema> = {};
+  const trustedFields: Record<string, FieldSchema> = {};
 
-  const [clientResult, trustedResult] = await Promise.all([
-    validateWritableFields(clientFields, values, permissions, context),
-    validateResourceAsync(trustedFields, values),
-  ]);
+  for (const [name, schema] of Object.entries(fields)) {
+    (Object.hasOwn(trustedValues, name) ? trustedFields : clientFields)[name] =
+      schema;
+  }
+
+  // Sequential, not `Promise.all`: trusted fields can carry their own async
+  // validators (e.g. a uniqueness check with a real side effect), which
+  // shouldn't run at all once client validation has already failed  a
+  // request that's going to 400 regardless shouldn't also pay for (or
+  // trigger the side effects of) validating fields the client never even
+  // controlled.
+  const clientResult = await validateWritableFields(
+    clientFields,
+    values,
+    permissions,
+    context,
+  );
 
   if (!clientResult.success) {
     return clientResult;
   }
+
+  const trustedResult = await validateResourceAsync(trustedFields, values);
 
   if (!trustedResult.success) {
     return trustedResult;

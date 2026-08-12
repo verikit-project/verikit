@@ -66,7 +66,7 @@ export interface PrismaIdConfig<TId = unknown> {
  * `"sqlite"`/`"mysql"`, which take the same code path) unless the datasource is PostgreSQL.
  * Only `"sqlite"` is exercised by this package's own test suite; `"postgresql"`'s branch is
  * implemented per Prisma's documented behavior but isn't integration-tested here (no
- * PostgreSQL instance in this repo's test environment) — establish and test your own
+ * PostgreSQL instance in this repo's test environment)  establish and test your own
  * provider's search behavior before relying on it in production.
  *
  * Separately, unlike `@verikit/drizzle` (which escapes `%`/`_` in the search term before
@@ -88,7 +88,7 @@ export interface PrismaAdapterOptions<TFields extends FieldMap> {
    * same-name fallback (unlike `@verikit/drizzle`'s column resolution) because a Prisma
    * delegate has no introspectable schema to fall back against; every field must be listed
    * explicitly. Relation fields and arbitrary Prisma `include`/`select` values are out of
-   * scope — see `ResourceAdapter`'s docstring on why relationship loading isn't part of this
+   * scope  see `ResourceAdapter`'s docstring on why relationship loading isn't part of this
    * contract yet.
    */
   fields: { [K in keyof TFields & string]: string };
@@ -107,10 +107,10 @@ export interface PrismaResourceRecord extends Record<string, unknown> {
 /**
  * Builds a `ResourceAdapter` backed by a Prisma model delegate, so `@verikit/server` never
  * has to import `@prisma/client` itself. Every operation selects and returns only the
- * configured `fields` plus the canonical `id` — never a whole model row — matching
+ * configured `fields` plus the canonical `id`  never a whole model row  matching
  * `ResourceAdapter`'s contract that adapter records are API records, not ORM rows.
  * @throws {Error} If `fields` is missing a mapping for a field the resource declares, or if a
- * `.searchable()` field's `fieldType` isn't text-like (`text`/`textarea`/`email`) — Prisma's
+ * `.searchable()` field's `fieldType` isn't text-like (`text`/`textarea`/`email`)  Prisma's
  * `contains` filter only works on `String` scalars.
  */
 export function createPrismaAdapter<

@@ -2,7 +2,7 @@
  * Baseline CRUD-style operations a resource-level rule can gate. `"list"` gates the list/search
  * routes, which check every request once against the whole collection rather than a
  * `context.record` (there's no single record to check yet). `"read"` gates a single-record fetch
- * (`GET .../:id`), where `context.record` is the actual fetched record — a `.can("read", ({
+ * (`GET .../:id`), where `context.record` is the actual fetched record  a `.can("read", ({
  * record }) => ...)` rule only ever runs there, never against list/search results.
  */
 export type ResourceOperation =

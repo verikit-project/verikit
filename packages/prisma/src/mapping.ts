@@ -24,7 +24,7 @@ export function mapFilterToPrisma(
 
 /**
  * The only `select` this adapter ever sends: the configured resource fields plus the id
- * field, and nothing else. There's no `include`/relation key here on purpose — a Prisma
+ * field, and nothing else. There's no `include`/relation key here on purpose  a Prisma
  * adapter must not auto-include relations any more than the Drizzle adapter auto-joins
  * them (see `ResourceAdapter`'s docstring in `@verikit/server`).
  */

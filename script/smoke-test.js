@@ -83,7 +83,7 @@ for (const name of fs.readdirSync(packagesDir).sort()) {
     }
   }
 
-  // Theme ships only CSS assets (no JS entry point) — the packed-file check above already
+  // Theme ships only CSS assets (no JS entry point)  the packed-file check above already
   // covers it; there's nothing importable to smoke-test at runtime.
   if (!pkg.main && !pkg.exports) continue;
 
