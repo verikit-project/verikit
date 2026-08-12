@@ -15,6 +15,8 @@ export interface ResourceListParams {
     field: string;
     direction: "asc" | "desc";
   };
+  /** Server-authored equality constraints. Never populate this from client input. */
+  scope?: Record<string, unknown>;
 }
 
 /** Result shape returned by `ResourceAdapter.list()`. */
@@ -46,7 +48,10 @@ export interface ResourceListResult<TRecord = Record<string, unknown>> {
  */
 export interface ResourceAdapter<TRecord = Record<string, unknown>> {
   list(params: ResourceListParams): Promise<ResourceListResult<TRecord>>;
-  find(id: string): Promise<TRecord | undefined>;
+  find(
+    id: string,
+    scope?: Record<string, unknown>,
+  ): Promise<TRecord | undefined>;
   create(values: Record<string, unknown>): Promise<TRecord>;
   /**
    * Updates the record with the given id and returns it. `@verikit/server`'s handler already
@@ -61,6 +66,7 @@ export interface ResourceAdapter<TRecord = Record<string, unknown>> {
   update(
     id: string,
     values: Record<string, unknown>,
+    scope?: Record<string, unknown>,
   ): Promise<TRecord | undefined>;
   /**
    * Deletes the record with the given id. Must be idempotent: deleting a record that's already
@@ -69,5 +75,5 @@ export interface ResourceAdapter<TRecord = Record<string, unknown>> {
    * a client that throws its own "not found" error here (e.g. Prisma's `P2025`) must catch and
    * swallow it rather than letting it propagate.
    */
-  delete(id: string): Promise<void>;
+  delete(id: string, scope?: Record<string, unknown>): Promise<void>;
 }
