@@ -98,6 +98,150 @@ test("createServer returns 404 for an unmatched path and 405 for a wrong method"
   assert.equal(badShape.status, 404);
 });
 
+test("createServer leaves OPTIONS unsupported unless cors is configured", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter(),
+        permissions: "open",
+      },
+    ],
+  });
+
+  const response = await handler(
+    new Request("https://x/post", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://app.example",
+        "access-control-request-method": "POST",
+      },
+    }),
+  );
+
+  assert.equal(response.status, 405);
+  assert.equal(response.headers.get("access-control-allow-origin"), null);
+});
+
+test("createServer handles configured CORS preflight requests", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter(),
+        permissions: "open",
+      },
+    ],
+    cors: {
+      origin: "https://app.example",
+      credentials: true,
+      maxAge: 600,
+    },
+  });
+
+  const response = await handler(
+    new Request("https://x/post/actions/publish", {
+      method: "OPTIONS",
+      headers: {
+        origin: "https://app.example",
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "authorization, content-type",
+      },
+    }),
+  );
+
+  assert.equal(response.status, 204);
+  assert.equal(
+    response.headers.get("access-control-allow-origin"),
+    "https://app.example",
+  );
+  assert.equal(
+    response.headers.get("access-control-allow-methods"),
+    "GET, POST, PATCH, DELETE, OPTIONS",
+  );
+  assert.equal(
+    response.headers.get("access-control-allow-headers"),
+    "authorization, content-type",
+  );
+  assert.equal(
+    response.headers.get("access-control-allow-credentials"),
+    "true",
+  );
+  assert.equal(response.headers.get("access-control-max-age"), "600");
+  assert.equal(response.headers.get("vary"), "Origin");
+});
+
+test("createServer adds configured CORS headers to matching normal responses", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter([{ ...post }]),
+        permissions: "open",
+      },
+    ],
+    cors: {
+      origin: ["https://app.example"],
+      exposedHeaders: ["x-request-id"],
+    },
+  });
+
+  const response = await handler(
+    new Request("https://x/post", {
+      headers: { origin: "https://app.example" },
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(
+    response.headers.get("access-control-allow-origin"),
+    "https://app.example",
+  );
+  assert.equal(
+    response.headers.get("access-control-expose-headers"),
+    "x-request-id",
+  );
+});
+
+test("createServer omits CORS headers for disallowed origins", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter([{ ...post }]),
+        permissions: "open",
+      },
+    ],
+    cors: { origin: "https://app.example" },
+  });
+
+  const response = await handler(
+    new Request("https://x/post", {
+      headers: { origin: "https://evil.example" },
+    }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get("access-control-allow-origin"), null);
+});
+
+test("createServer validates unsafe CORS options at construction time", () => {
+  assert.throws(
+    () =>
+      createServer({
+        resources: [
+          {
+            resource: createPostResource(),
+            adapter: createInMemoryAdapter(),
+            permissions: "open",
+          },
+        ],
+        cors: { origin: "*", credentials: true },
+      }),
+    /cors\.credentials/,
+  );
+});
+
 test("createServer honors a custom path and a basePath prefix together", async () => {
   const handler = createServer({
     resources: [
