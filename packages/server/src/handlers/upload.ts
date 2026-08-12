@@ -64,10 +64,7 @@ export async function handleUpload(
   ) {
     return errorResponse(415, "Expected multipart/form-data.");
   }
-  const body = await readRequestBytes(
-    ctx.request,
-    ctx.maxBodyBytes ?? 1_048_576,
-  );
+  const body = await readRequestBytes(ctx.request, ctx.maxBodyBytes);
   if (!body.ok) {
     return errorResponse(413, "Payload too large.");
   }
