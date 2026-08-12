@@ -68,28 +68,28 @@ export interface ResourceAdapter<TRecord = Record<string, unknown>> {
     scope?: Record<string, unknown>,
   ): Promise<TRecord | undefined>;
   create(values: Record<string, unknown>): Promise<TRecord>;
-/**
- * Updates the record with the given id and returns it.
- *
- * The record may disappear between the server's existence/permission check
- * and this call because those operations are not atomic. Return `undefined`
- * when the record no longer exists so the server can consistently treat it
- * as not found.
- *
- * Adapters whose storage client reports this case by throwing must translate
- * that error to `undefined`.
- */
+  /**
+   * Updates the record with the given id and returns it.
+   *
+   * The record may disappear between the server's existence/permission check
+   * and this call because those operations are not atomic. Return `undefined`
+   * when the record no longer exists so the server can consistently treat it
+   * as not found.
+   *
+   * Adapters whose storage client reports this case by throwing must translate
+   * that error to `undefined`.
+   */
   update(
     id: string,
     values: Record<string, unknown>,
     scope?: Record<string, unknown>,
   ): Promise<TRecord | undefined>;
-/**
- * Deletes the record with the given id.
- *
- * Deletion is idempotent: if the record no longer exists, the operation must
- * succeed as a no-op. Adapters whose storage client reports this case by
- * throwing must catch and suppress that error.
- */
+  /**
+   * Deletes the record with the given id.
+   *
+   * Deletion is idempotent: if the record no longer exists, the operation must
+   * succeed as a no-op. Adapters whose storage client reports this case by
+   * throwing must catch and suppress that error.
+   */
   delete(id: string, scope?: Record<string, unknown>): Promise<void>;
 }
