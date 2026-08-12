@@ -98,6 +98,8 @@ export interface FieldSchema {
   searchable?: boolean;
   /** Column can be used for sorting in tables */
   sortable?: boolean;
+  /** Column can be used for exact and range filters in list requests. */
+  filterable?: boolean;
   /**
    * Field should not be displayed in forms or tables (stored but hidden from UI)
    */
@@ -326,6 +328,11 @@ export class FieldBuilder<
   /** Marks the field sortable in table columns. */
   sortable(): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ sortable: true } as Partial<TSchema>);
+  }
+
+  /** Marks the field safe for server-side structured list filtering. */
+  filterable(): FieldBuilderWithValue<this, TValue, TSchema> {
+    return this.withState({ filterable: true } as Partial<TSchema>);
   }
 
   /** Hides the field from forms and tables. */
