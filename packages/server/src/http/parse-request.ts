@@ -98,12 +98,18 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-async function readRequestText(
+/**
+ * Reads a request body with a hard byte limit. A declared Content-Length can
+ * reject early, but every streamed chunk is counted as the authoritative limit.
+ */
+export async function readRequestBytes(
   request: Request,
   maxBodyBytes: number | false,
-): Promise<{ ok: true; text: string } | { ok: false; reason: "too-large" }> {
+): Promise<
+  { ok: true; value: Uint8Array } | { ok: false; reason: "too-large" }
+> {
   if (maxBodyBytes === false) {
-    return { ok: true, text: await request.text() };
+    return { ok: true, value: new Uint8Array(await request.arrayBuffer()) };
   }
 
   const contentLength = request.headers.get("content-length");
@@ -117,13 +123,12 @@ async function readRequestText(
   }
 
   if (!request.body) {
-    return { ok: true, text: "" };
+    return { ok: true, value: new Uint8Array() };
   }
 
   const reader = request.body.getReader();
-  const decoder = new TextDecoder();
   let bytes = 0;
-  let text = "";
+  const chunks: Uint8Array[] = [];
 
   while (true) {
     const { done, value } = await reader.read();
@@ -139,12 +144,17 @@ async function readRequestText(
       return { ok: false, reason: "too-large" };
     }
 
-    text += decoder.decode(value, { stream: true });
+    chunks.push(value);
   }
 
-  text += decoder.decode();
+  const value = new Uint8Array(bytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    value.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
 
-  return { ok: true, text };
+  return { ok: true, value };
 }
 
 /**
@@ -157,7 +167,7 @@ export async function parseJsonObjectBody(
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; reason: "invalid-json" | "too-large" }
 > {
-  const body = await readRequestText(
+  const body = await readRequestBytes(
     request,
     options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES,
   );
@@ -166,7 +176,7 @@ export async function parseJsonObjectBody(
     return body;
   }
 
-  const { text } = body;
+  const text = new TextDecoder().decode(body.value);
 
   if (text.trim().length === 0) {
     return { ok: true, value: {} };

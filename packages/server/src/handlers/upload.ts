@@ -5,6 +5,7 @@ import {
   notFoundResponse,
   dataResponse,
 } from "../http/responses.js";
+import { readRequestBytes } from "../http/parse-request.js";
 import type { HandlerContext } from "./context.js";
 import type { FileStorage } from "../storage.js";
 
@@ -52,13 +53,24 @@ export async function handleUpload(
   ) {
     return errorResponse(415, "Expected multipart/form-data.");
   }
-  if (ctx.maxBodyBytes !== false) {
-    const declared = Number(ctx.request.headers.get("content-length"));
-    if (Number.isFinite(declared) && declared > ctx.maxBodyBytes) {
-      return errorResponse(413, "Payload too large.");
-    }
+  const body = await readRequestBytes(
+    ctx.request,
+    ctx.maxBodyBytes ?? 1_048_576,
+  );
+  if (!body.ok) {
+    return errorResponse(413, "Payload too large.");
   }
-  const form = await ctx.request.formData();
+  // Reconstruct a request only after the bounded read. Drop Content-Length so a
+  // bogus client-supplied value cannot affect the platform multipart parser.
+  const headers = new Headers(ctx.request.headers);
+  headers.delete("content-length");
+  const multipartBody = new Uint8Array(body.value).buffer;
+  const multipartRequest = new Request(ctx.request.url, {
+    method: ctx.request.method,
+    headers,
+    body: multipartBody,
+  });
+  const form = await multipartRequest.formData();
   const candidate = form.get("file");
   // `File` is not a global in every supported Node runtime, while multipart
   // parsers still return a Blob-compatible File object.

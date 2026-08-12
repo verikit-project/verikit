@@ -540,7 +540,7 @@ test("uploads are denied when the actor lacks field write permission", async () 
   assert.equal(response.status, 403);
 });
 
-test("uploads reject non-multipart bodies, oversized declared lengths, oversized files, and disallowed types", async () => {
+test("uploads enforce maxBodyBytes from actual multipart bytes, not just Content-Length", async () => {
   const resource = defineResource("asset", {
     fields: { attachment: image().maxSize(10).accept(["image/png"]) },
   });
@@ -548,7 +548,7 @@ test("uploads reject non-multipart bodies, oversized declared lengths, oversized
     resources: [
       { resource, adapter: createInMemoryAdapter(), permissions: "open" },
     ],
-    maxBodyBytes: 20,
+    maxBodyBytes: 512,
     storage: {
       async put({ file }) {
         return {
@@ -581,6 +581,35 @@ test("uploads reject non-multipart bodies, oversized declared lengths, oversized
   );
   assert.equal(oversizedDeclared.status, 413);
 
+  const misleadingLengthForm = new FormData();
+  misleadingLengthForm.set(
+    "file",
+    new Blob(["x".repeat(1_000)], { type: "image/png" }),
+    "too-large.png",
+  );
+  const misleadingLength = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: misleadingLengthForm,
+      headers: { "content-length": "1" },
+    }),
+  );
+  assert.equal(misleadingLength.status, 413);
+
+  const missingLengthForm = new FormData();
+  missingLengthForm.set(
+    "file",
+    new Blob(["x".repeat(1_000)], { type: "image/png" }),
+    "too-large.png",
+  );
+  const missingLength = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: missingLengthForm,
+    }),
+  );
+  assert.equal(missingLength.status, 413);
+
   const tooBigFileForm = new FormData();
   tooBigFileForm.set(
     "file",
@@ -604,21 +633,6 @@ test("uploads reject non-multipart bodies, oversized declared lengths, oversized
     }),
   );
   assert.equal(wrongType.status, 415);
-
-  const garbageLengthForm = new FormData();
-  garbageLengthForm.set(
-    "file",
-    new Blob(["hi"], { type: "image/png" }),
-    "a.png",
-  );
-  const garbageLength = await handler(
-    new Request("https://x/asset/uploads/attachment", {
-      method: "POST",
-      body: garbageLengthForm,
-      headers: { "content-length": "not-a-number" },
-    }),
-  );
-  assert.equal(garbageLength.status, 201);
 
   const nonBlobForm = new FormData();
   nonBlobForm.set("file", "just a string, not a file");

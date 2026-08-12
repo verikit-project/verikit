@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  readRequestBytes,
   parseJsonObjectBody,
   parseListParams,
 } from "../../src/http/parse-request.js";
@@ -139,4 +140,25 @@ test("parseJsonObjectBody allows oversized bodies when maxBodyBytes is false", a
       value: { title: "This is deliberately larger than 8 bytes" },
     },
   );
+});
+
+test("readRequestBytes enforces the actual stream length despite missing or misleading Content-Length", async () => {
+  const missingLength = new Request("https://x/posts", {
+    method: "POST",
+    body: "x".repeat(20),
+  });
+  assert.deepEqual(await readRequestBytes(missingLength, 8), {
+    ok: false,
+    reason: "too-large",
+  });
+
+  const misleadingLength = new Request("https://x/posts", {
+    method: "POST",
+    headers: { "content-length": "1" },
+    body: "x".repeat(20),
+  });
+  assert.deepEqual(await readRequestBytes(misleadingLength, 8), {
+    ok: false,
+    reason: "too-large",
+  });
 });
