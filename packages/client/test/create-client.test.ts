@@ -54,12 +54,16 @@ test("list() GETs the resource base with page/pageSize/sort/order/search seriali
     pageSize: 5,
     search: "hello",
     sort: { field: "title", direction: "desc" },
+    filters: {
+      published: { eq: true },
+      views: { gte: 10, lt: 100, gt: undefined },
+    },
   });
 
   assert.equal(calls.length, 1);
   assert.equal(
     calls[0]!.url,
-    "https://x.test/api/posts?page=2&pageSize=5&search=hello&sort=title&order=desc",
+    "https://x.test/api/posts?page=2&pageSize=5&search=hello&sort=title&order=desc&filter%5Bpublished%5D=true&filter%5Bviews%5D%5Bgte%5D=10&filter%5Bviews%5D%5Blt%5D=100",
   );
   assert.equal(calls[0]!.method, "GET");
   assert.equal(calls[0]!.body, undefined);
@@ -133,6 +137,53 @@ test("delete() DELETEs and resolves to undefined on 204", async () => {
   assert.equal(calls[0]!.method, "DELETE");
   assert.equal(calls[0]!.url, "https://x.test/posts/1");
   assert.equal(result, undefined);
+});
+
+test("upload() POSTs a multipart body to the field's uploads route without a Content-Type header", async () => {
+  const seen: {
+    url: string;
+    method: string;
+    body: unknown;
+    headers: Headers;
+  }[] = [];
+  const fetchImpl = (async (
+    input: RequestInfo | URL,
+    init: RequestInit = {},
+  ) => {
+    seen.push({
+      url: String(input),
+      method: init.method ?? "GET",
+      body: init.body,
+      headers: new Headers(init.headers),
+    });
+    return jsonResponse({
+      data: {
+        url: "https://files.example/avatar.png",
+        name: "avatar.png",
+        type: "image/png",
+        size: 5,
+      },
+    });
+  }) as typeof fetch;
+
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+  const file = new Blob(["hello"], { type: "image/png" });
+  const result = await client
+    .resource("users")
+    .upload("avatar", file, { filename: "avatar.png" });
+
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0]!.method, "POST");
+  assert.equal(seen[0]!.url, "https://x.test/users/uploads/avatar");
+  assert.ok(seen[0]!.body instanceof FormData);
+  assert.equal((seen[0]!.body as FormData).get("file") instanceof File, true);
+  assert.equal(seen[0]!.headers.has("content-type"), false);
+  assert.deepEqual(result, {
+    url: "https://files.example/avatar.png",
+    name: "avatar.png",
+    type: "image/png",
+    size: 5,
+  });
 });
 
 test("action() only includes input/recordId/confirmed when provided", async () => {

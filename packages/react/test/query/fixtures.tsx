@@ -23,6 +23,7 @@ export interface FakeResourceCalls {
   create: number;
   update: number;
   delete: number;
+  upload: number;
   action: number;
 }
 
@@ -35,7 +36,8 @@ export interface FakeClientFailures {
   delete?: boolean;
 }
 
-type FakeMethod = "list" | "find" | "create" | "update" | "delete" | "action";
+type FakeMethod =
+  "list" | "find" | "create" | "update" | "delete" | "upload" | "action";
 
 export function createFakeClient(initial: readonly FakeRecord[] = []): {
   client: VerikitClient;
@@ -59,6 +61,7 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     create: 0,
     update: 0,
     delete: 0,
+    upload: 0,
     action: 0,
   };
   const failNext: FakeClientFailures = {};
@@ -168,6 +171,17 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       if (index !== -1) {
         records.splice(index, 1);
       }
+    },
+
+    async upload(field, file, options) {
+      calls.upload += 1;
+      await waitForGate("upload");
+      return {
+        url: `blob:fake/${field}`,
+        name: options?.filename ?? "upload.bin",
+        type: file.type,
+        size: file.size,
+      };
     },
 
     async action<TResult = unknown>(
