@@ -5,6 +5,7 @@ import {
   createPrismaAdapter,
   type PrismaModelDelegate,
 } from "../src/create-prisma-adapter.js";
+import { mapFilterToPrisma } from "../src/mapping.js";
 import {
   createCounterAdapter,
   createLegacyPostAdapter,
@@ -12,6 +13,16 @@ import {
   createPostResource,
   createTestDb,
 } from "./fixtures.js";
+
+test("mapFilterToPrisma translates each ResourceFilter key to Prisma's own filter shape", () => {
+  assert.deepEqual(mapFilterToPrisma({ eq: "x" }), { equals: "x" });
+  assert.deepEqual(mapFilterToPrisma({ eq: null }), { equals: null });
+  assert.deepEqual(mapFilterToPrisma({ gte: 1 }), { gte: 1 });
+  assert.deepEqual(mapFilterToPrisma({ gt: 1 }), { gt: 1 });
+  assert.deepEqual(mapFilterToPrisma({ lte: 1 }), { lte: 1 });
+  assert.deepEqual(mapFilterToPrisma({ lt: 1 }), { lt: 1 });
+  assert.deepEqual(mapFilterToPrisma({}), {});
+});
 
 test("create/find/update/delete round-trip through a real Prisma client", async (t) => {
   const db = await createTestDb();
@@ -185,6 +196,114 @@ test("list paginates and reports the total across all pages", async (t) => {
 
   const page3 = await adapter.list({ page: 3, pageSize: 2 });
   assert.equal(page3.records.length, 1);
+});
+
+test("find/update/delete/list honor a scope, and reject an unmapped scope field", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  const mine = await adapter.create({ title: "Mine", body: "" });
+  const theirs = await adapter.create({ title: "Theirs", body: "" });
+
+  assert.deepEqual(await adapter.find(mine.id, { title: "Mine" }), mine);
+  assert.equal(await adapter.find(theirs.id, { title: "Mine" }), undefined);
+
+  const updated = await adapter.update(
+    mine.id,
+    { body: "updated" },
+    { title: "Mine" },
+  );
+  assert.equal(updated?.body, "updated");
+  assert.equal(
+    await adapter.update(theirs.id, { body: "nope" }, { title: "Mine" }),
+    undefined,
+  );
+
+  const scopedList = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    scope: { title: "Mine" },
+  });
+  assert.equal(scopedList.total, 1);
+
+  await adapter.delete(theirs.id, { title: "Mine" });
+  assert.notEqual(await adapter.find(theirs.id), undefined);
+
+  await adapter.delete(theirs.id, { title: "Theirs" });
+  assert.equal(await adapter.find(theirs.id), undefined);
+
+  await assert.rejects(
+    () => adapter.find(mine.id, { notAField: "x" }),
+    /has no Prisma mapping/,
+  );
+
+  assert.deepEqual(await adapter.find(mine.id, {}), updated);
+});
+
+test("list applies exact and range filters, and rejects an unmapped filter field", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  await adapter.create({ title: "Alpha", body: "", published: true });
+  await adapter.create({ title: "Beta", body: "", published: false });
+  await adapter.create({ title: "Gamma", body: "", published: false });
+
+  const exact = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: { published: { eq: true } },
+  });
+  assert.equal(exact.total, 1);
+  assert.equal(exact.records[0]?.title, "Alpha");
+
+  const ranged = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: { title: { gte: "Beta", lt: "Gamma" } },
+  });
+  assert.equal(ranged.total, 1);
+  assert.equal(ranged.records[0]?.title, "Beta");
+
+  await assert.rejects(
+    () =>
+      adapter.list({
+        page: 1,
+        pageSize: 10,
+        filters: { notAField: { eq: "x" } },
+      }),
+    /has no Prisma mapping/,
+  );
+});
+
+test("scoped find/update/delete reject a model delegate missing findFirst/updateMany/deleteMany", async () => {
+  const model: PrismaModelDelegate = {
+    findMany: async () => [],
+    count: async () => 0,
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+
+  await assert.rejects(
+    () => adapter.find("1", { title: "x" }),
+    /scoped reads require a Prisma delegate with findFirst/,
+  );
+  await assert.rejects(
+    () => adapter.update("1", { title: "y" }, { title: "x" }),
+    /scoped updates require a Prisma delegate with updateMany/,
+  );
+  await assert.rejects(
+    () => adapter.delete("1", { title: "x" }),
+    /scoped deletes require a Prisma delegate with deleteMany/,
+  );
 });
 
 test("list searches across every searchable field, case-insensitively on SQLite", async (t) => {

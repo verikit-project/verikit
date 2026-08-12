@@ -1,5 +1,26 @@
+import type { ResourceFilter } from "@verikit/server";
+
 /** Resource field name -> Prisma scalar name. */
 export type PrismaFieldMap = Record<string, string>;
+
+/**
+ * Translates a `ResourceFilter` (`eq`/`gte`/`gt`/`lte`/`lt`) into Prisma's own scalar filter
+ * shape. Only `eq` needs renaming (Prisma calls it `equals`); the range keys already match
+ * Prisma's own names, so they pass through unchanged.
+ */
+export function mapFilterToPrisma(
+  filter: ResourceFilter,
+): Record<string, unknown> {
+  const mapped: Record<string, unknown> = {};
+
+  if (filter.eq !== undefined) mapped.equals = filter.eq;
+  if (filter.gte !== undefined) mapped.gte = filter.gte;
+  if (filter.gt !== undefined) mapped.gt = filter.gt;
+  if (filter.lte !== undefined) mapped.lte = filter.lte;
+  if (filter.lt !== undefined) mapped.lt = filter.lt;
+
+  return mapped;
+}
 
 /**
  * The only `select` this adapter ever sends: the configured resource fields plus the id

@@ -3,6 +3,7 @@ import type { ResourceAdapter, ResourceListParams } from "@verikit/server";
 import {
   buildSelect,
   isRecordNotFoundError,
+  mapFilterToPrisma,
   mapValuesToData,
   presentRow,
   type PrismaFieldMap,
@@ -202,7 +203,7 @@ export function createPrismaAdapter<
                 `@verikit/prisma: resource "${resource.name}" filter field "${name}" has no Prisma mapping.`,
               );
             }
-            return [scalar, filter];
+            return [scalar, mapFilterToPrisma(filter)];
           }),
         )
       : undefined;
