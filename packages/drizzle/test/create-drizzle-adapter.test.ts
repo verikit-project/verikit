@@ -221,6 +221,28 @@ test("find/update/delete/list honor a scope, and reject an unmapped scope field"
   assert.deepEqual(await adapter.find(mine.id, {}), updated);
 });
 
+test("find/list honor a scope value of null via IS NULL, not a literal comparison", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+
+  const noBody = await adapter.create({ title: "No body" });
+  const withBody = await adapter.create({
+    title: "Has body",
+    body: "something",
+  });
+
+  assert.deepEqual(await adapter.find(noBody.id, { body: null }), noBody);
+  assert.equal(await adapter.find(withBody.id, { body: null }), undefined);
+
+  const scopedList = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    scope: { body: null },
+  });
+  assert.equal(scopedList.total, 1);
+  assert.equal(scopedList.records[0]?.id, noBody.id);
+});
+
 test("list applies exact and range filters", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());

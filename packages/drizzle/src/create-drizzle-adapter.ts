@@ -103,7 +103,9 @@ export function createDrizzleAdapter<
           `@verikit/drizzle: resource "${resource.name}" scope field "${name}" has no matching column.`,
         );
       }
-      conditions.push(eq(resolved.column, value));
+      conditions.push(
+        value === null ? isNull(resolved.column) : eq(resolved.column, value),
+      );
     }
     return combineConditions(conditions);
   }
