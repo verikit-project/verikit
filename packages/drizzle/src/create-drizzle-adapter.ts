@@ -86,6 +86,11 @@ export function createDrizzleAdapter<
   function toPublicRecord(record: Record<string, unknown>) {
     return { ...record, id: String(record.id) };
   }
+
+  function combineConditions(conditions: readonly SQL[]): SQL | undefined {
+    return conditions.length ? and(...conditions) : undefined;
+  }
+
   function scopeCondition(
     scope: Record<string, unknown> | undefined,
   ): SQL | undefined {
@@ -100,7 +105,7 @@ export function createDrizzleAdapter<
       }
       conditions.push(eq(resolved.column, value));
     }
-    return conditions.length ? and(...conditions) : undefined;
+    return combineConditions(conditions);
   }
 
   function filterCondition(
@@ -121,7 +126,7 @@ export function createDrizzleAdapter<
       if (filter.lte !== undefined) conditions.push(lte(column, filter.lte));
       if (filter.lt !== undefined) conditions.push(lt(column, filter.lt));
     }
-    return conditions.length ? and(...conditions) : undefined;
+    return combineConditions(conditions);
   }
   const searchableColumns = Object.entries(schema.fields)
     .filter(([, field]) => field.searchable)
