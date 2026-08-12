@@ -138,3 +138,37 @@ test("validateResourceInput gates per-field write access when permissions are co
   );
   assert.equal(asAdmin.success, true);
 });
+
+test("validateResourceInput validates trusted fields via plain schema validation and merges them with the permission-gated result", async () => {
+  const fields = createPostResource().toSchema().fields;
+  const permissions = definePermissions<Actor>()
+    .field("body", { write: () => true })
+    .field("published", { write: () => true });
+
+  // "title" is server-owned (trusted): it must still be validated, but without
+  // requiring its own write grant, and its validated value must end up in the
+  // merged result alongside the permission-gated "body"/"published" values.
+  const merged = await validateResourceInput(
+    fields,
+    { body: "hi", title: "Trusted" },
+    permissions,
+    { actor: { role: "viewer" } },
+    { title: "Trusted" },
+  );
+  assert.deepEqual(merged, {
+    success: true,
+    value: { body: "hi", published: false, title: "Trusted" },
+  });
+
+  // A trusted value that fails plain schema validation (here: null against a
+  // non-nullable text field) still surfaces as a failure, independent of the
+  // client fields' own (successful) permission-gated validation.
+  const trustedInvalid = await validateResourceInput(
+    fields,
+    { body: "hi", title: null },
+    permissions,
+    { actor: { role: "viewer" } },
+    { title: null },
+  );
+  assert.equal(trustedInvalid.success, false);
+});
