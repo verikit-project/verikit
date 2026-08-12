@@ -17,6 +17,16 @@ export interface ResourceListParams {
   };
   /** Server-authored equality constraints. Never populate this from client input. */
   scope?: Record<string, unknown>;
+  /** Server-validated field filters, never raw query-string input. */
+  filters?: Record<string, ResourceFilter>;
+}
+
+export interface ResourceFilter {
+  eq?: string | number | boolean | null;
+  gte?: string | number;
+  gt?: string | number;
+  lte?: string | number;
+  lt?: string | number;
 }
 
 /** Result shape returned by `ResourceAdapter.list()`. */

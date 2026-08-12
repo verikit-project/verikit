@@ -191,8 +191,22 @@ export function createPrismaAdapter<
   function combinedWhere(
     scope: Record<string, unknown> | undefined,
     extra?: Record<string, unknown>,
+    filters?: ResourceListParams["filters"],
   ) {
-    const constraints = [scopeWhere(scope), extra].filter(Boolean);
+    const filterWhere = filters
+      ? Object.fromEntries(
+          Object.entries(filters).map(([name, filter]) => {
+            const scalar = fields[name];
+            if (!scalar) {
+              throw new Error(
+                `@verikit/prisma: resource "${resource.name}" filter field "${name}" has no Prisma mapping.`,
+              );
+            }
+            return [scalar, filter];
+          }),
+        )
+      : undefined;
+    const constraints = [scopeWhere(scope), extra, filterWhere].filter(Boolean);
     return constraints.length === 0
       ? undefined
       : constraints.length === 1
@@ -212,6 +226,7 @@ export function createPrismaAdapter<
       const where = combinedWhere(
         params.scope,
         params.search ? searchWhere(params.search) : undefined,
+        params.filters,
       );
       const sort = params.sort;
       const sortScalar = sort && fields[sort.field];

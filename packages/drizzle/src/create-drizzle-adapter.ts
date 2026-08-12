@@ -6,7 +6,12 @@ import {
   count,
   desc,
   eq,
+  gt,
+  gte,
   is,
+  isNull,
+  lt,
+  lte,
   type SQL,
   type Table,
 } from "drizzle-orm";
@@ -97,6 +102,27 @@ export function createDrizzleAdapter<
     }
     return conditions.length ? and(...conditions) : undefined;
   }
+
+  function filterCondition(
+    filters: ResourceListParams["filters"],
+  ): SQL | undefined {
+    if (!filters) return undefined;
+    const conditions: SQL[] = [];
+    for (const [name, filter] of Object.entries(filters)) {
+      const column = columnsByField.get(name)?.column;
+      if (!column) continue;
+      if (filter.eq !== undefined) {
+        conditions.push(
+          filter.eq === null ? isNull(column) : eq(column, filter.eq),
+        );
+      }
+      if (filter.gte !== undefined) conditions.push(gte(column, filter.gte));
+      if (filter.gt !== undefined) conditions.push(gt(column, filter.gt));
+      if (filter.lte !== undefined) conditions.push(lte(column, filter.lte));
+      if (filter.lt !== undefined) conditions.push(lt(column, filter.lt));
+    }
+    return conditions.length ? and(...conditions) : undefined;
+  }
   const searchableColumns = Object.entries(schema.fields)
     .filter(([, field]) => field.searchable)
     .map(([name]) => {
@@ -180,7 +206,11 @@ export function createDrizzleAdapter<
       const search = params.search
         ? searchCondition(searchableColumns, params.search)
         : undefined;
-      const where = and(search, scopeCondition(params.scope));
+      const where = and(
+        search,
+        scopeCondition(params.scope),
+        filterCondition(params.filters),
+      );
 
       // better-sqlite3 is fully synchronous: its native `transaction()` wrapper throws
       // "Transaction function cannot return a promise" if the callback is `async`, so the
