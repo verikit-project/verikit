@@ -1,4 +1,5 @@
-import type { ResourceListParams } from "../adapter.js";
+import type { FieldSchema } from "@verikit/core";
+import type { ResourceFilter, ResourceListParams } from "../adapter.js";
 
 const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
@@ -49,6 +50,48 @@ export function parseListParams(
       },
     }),
   };
+}
+
+/**
+ * Parses `filter[field]=value` and range variants such as
+ * `filter[createdAt][gte]=2026-01-01`. Values are decoded according to their
+ * declared field type and unknown/non-filterable fields are ignored by callers.
+ */
+export function parseFilters(
+  url: URL,
+  fields: Record<string, FieldSchema>,
+): Record<string, ResourceFilter> {
+  const filters: Record<string, ResourceFilter> = {};
+  const pattern = /^filter\[([^\]]+)\](?:\[(eq|gte|gt|lte|lt)\])?$/;
+
+  for (const [key, raw] of url.searchParams) {
+    const match = pattern.exec(key);
+    if (!match) continue;
+    const [, name, operator = "eq"] = match;
+    const field = fields[name!];
+    if (!field?.filterable) continue;
+    const value = parseFilterValue(raw, field);
+    if (value === undefined) continue;
+    const filter = (filters[name!] ??= {});
+    filter[operator as keyof ResourceFilter] = value as never;
+  }
+
+  return filters;
+}
+
+function parseFilterValue(
+  raw: string,
+  field: FieldSchema,
+): string | number | boolean | null | undefined {
+  if (raw === "null") return null;
+  if (field.fieldType === "boolean") {
+    return raw === "true" ? true : raw === "false" ? false : undefined;
+  }
+  if (field.fieldType === "number") {
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : undefined;
+  }
+  return raw;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

@@ -1,4 +1,4 @@
-import { parseListParams } from "../http/parse-request.js";
+import { parseFilters, parseListParams } from "../http/parse-request.js";
 import { dataResponse, forbiddenResponse } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
@@ -29,6 +29,7 @@ export async function handleList(
 
   const { sort, ...rest } = parseListParams(url, options);
   const scope = await resolveScope(entry, actor);
+  const filters = parseFilters(url, entry.fields);
 
   // `sort.field` is caller-controlled and reaches the adapter verbatim. Dropping
   // anything outside the resource's own `.sortable()` field names keeps an adapter that
@@ -38,6 +39,7 @@ export async function handleList(
   const params = {
     ...rest,
     ...(scope && { scope }),
+    ...(Object.keys(filters).length > 0 && { filters }),
     ...(sort && entry.fields[sort.field]?.sortable && { sort }),
   };
 
