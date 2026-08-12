@@ -11,6 +11,7 @@ import {
   validateResourceInput,
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
+import { resolveCreateValues } from "../access.js";
 
 /** Handles `POST {base}`. */
 export async function handleCreate(ctx: HandlerContext): Promise<Response> {
@@ -36,11 +37,17 @@ export async function handleCreate(ctx: HandlerContext): Promise<Response> {
       : errorResponse(400, "Invalid JSON body.");
   }
 
+  // Resolve before validation so required tenant fields can be server-owned, and
+  // merge last so a submitted organizationId can never override the actor's one.
+  const owned = (await resolveCreateValues(entry, actor)) ?? {};
+  const values = { ...body.value, ...owned };
+
   const validated = await validateResourceInput(
     entry.fields,
-    body.value,
+    values,
     entry.config.permissions,
     { actor },
+    owned,
   );
 
   if (!validated.success) {
@@ -49,6 +56,8 @@ export async function handleCreate(ctx: HandlerContext): Promise<Response> {
     });
   }
 
+  // Access-owned values intentionally win over the request body: a client can never
+  // select a different organization simply by submitting its organizationId.
   const record = await entry.config.adapter.create(validated.value);
   const publicRecord = record as Record<string, unknown>;
   const hidden = await unreadableFieldNames(

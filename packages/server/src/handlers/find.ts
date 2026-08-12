@@ -5,6 +5,7 @@ import {
   unreadableFieldNames,
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
+import { resolveScope } from "../access.js";
 
 /** Handles `GET {base}/:id`. */
 export async function handleFind(
@@ -12,7 +13,8 @@ export async function handleFind(
   id: string,
 ): Promise<Response> {
   const { entry, actor } = ctx;
-  const record = (await entry.config.adapter.find(id)) as
+  const scope = await resolveScope(entry, actor);
+  const record = (await entry.config.adapter.find(id, scope)) as
     Record<string, unknown> | undefined;
 
   if (!record) {

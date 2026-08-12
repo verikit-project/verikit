@@ -6,6 +6,7 @@ import {
   unreadableFieldNames,
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
+import { resolveScope } from "../access.js";
 
 /**
  * Handles both `GET {base}` (list) and `GET {base}/search` (a smaller-page-size alias).
@@ -27,6 +28,7 @@ export async function handleList(
   }
 
   const { sort, ...rest } = parseListParams(url, options);
+  const scope = await resolveScope(entry, actor);
 
   // `sort.field` is caller-controlled and reaches the adapter verbatim. Dropping
   // anything outside the resource's own `.sortable()` field names keeps an adapter that
@@ -35,6 +37,7 @@ export async function handleList(
   // if the schema explicitly opted it in for sorting, not just because it exists.
   const params = {
     ...rest,
+    ...(scope && { scope }),
     ...(sort && entry.fields[sort.field]?.sortable && { sort }),
   };
 

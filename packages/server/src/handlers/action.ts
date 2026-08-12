@@ -9,6 +9,7 @@ import {
 } from "../http/responses.js";
 import { maybeCheckAction } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
+import { resolveScope } from "../access.js";
 
 interface ActionRequestBody {
   input?: Record<string, unknown>;
@@ -66,9 +67,10 @@ export async function handleAction(
 
   const body = parsedBody.value as ActionRequestBody;
   let record: unknown;
+  const scope = await resolveScope(entry, actor);
 
   if (typeof body.recordId === "string") {
-    record = await entry.config.adapter.find(body.recordId);
+    record = await entry.config.adapter.find(body.recordId, scope);
 
     if (!record) {
       return notFoundResponse(`Record "${body.recordId}" not found.`);
