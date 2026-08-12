@@ -7,6 +7,7 @@ import { validateBuiltInFieldConstraints } from "../fields/shared/built-in-const
 import { ValidationIssue, ValidationResult } from "../types/validation.js";
 
 export type { FileLike } from "../fields/shared/built-in-constraints.js";
+export { matchesAccept } from "../fields/shared/built-in-constraints.js";
 
 function issue(
   message: string,

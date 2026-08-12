@@ -1,4 +1,4 @@
-import { checkFieldAccess } from "@verikit/core";
+import { checkFieldAccess, matchesAccept } from "@verikit/core";
 import {
   errorResponse,
   forbiddenResponse,
@@ -14,27 +14,6 @@ interface UploadField {
   fieldType: "file" | "image";
   accept?: readonly string[];
   maxSize?: number;
-}
-
-function accepts(
-  type: string,
-  name: string,
-  accepted: readonly string[] | undefined,
-): boolean {
-  if (!accepted || accepted.length === 0) return true;
-  const normalizedType = type.toLowerCase();
-  const normalizedName = name.toLowerCase();
-
-  return accepted.some((rule) => {
-    const normalizedRule = rule.toLowerCase();
-    if (normalizedRule.endsWith("/*")) {
-      return normalizedType.startsWith(normalizedRule.slice(0, -1));
-    }
-    if (normalizedRule.startsWith(".")) {
-      return normalizedName.endsWith(normalizedRule);
-    }
-    return normalizedType === normalizedRule;
-  });
 }
 
 /** Handles `POST {base}/uploads/:field` multipart requests. */
@@ -86,11 +65,13 @@ export async function handleUpload(
   // bogus client-supplied value cannot affect the platform multipart parser.
   const headers = new Headers(ctx.request.headers);
   headers.delete("content-length");
-  const multipartBody = new Uint8Array(body.value).buffer;
   const multipartRequest = new Request(ctx.request.url, {
     method: ctx.request.method,
     headers,
-    body: multipartBody,
+    // `readRequestBytes` always allocates a fresh, exactly-sized buffer (never a
+    // SharedArrayBuffer), so this is the same bytes with no extra copy — unlike
+    // `new Uint8Array(body.value).buffer`, which would memcpy the whole upload.
+    body: body.value.buffer as ArrayBuffer,
   });
   const form = await multipartRequest.formData();
   const candidate = form.get("file");
@@ -105,7 +86,11 @@ export async function handleUpload(
   if (uploadField.maxSize !== undefined && file.size > uploadField.maxSize) {
     return errorResponse(413, "File exceeds the field's maximum size.");
   }
-  if (!accepts(file.type, file.name, uploadField.accept)) {
+  if (
+    uploadField.accept &&
+    uploadField.accept.length > 0 &&
+    !matchesAccept(uploadField.accept, file)
+  ) {
     return errorResponse(415, "File type is not accepted by this field.");
   }
   const stored = await storage.put({

@@ -126,7 +126,10 @@ function validateOption(
   return isAllowed ? [] : [issue("Must be one of the allowed options.")];
 }
 
-function matchesAccept(patterns: readonly string[], file: FileLike): boolean {
+export function matchesAccept(
+  patterns: readonly string[],
+  file: FileLike,
+): boolean {
   const fileType = file.type?.toLowerCase();
   const fileName = file.name?.toLowerCase();
 
