@@ -4,6 +4,7 @@ import {
   definePermissions,
   defineResource,
   image,
+  number,
   text,
   textarea,
   boolean,
@@ -172,12 +173,151 @@ test("actor-aware scopes isolate every storage operation and own create values",
   assert.equal((await created.json()).data.organizationId, "org-a");
 });
 
+test("an access.scope hook returning no constraints leaves storage operations unscoped", async () => {
+  const resource = defineResource("project", {
+    fields: {
+      title: text().required(),
+      organizationId: text().required(),
+    },
+    access: {
+      scope: () => ({}),
+    },
+  });
+  const adapter = createInMemoryAdapter([
+    { ...post, id: "a", organizationId: "org-a" },
+    { ...post, id: "b", organizationId: "org-b" },
+  ]);
+  const handler = createServer({
+    resources: [{ resource, adapter, permissions: "open" }],
+  });
+
+  const list = await handler(new Request("https://x/project"));
+  const listed = await list.json();
+  assert.deepEqual(listed.data.map((record: Post) => record.id).sort(), [
+    "a",
+    "b",
+  ]);
+});
+
+test("an access hook returning an unknown field maps to the standard 500 envelope", async () => {
+  const resource = defineResource("project", {
+    fields: { title: text().required() },
+    access: {
+      scope: () => ({ organizationId: "org-a" }),
+    },
+  });
+  const observed: unknown[] = [];
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter([]),
+        permissions: "open",
+      },
+    ],
+    onError: (error) => {
+      observed.push(error);
+    },
+  });
+
+  const response = await handler(new Request("https://x/project"));
+  assert.equal(response.status, 500);
+  assert.equal(observed.length, 1);
+  assert.match(
+    (observed[0] as Error).message,
+    /access\.scope returned unknown field "organizationId"/,
+  );
+});
+
+test("an access hook returning undefined for a known field maps to the standard 500 envelope", async () => {
+  const resource = defineResource("project", {
+    fields: { title: text().required() },
+    access: {
+      onCreate: () => ({ title: undefined }) as Record<string, unknown>,
+    },
+  });
+  const observed: unknown[] = [];
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter([]),
+        permissions: "open",
+      },
+    ],
+    onError: (error) => {
+      observed.push(error);
+    },
+  });
+
+  const response = await handler(
+    new Request("https://x/project", {
+      method: "POST",
+      body: JSON.stringify({ title: "draft" }),
+    }),
+  );
+  assert.equal(response.status, 500);
+  assert.equal(observed.length, 1);
+  assert.match(
+    (observed[0] as Error).message,
+    /access\.onCreate returned undefined for "title"/,
+  );
+});
+
+test("create validates client-controlled fields against non-open permissions while trusting access.onCreate's own fields", async () => {
+  const resource = defineResource("project", {
+    fields: {
+      title: text().required(),
+      organizationId: text().required(),
+    },
+    access: {
+      onCreate: ({ actor }) => ({
+        organizationId: (actor as { organizationId: string }).organizationId,
+      }),
+    },
+  });
+  const permissions = definePermissions<{ organizationId: string }>()
+    .can("create", () => true)
+    .field("title", { read: () => true, write: () => true })
+    .field("organizationId", { read: () => true });
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter([] as unknown as Post[]),
+        permissions,
+      },
+    ],
+    context: () => ({ organizationId: "org-a" }),
+  });
+
+  const response = await handler(
+    new Request("https://x/project", {
+      method: "POST",
+      body: JSON.stringify({ title: "draft" }),
+    }),
+  );
+  const body = await response.json();
+  assert.equal(response.status, 201);
+  assert.equal(body.data.title, "draft");
+  assert.equal(body.data.organizationId, "org-a");
+
+  const invalid = await handler(
+    new Request("https://x/project", {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+  );
+  assert.equal(invalid.status, 400);
+});
+
 test("list supports opt-in exact field filters", async () => {
   const resource = defineResource("post", {
     fields: {
       title: text().required().filterable(),
       body: textarea(),
       published: boolean().default(false).filterable(),
+      views: number().default(0).filterable(),
     },
   });
   const handler = createServer({
@@ -185,9 +325,9 @@ test("list supports opt-in exact field filters", async () => {
       {
         resource,
         adapter: createInMemoryAdapter([
-          { ...post, id: "yes", published: true },
-          { ...post, id: "no", published: false },
-        ]),
+          { ...post, id: "yes", published: true, title: "Alpha", views: 5 },
+          { ...post, id: "no", published: false, title: "Beta", views: 9 },
+        ] as unknown as Post[]),
         permissions: "open",
       },
     ],
@@ -203,6 +343,54 @@ test("list supports opt-in exact field filters", async () => {
     ["yes"],
   );
   assert.equal(body.meta.total, 1);
+
+  const byTitle = await (
+    await handler(new Request("https://x/post?filter[title]=Beta"))
+  ).json();
+  assert.deepEqual(
+    byTitle.data.map((record: Post) => record.id),
+    ["no"],
+  );
+
+  const byViews = await (
+    await handler(new Request("https://x/post?filter[views][gte]=9"))
+  ).json();
+  assert.deepEqual(
+    byViews.data.map((record: Post) => record.id),
+    ["no"],
+  );
+
+  const byInvalidViews = await (
+    await handler(new Request("https://x/post?filter[views]=not-a-number"))
+  ).json();
+  assert.equal(byInvalidViews.meta.total, 2);
+
+  // `body` is a real field but not `.filterable()`, and `nope` isn't a field at all;
+  // both are silently ignored rather than filtering anything out.
+  const byIgnoredFields = await (
+    await handler(
+      new Request("https://x/post?filter[body]=anything&filter[nope]=x"),
+    )
+  ).json();
+  assert.equal(byIgnoredFields.meta.total, 2);
+
+  const byNullTitle = await (
+    await handler(new Request("https://x/post?filter[title]=null"))
+  ).json();
+  assert.equal(byNullTitle.meta.total, 0);
+
+  const byPublishedFalse = await (
+    await handler(new Request("https://x/post?filter[published]=false"))
+  ).json();
+  assert.deepEqual(
+    byPublishedFalse.data.map((record: Post) => record.id),
+    ["no"],
+  );
+
+  const byPublishedInvalid = await (
+    await handler(new Request("https://x/post?filter[published]=maybe"))
+  ).json();
+  assert.equal(byPublishedInvalid.meta.total, 2);
 });
 
 test("file fields upload through the configured storage backend", async () => {
@@ -245,6 +433,234 @@ test("file fields upload through the configured storage backend", async () => {
     },
   });
   assert.equal(stored.length, 1);
+});
+
+test("uploads to a non-file field or unknown field name 404", async () => {
+  const resource = defineResource("asset", {
+    fields: { title: text(), attachment: image() },
+  });
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+    storage: {
+      async put({ file }) {
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+
+  const form = new FormData();
+  form.set("file", new Blob(["hello"]), "a.png");
+
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/asset/uploads/title", {
+          method: "POST",
+          body: form,
+        }),
+      )
+    ).status,
+    404,
+  );
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/asset/uploads/missing", {
+          method: "POST",
+          body: form,
+        }),
+      )
+    ).status,
+    404,
+  );
+});
+
+test("uploads 501 when no storage backend is configured", async () => {
+  const resource = defineResource("asset", { fields: { attachment: image() } });
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+  });
+
+  const form = new FormData();
+  form.set("file", new Blob(["hello"]), "a.png");
+
+  const response = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: form,
+    }),
+  );
+  assert.equal(response.status, 501);
+});
+
+test("uploads are denied when the actor lacks field write permission", async () => {
+  const resource = defineResource("asset", { fields: { attachment: image() } });
+  const permissions = definePermissions<Actor>().field("attachment", {
+    write: ({ actor }) => actor.role === "admin",
+  });
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter(),
+        permissions,
+      },
+    ],
+    context: () => ({ role: "viewer" }) satisfies Actor,
+    storage: {
+      async put({ file }) {
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+
+  const form = new FormData();
+  form.set("file", new Blob(["hello"]), "a.png");
+
+  const response = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: form,
+    }),
+  );
+  assert.equal(response.status, 403);
+});
+
+test("uploads reject non-multipart bodies, oversized declared lengths, oversized files, and disallowed types", async () => {
+  const resource = defineResource("asset", {
+    fields: { attachment: image().maxSize(10).accept(["image/png"]) },
+  });
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+    maxBodyBytes: 20,
+    storage: {
+      async put({ file }) {
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+
+  const notMultipart = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    }),
+  );
+  assert.equal(notMultipart.status, 415);
+
+  const oversizedForm = new FormData();
+  oversizedForm.set("file", new Blob(["x".repeat(30)]), "a.png");
+  const oversizedDeclared = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: oversizedForm,
+      headers: { "content-length": "30" },
+    }),
+  );
+  assert.equal(oversizedDeclared.status, 413);
+
+  const tooBigFileForm = new FormData();
+  tooBigFileForm.set(
+    "file",
+    new Blob(["x".repeat(15)], { type: "image/png" }),
+    "a.png",
+  );
+  const tooBigFile = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: tooBigFileForm,
+    }),
+  );
+  assert.equal(tooBigFile.status, 413);
+
+  const wrongTypeForm = new FormData();
+  wrongTypeForm.set("file", new Blob(["hi"], { type: "text/plain" }), "a.txt");
+  const wrongType = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: wrongTypeForm,
+    }),
+  );
+  assert.equal(wrongType.status, 415);
+
+  const garbageLengthForm = new FormData();
+  garbageLengthForm.set(
+    "file",
+    new Blob(["hi"], { type: "image/png" }),
+    "a.png",
+  );
+  const garbageLength = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: garbageLengthForm,
+      headers: { "content-length": "not-a-number" },
+    }),
+  );
+  assert.equal(garbageLength.status, 201);
+
+  const nonBlobForm = new FormData();
+  nonBlobForm.set("file", "just a string, not a file");
+  const nonBlob = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: nonBlobForm,
+    }),
+  );
+  assert.equal(nonBlob.status, 400);
+});
+
+test("uploads with an explicit empty accept list allow any file type through", async () => {
+  const resource = defineResource("asset", {
+    fields: { attachment: image().accept([]) },
+  });
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+    storage: {
+      async put({ file }) {
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+
+  const form = new FormData();
+  form.set("file", new Blob(["hi"], { type: "text/plain" }), "a.txt");
+
+  const response = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: form,
+    }),
+  );
+  assert.equal(response.status, 201);
 });
 
 test("createServer returns 404 for an unmatched path and 405 for a wrong method", async () => {

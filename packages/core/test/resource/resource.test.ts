@@ -56,6 +56,38 @@ test("resource preserves table reference and snapshots meta", () => {
   assert.notEqual(schema.meta, meta);
 });
 
+test("resource stores access rules but never serializes them via toSchema", () => {
+  const access = {
+    scope: ({ actor }: { actor: { id: string } }) => ({ ownerId: actor.id }),
+    onCreate: ({ actor }: { actor: { id: string } }) => ({
+      ownerId: actor.id,
+    }),
+  };
+
+  const resource = defineResource("post", {
+    access,
+    fields: { name: text() },
+  });
+
+  assert.deepEqual(resource.access?.scope?.({ actor: { id: "42" } }), {
+    ownerId: "42",
+  });
+  assert.deepEqual(resource.access?.onCreate?.({ actor: { id: "42" } }), {
+    ownerId: "42",
+  });
+  assert.equal(
+    "access" in resource.toSchema(),
+    false,
+    "toSchema() output must not include server-only access rules",
+  );
+});
+
+test("resource without access config leaves access undefined", () => {
+  const resource = defineResource("user", { fields: { name: text() } });
+
+  assert.equal(resource.access, undefined);
+});
+
 test("resource snapshots caller-owned fields, relationships, and meta", () => {
   const author = defineResource("author", { fields: { name: text() } });
   const fields: Record<string, AnyFieldBuilder> = { name: text() };

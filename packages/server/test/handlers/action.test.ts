@@ -41,7 +41,13 @@ function ctxFor(
     method: "POST",
     body: JSON.stringify(body),
   });
-  return { entry: entry!, actor, request, url: new URL(request.url) };
+  return {
+    entry: entry!,
+    actor,
+    request,
+    url: new URL(request.url),
+    maxBodyBytes: 1_048_576,
+  };
 }
 
 const post: Post = { id: "1", title: "Hello", body: "world", published: false };
@@ -89,6 +95,7 @@ test("handleAction returns 400 for an invalid JSON body", async () => {
       actor: { role: "viewer" } as Actor,
       request,
       url: new URL(request.url),
+      maxBodyBytes: 1_048_576,
     },
     "publish",
   );

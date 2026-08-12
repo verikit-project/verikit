@@ -37,6 +37,7 @@ function ctxFor(
     actor: { role: "viewer" } as Actor,
     request,
     url: new URL("https://x/post/1"),
+    maxBodyBytes: 1_048_576,
   };
 }
 
