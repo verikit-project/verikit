@@ -104,6 +104,22 @@ export function createResourceClient<TRecord = Record<string, unknown>>(
       await run("DELETE", [id], { signal: options.signal });
     },
 
+    async upload(field, file, options = {}) {
+      const form = new FormData();
+      form.set("file", file, options.filename);
+      const envelope = (await run("POST", ["uploads", field], {
+        body: form,
+        signal: options.signal,
+      })) as RecordEnvelope<{
+        url: string;
+        key?: string;
+        name: string;
+        type: string;
+        size: number;
+      }>;
+      return envelope.data;
+    },
+
     async action<TResult = unknown>(
       actionName: string,
       input?: Record<string, unknown>,
