@@ -33,6 +33,7 @@ export type RouteAction =
   | { kind: "find"; id: string }
   | { kind: "update"; id: string }
   | { kind: "delete"; id: string }
+  | { kind: "upload"; field: string }
   | { kind: "action"; name: string };
 
 export type RouteResolution =
@@ -89,6 +90,15 @@ export function resolveResourceAction(
       ? {
           status: "matched",
           action: { kind: "action", name: remaining[1] as string },
+        }
+      : { status: "method-not-allowed" };
+  }
+
+  if (remaining.length === 2 && remaining[0] === "uploads") {
+    return method === "POST"
+      ? {
+          status: "matched",
+          action: { kind: "upload", field: remaining[1] as string },
         }
       : { status: "method-not-allowed" };
   }
