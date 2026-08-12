@@ -93,6 +93,7 @@ function parseFilterValue(
     return raw === "true" ? true : raw === "false" ? false : undefined;
   }
   if (field.fieldType === "number") {
+    if (raw.trim() === "") return undefined;
     const value = Number(raw);
     return Number.isFinite(value) ? value : undefined;
   }
