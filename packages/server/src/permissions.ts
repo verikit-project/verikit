@@ -118,8 +118,34 @@ export function validateResourceInput<TActor, TRecord>(
   values: Record<string, unknown>,
   permissions: PermissionsBuilder<TActor, TRecord> | "open",
   context: PermissionContext<TActor, TRecord>,
+  trustedValues: Record<string, unknown> = {},
 ): Promise<ValidationResult<Record<string, unknown>>> {
-  return permissions === "open"
-    ? validateResourceAsync(fields, values)
-    : validateWritableFields(fields, values, permissions, context);
+  if (permissions === "open" || Object.keys(trustedValues).length === 0) {
+    return permissions === "open"
+      ? validateResourceAsync(fields, values)
+      : validateWritableFields(fields, values, permissions, context);
+  }
+
+  // Server-owned fields (e.g. organizationId) must still be validated, but must
+  // not require a client write grant. Validate client-controlled fields against
+  // permissions first, then validate the complete merged record normally.
+  const clientFields = Object.fromEntries(
+    Object.entries(fields).filter(
+      ([name]) => !Object.hasOwn(trustedValues, name),
+    ),
+  );
+  const clientValues = Object.fromEntries(
+    Object.entries(values).filter(
+      ([name]) => !Object.hasOwn(trustedValues, name),
+    ),
+  );
+
+  return validateWritableFields(
+    clientFields,
+    clientValues,
+    permissions,
+    context,
+  ).then((clientResult) =>
+    clientResult.success ? validateResourceAsync(fields, values) : clientResult,
+  );
 }
