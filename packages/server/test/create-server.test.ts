@@ -200,7 +200,10 @@ test("createServer uses configured CORS allowed headers on preflight", async () 
 
   assert.equal(response.status, 204);
   assert.equal(response.headers.get("access-control-allow-origin"), "*");
-  assert.equal(response.headers.get("access-control-allow-methods"), "GET, POST");
+  assert.equal(
+    response.headers.get("access-control-allow-methods"),
+    "GET, POST",
+  );
   assert.equal(
     response.headers.get("access-control-allow-headers"),
     "authorization, content-type",
