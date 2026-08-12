@@ -86,6 +86,22 @@ test("search() hits the /search sub-route", async () => {
   assert.equal(calls[0]!.url, "https://x.test/posts/search?search=q");
 });
 
+test("relationship() hits the relationship picker route", async () => {
+  const { fetchImpl, calls } = fakeFetch(() =>
+    jsonResponse({ data: [], meta: { total: 0, page: 1, pageSize: 10 } }),
+  );
+
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+  await client.resource("projects").relationship("organization", {
+    search: "acme",
+  });
+
+  assert.equal(
+    calls[0]!.url,
+    "https://x.test/projects/relationships/organization?search=acme",
+  );
+});
+
 test("find() encodes the id and unwraps `data`", async () => {
   const { fetchImpl, calls } = fakeFetch(() =>
     jsonResponse({ data: { id: "a/b", title: "Hi" } }),

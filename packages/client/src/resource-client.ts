@@ -27,7 +27,7 @@ interface ListEnvelope<T> {
 }
 
 /**
- * Implements the seven routes `@verikit/server`'s `createServer()` exposes per resource.
+ * Implements the routes `@verikit/server`'s `createServer()` exposes per resource.
  */
 export function createResourceClient<TRecord = Record<string, unknown>>(
   deps: ResourceClientDeps,
@@ -55,15 +55,15 @@ export function createResourceClient<TRecord = Record<string, unknown>>(
     });
   }
 
-  async function list(
+  async function list<T>(
     endpoint: readonly string[],
     params: ListParams,
     options: RequestOptions,
-  ): Promise<ListResponse<TRecord>> {
+  ): Promise<ListResponse<T>> {
     const envelope = (await run("GET", endpoint, {
       query: buildListQuery(params),
       signal: options.signal,
-    })) as ListEnvelope<TRecord>;
+    })) as ListEnvelope<T>;
 
     return {
       records: envelope.data,
@@ -74,8 +74,11 @@ export function createResourceClient<TRecord = Record<string, unknown>>(
   }
 
   return {
-    list: (params = {}, options = {}) => list([], params, options),
-    search: (params = {}, options = {}) => list(["search"], params, options),
+    list: (params = {}, options = {}) => list<TRecord>([], params, options),
+    search: (params = {}, options = {}) =>
+      list<TRecord>(["search"], params, options),
+    relationship: (relationship, params = {}, options = {}) =>
+      list(["relationships", relationship], params, options),
 
     async find(id, options = {}) {
       const envelope = (await run("GET", [id], {

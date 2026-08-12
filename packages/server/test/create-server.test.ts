@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   definePermissions,
   defineResource,
+  belongsTo,
   file,
   image,
   number,
@@ -12,6 +13,7 @@ import {
 } from "@verikit/core";
 import { action } from "@verikit/runtime";
 import { createServer } from "../src/create-server.js";
+import { createInMemoryAdapter as createGenericInMemoryAdapter } from "../src/testing/in-memory-adapter.js";
 import {
   createInMemoryAdapter,
   createPostResource,
@@ -106,6 +108,57 @@ test("createServer exposes list/search/create/find/update/delete/action routes",
 
   const findAfterDelete = await handler(new Request("https://x/post/1"));
   assert.equal(findAfterDelete.status, 404);
+});
+
+test("createServer exposes scoped belongs-to relationship pickers", async () => {
+  const organization = defineResource("organization", {
+    fields: {
+      name: text().required().searchable(),
+      organizationId: text().required(),
+    },
+    access: {
+      scope: ({ actor }) => ({ organizationId: actor.organizationId }),
+    },
+  });
+  const project = defineResource("project", {
+    fields: {
+      title: text().required(),
+      organizationId: text().required(),
+    },
+    relationships: (field) => ({
+      organization: belongsTo(() => organization).via(field("organizationId")),
+    }),
+  });
+  const handler = createServer<{ organizationId: string }>({
+    context: () => ({ organizationId: "one" }),
+    resources: [
+      {
+        resource: project,
+        adapter: createGenericInMemoryAdapter([]),
+        permissions: "open",
+      },
+      {
+        resource: organization,
+        adapter: createGenericInMemoryAdapter(
+          [
+            { id: "one", name: "Acme", organizationId: "one" },
+            { id: "two", name: "Other", organizationId: "two" },
+          ],
+          { searchableFields: ["name"] },
+        ),
+        permissions: "open",
+      },
+    ],
+  });
+
+  const response = await handler(
+    new Request("https://x/project/relationships/organization?search=acme"),
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).data, [
+    { id: "one", name: "Acme", organizationId: "one" },
+  ]);
 });
 
 test("actor-aware scopes isolate every storage operation and own create values", async () => {

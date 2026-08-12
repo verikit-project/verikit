@@ -29,6 +29,7 @@ export function stripPrefix(
 export type RouteAction =
   | { kind: "list" }
   | { kind: "search" }
+  | { kind: "relationship-picker"; relationship: string }
   | { kind: "create" }
   | { kind: "find"; id: string }
   | { kind: "update"; id: string }
@@ -42,7 +43,7 @@ export type RouteResolution =
   | { status: "not-found" };
 
 /**
- * Matches the segments remaining after a resource's base path against the seven routes `createServer` exposes for that resource, given the request method. Distinguishes "no such shape" (404) from "right shape, wrong verb" (405) so the caller can respond accordingly.
+ * Matches the segments remaining after a resource's base path against the routes `createServer` exposes for that resource, given the request method. Distinguishes "no such shape" (404) from "right shape, wrong verb" (405) so the caller can respond accordingly.
  */
 export function resolveResourceAction(
   remaining: readonly string[],
@@ -99,6 +100,18 @@ export function resolveResourceAction(
       ? {
           status: "matched",
           action: { kind: "upload", field: remaining[1] as string },
+        }
+      : { status: "method-not-allowed" };
+  }
+
+  if (remaining.length === 2 && remaining[0] === "relationships") {
+    return method === "GET"
+      ? {
+          status: "matched",
+          action: {
+            kind: "relationship-picker",
+            relationship: remaining[1] as string,
+          },
         }
       : { status: "method-not-allowed" };
   }

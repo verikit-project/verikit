@@ -74,6 +74,20 @@ test("resolveResourceAction matches /actions/:name to POST only", () => {
   });
 });
 
+test("resolveResourceAction matches relationship pickers to GET only", () => {
+  assert.deepEqual(
+    resolveResourceAction(["relationships", "organization"], "GET"),
+    {
+      status: "matched",
+      action: { kind: "relationship-picker", relationship: "organization" },
+    },
+  );
+  assert.deepEqual(
+    resolveResourceAction(["relationships", "organization"], "POST"),
+    { status: "method-not-allowed" },
+  );
+});
+
 test("resolveResourceAction reports not-found for shapes of 3+ segments", () => {
   assert.deepEqual(resolveResourceAction(["5", "extra"], "GET"), {
     status: "not-found",

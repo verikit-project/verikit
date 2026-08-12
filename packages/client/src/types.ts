@@ -74,6 +74,15 @@ export interface ResourceClient<TRecord = Record<string, unknown>> {
     params?: ListParams,
     options?: RequestOptions,
   ): Promise<ListResponse<TRecord>>;
+  /**
+   * Lists selectable records for this resource's `belongsTo` relationship.
+   * The server applies the target resource's permissions and actor-aware scope.
+   */
+  relationship<TTarget = Record<string, unknown>>(
+    name: string,
+    params?: ListParams,
+    options?: RequestOptions,
+  ): Promise<ListResponse<TTarget>>;
   find(id: string, options?: RequestOptions): Promise<TRecord>;
   create(
     input: Record<string, unknown>,

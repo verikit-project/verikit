@@ -6,6 +6,7 @@ import { handleCreate } from "./handlers/create.js";
 import { handleDelete } from "./handlers/delete.js";
 import { handleFind } from "./handlers/find.js";
 import { handleList } from "./handlers/list.js";
+import { handleRelationshipPicker } from "./handlers/relationship-picker.js";
 import { handleUpdate } from "./handlers/update.js";
 import { handleUpload } from "./handlers/upload.js";
 import type { FileStorage } from "./storage.js";
@@ -279,7 +280,7 @@ function preflightResponse(
 }
 
 /**
- * Derives a web-standard `(Request) => Promise<Response>` handler from a set of resources: CRUD, a search alias, and named-action routes, each wired through `@verikit/core` permissions/validation and `@verikit/runtime`'s `runAction`. Storage is never touched directly every operation goes through the resource's `ResourceAdapter`. @throws {Error} If two resources resolve to the same route, or a resource declares two actions with the same name checked once, at creation time.
+ * Derives a web-standard `(Request) => Promise<Response>` handler from a set of resources: CRUD, a search alias, scope-aware `belongsTo` pickers, and named-action routes, each wired through `@verikit/core` permissions/validation and `@verikit/runtime`'s `runAction`. Storage is never touched directly every operation goes through the resource's `ResourceAdapter`. @throws {Error} If two resources resolve to the same route, or a resource declares two actions with the same name checked once, at creation time.
  */
 export function createServer<TActor = unknown>(
   options: CreateServerOptions<TActor>,
@@ -333,6 +334,15 @@ export function createServer<TActor = unknown>(
             await handleList(ctx, {
               defaultPageSize: DEFAULT_SEARCH_PAGE_SIZE,
             }),
+            responseCorsHeaders,
+          );
+        case "relationship-picker":
+          return withCors(
+            await handleRelationshipPicker(
+              ctx,
+              routeTable,
+              action.relationship,
+            ),
             responseCorsHeaders,
           );
         case "create":
