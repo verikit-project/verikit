@@ -734,6 +734,62 @@ test("uploads honor case-insensitive extension accept patterns", async () => {
   );
 });
 
+test("uploads accept unrestricted and exact MIME file rules", async () => {
+  const resource = defineResource("asset", {
+    fields: {
+      unrestricted: file(),
+      pdf: file().accept(["application/pdf"]),
+    },
+  });
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+    storage: {
+      async put({ file: uploaded }) {
+        return {
+          url: `https://files.example/${uploaded.name}`,
+          name: uploaded.name,
+          type: uploaded.type,
+          size: uploaded.size,
+        };
+      },
+    },
+  });
+
+  const unrestricted = new FormData();
+  unrestricted.set(
+    "file",
+    new Blob(["plain"], { type: "text/plain" }),
+    "notes.txt",
+  );
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/asset/uploads/unrestricted", {
+          method: "POST",
+          body: unrestricted,
+        }),
+      )
+    ).status,
+    201,
+  );
+
+  const pdf = new FormData();
+  pdf.set("file", new Blob(["pdf"], { type: "application/pdf" }), "report.bin");
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/asset/uploads/pdf", {
+          method: "POST",
+          body: pdf,
+        }),
+      )
+    ).status,
+    201,
+  );
+});
+
 test("createServer returns 404 for an unmatched path and 405 for a wrong method", async () => {
   const handler = createServer({
     resources: [
