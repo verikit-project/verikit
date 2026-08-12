@@ -114,6 +114,16 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       return resourceClient.list(params, options);
     },
 
+    async relationship<TTarget = Record<string, unknown>>(
+      _name: string,
+      params?: ListParams,
+      options?: RequestOptions,
+    ): Promise<ListResponse<TTarget>> {
+      return resourceClient.list(params, options) as Promise<
+        ListResponse<TTarget>
+      >;
+    },
+
     async find(id, _options) {
       calls.find += 1;
       await waitForGate("find");
