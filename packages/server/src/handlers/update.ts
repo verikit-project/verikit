@@ -58,7 +58,8 @@ export async function handleUpdate(
   const values = { ...body.value, ...(scope ?? {}) };
   const submittedFields = Object.fromEntries(
     Object.entries(entry.fields).filter(
-      ([name]) => Object.hasOwn(body.value, name) || Object.hasOwn(scope ?? {}, name),
+      ([name]) =>
+        Object.hasOwn(body.value, name) || Object.hasOwn(scope ?? {}, name),
     ),
   );
 

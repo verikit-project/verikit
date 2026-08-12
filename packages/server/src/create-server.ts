@@ -7,6 +7,8 @@ import { handleDelete } from "./handlers/delete.js";
 import { handleFind } from "./handlers/find.js";
 import { handleList } from "./handlers/list.js";
 import { handleUpdate } from "./handlers/update.js";
+import { handleUpload } from "./handlers/upload.js";
+import type { FileStorage } from "./storage.js";
 import {
   errorResponse,
   methodNotAllowedResponse,
@@ -47,6 +49,8 @@ export interface ServerResourceConfig<TActor = unknown> {
 
 export interface CreateServerOptions<TActor = unknown> {
   resources: ServerResourceConfig<TActor>[];
+  /** Backend used by `POST /{resource}/uploads/{fileField}`. */
+  storage?: FileStorage;
   /**
    * Derives the actor used for permission checks from the incoming request.
    */
@@ -351,6 +355,11 @@ export function createServer<TActor = unknown>(
         case "action":
           return withCors(
             await handleAction(ctx, action.name),
+            responseCorsHeaders,
+          );
+        case "upload":
+          return withCors(
+            await handleUpload(ctx, action.field, options.storage),
             responseCorsHeaders,
           );
       }
