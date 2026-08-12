@@ -26,6 +26,7 @@ export interface PrismaModelDelegate {
   create(args: any): Promise<any>;
   update(args: any): Promise<any>;
   updateMany?(args: any): Promise<{ count: number }>;
+  updateManyAndReturn?(args: any): Promise<any[]>;
   delete(args: any): Promise<any>;
   deleteMany?(args: any): Promise<{ count: number }>;
 }
@@ -298,18 +299,30 @@ export function createPrismaAdapter<
       const data = mapValuesToData(values, fields);
 
       // Prisma's update() only accepts a unique selector, so it cannot express
-      // `{ id, organizationId }`. updateMany makes the tenant predicate atomic;
-      // the scoped find then returns the canonical public record.
+      // `{ id, organizationId }`. updateMany/updateManyAndReturn make the tenant
+      // predicate atomic.
       if (scope) {
+        const where = combinedWhere(scope, { [id.field]: value });
+
+        // returns the written row directly,
+        // so the scoped write and the canonical-record read happen in one round
+        // trip instead of two. Older Prisma delegates fall back to updateMany
+        // plus a follow-up scoped find.
+        if (model.updateManyAndReturn) {
+          const [row] = await model.updateManyAndReturn({
+            where,
+            data,
+            select,
+          });
+          return present(row);
+        }
+
         if (!model.updateMany) {
           throw new Error(
-            "@verikit/prisma: scoped updates require a Prisma delegate with updateMany().",
+            "@verikit/prisma: scoped updates require a Prisma delegate with updateMany() or updateManyAndReturn().",
           );
         }
-        const result = await model.updateMany({
-          where: combinedWhere(scope, { [id.field]: value }),
-          data,
-        });
+        const result = await model.updateMany({ where, data });
         return result.count === 0 ? undefined : this.find(pathId, scope);
       }
 

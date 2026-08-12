@@ -241,6 +241,57 @@ test("find/update/delete/list honor a scope, and reject an unmapped scope field"
   assert.deepEqual(await adapter.find(mine.id, {}), updated);
 });
 
+function matchesPrismaWhere(
+  row: Record<string, unknown>,
+  where: Record<string, unknown>,
+): boolean {
+  if ("AND" in where) {
+    return (where.AND as Record<string, unknown>[]).every((clause) =>
+      matchesPrismaWhere(row, clause),
+    );
+  }
+  return Object.entries(where).every(([key, value]) => row[key] === value);
+}
+
+test("scoped update falls back to updateMany + a follow-up find when the delegate lacks updateManyAndReturn", async () => {
+  const rows: Record<string, unknown>[] = [
+    { id: "1", title: "Mine", body: "", published: false },
+    { id: "2", title: "Theirs", body: "", published: false },
+  ];
+  // Deliberately omits `updateManyAndReturn` to exercise createPrismaAdapter's updateMany-then-find fallback path.
+  const model: PrismaModelDelegate = {
+    findMany: async () => rows,
+    count: async () => rows.length,
+    findUnique: async ({ where }) =>
+      rows.find((row) => row.id === where.id) ?? null,
+    findFirst: async ({ where }) =>
+      rows.find((row) => matchesPrismaWhere(row, where)) ?? null,
+    create: async () => ({}),
+    update: async () => ({}),
+    updateMany: async ({ where, data }) => {
+      const matches = rows.filter((row) => matchesPrismaWhere(row, where));
+      for (const row of matches) Object.assign(row, data);
+      return { count: matches.length };
+    },
+    delete: async () => ({}),
+  };
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+
+  const updated = await adapter.update(
+    "1",
+    { body: "updated" },
+    { title: "Mine" },
+  );
+  assert.equal(updated?.body, "updated");
+
+  const missed = await adapter.update("2", { body: "nope" }, { title: "Mine" });
+  assert.equal(missed, undefined);
+});
+
 test("list applies exact and range filters, and rejects an unmapped filter field", async (t) => {
   const db = await createTestDb();
   t.after(() => db.$disconnect());
