@@ -38,8 +38,21 @@ export function createPostResource(): Resource {
   });
 }
 
+/** Whether `post` matches every key/value pair in `scope` (vacuously true when `scope` is unset). */
+function matchesScope(
+  post: Post,
+  scope: Record<string, unknown> | undefined,
+): boolean {
+  return (
+    !scope ||
+    Object.entries(scope).every(([name, value]) => post[name] === value)
+  );
+}
+
 /**
- * A tiny in-memory `ResourceAdapter`, mirroring `@verikit/server`'s own test fixture.
+ * A tiny in-memory `ResourceAdapter`, mirroring `@verikit/server`'s own test fixture
+ * (including its `scope`/`filters` enforcement, so client tests exercising access control
+ * or structured filtering see the same behavior a real adapter would).
  */
 export function createInMemoryAdapter(
   initial: readonly Post[] = [],
@@ -48,7 +61,22 @@ export function createInMemoryAdapter(
 
   return {
     async list(params: ResourceListParams): Promise<ResourceListResult<Post>> {
-      let filtered = records;
+      let filtered = records.filter((post) => matchesScope(post, params.scope));
+
+      if (params.filters) {
+        filtered = filtered.filter((post) =>
+          Object.entries(params.filters!).every(([name, filter]) => {
+            const value = post[name];
+            return (
+              (filter.eq === undefined || value === filter.eq) &&
+              (filter.gte === undefined || value! >= filter.gte) &&
+              (filter.gt === undefined || value! > filter.gt) &&
+              (filter.lte === undefined || value! <= filter.lte) &&
+              (filter.lt === undefined || value! < filter.lt)
+            );
+          }),
+        );
+      }
 
       if (params.search) {
         const term = params.search.toLowerCase();
@@ -74,8 +102,13 @@ export function createInMemoryAdapter(
       };
     },
 
-    async find(id: string): Promise<Post | undefined> {
-      return records.find((post) => post.id === id);
+    async find(
+      id: string,
+      scope?: Record<string, unknown>,
+    ): Promise<Post | undefined> {
+      return records.find(
+        (post) => post.id === id && matchesScope(post, scope),
+      );
     },
 
     async create(values: Record<string, unknown>): Promise<Post> {
@@ -90,17 +123,25 @@ export function createInMemoryAdapter(
       return post;
     },
 
-    async update(id: string, values: Record<string, unknown>): Promise<Post> {
-      const index = records.findIndex((post) => post.id === id);
+    async update(
+      id: string,
+      values: Record<string, unknown>,
+      scope?: Record<string, unknown>,
+    ): Promise<Post | undefined> {
+      const index = records.findIndex(
+        (post) => post.id === id && matchesScope(post, scope),
+      );
       if (index === -1) {
-        throw new Error(`No post with id "${id}".`);
+        return undefined;
       }
       records[index] = { ...records[index], ...values } as Post;
       return records[index];
     },
 
-    async delete(id: string): Promise<void> {
-      const index = records.findIndex((post) => post.id === id);
+    async delete(id: string, scope?: Record<string, unknown>): Promise<void> {
+      const index = records.findIndex(
+        (post) => post.id === id && matchesScope(post, scope),
+      );
       if (index !== -1) {
         records.splice(index, 1);
       }
