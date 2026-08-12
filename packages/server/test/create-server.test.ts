@@ -24,6 +24,30 @@ interface Actor {
 
 const post: Post = { id: "1", title: "Hello", body: "world", published: false };
 
+/**
+ * Hand-encodes a single-file multipart body instead of using `FormData`. Node's `FormData`
+ * bodies stream through an internal lazy encoder; cancelling `request.body`'s reader partway
+ * through (as `readRequestBytes` does once `maxBodyBytes` is exceeded) races that encoder and
+ * throws `ReadableStream is already closed` asynchronously, after the test has already finished
+ * (this is a Node/undici quirk specific to `FormData`-constructed bodies, not something a real,
+ * socket-backed request body triggers). A raw multipart body sidesteps the encoder entirely.
+ */
+function rawMultipartBody(content: string): {
+  headers: Record<string, string>;
+  body: string;
+} {
+  const boundary = "----verikitTestBoundary";
+  const body =
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="file"; filename="too-large.png"\r\n` +
+    `Content-Type: image/png\r\n\r\n${content}\r\n--${boundary}--\r\n`;
+
+  return {
+    headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
+    body,
+  };
+}
+
 test("createServer exposes list/search/create/find/update/delete/action routes", async () => {
   const adapter = createInMemoryAdapter([{ ...post }]);
   const publish = action("publish").execute(() => "published");
@@ -503,10 +527,50 @@ test("uploads 501 when no storage backend is configured", async () => {
   assert.equal(response.status, 501);
 });
 
-test("uploads are denied when the actor lacks field write permission", async () => {
+test("uploads are denied when the actor lacks field write permission, even with resource-level create access", async () => {
+  const resource = defineResource("asset", { fields: { attachment: image() } });
+  const permissions = definePermissions<Actor>()
+    .can("create", () => true)
+    .field("attachment", {
+      write: ({ actor }) => actor.role === "admin",
+    });
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter(),
+        permissions,
+      },
+    ],
+    context: () => ({ role: "viewer" }) satisfies Actor,
+    storage: {
+      async put({ file }) {
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+
+  const form = new FormData();
+  form.set("file", new Blob(["hello"]), "a.png");
+
+  const response = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: form,
+    }),
+  );
+  assert.equal(response.status, 403);
+});
+
+test("uploads are denied when the actor lacks both resource-level create and update access", async () => {
   const resource = defineResource("asset", { fields: { attachment: image() } });
   const permissions = definePermissions<Actor>().field("attachment", {
-    write: ({ actor }) => actor.role === "admin",
+    write: () => true,
   });
   const handler = createServer({
     resources: [
@@ -539,6 +603,44 @@ test("uploads are denied when the actor lacks field write permission", async () 
     }),
   );
   assert.equal(response.status, 403);
+});
+
+test("uploads succeed for an actor who can only update (not create) the resource, given field write access", async () => {
+  const resource = defineResource("asset", { fields: { attachment: image() } });
+  const permissions = definePermissions<Actor>()
+    .can("update", () => true)
+    .field("attachment", { write: () => true });
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter(),
+        permissions,
+      },
+    ],
+    context: () => ({ role: "viewer" }) satisfies Actor,
+    storage: {
+      async put({ file }) {
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+
+  const form = new FormData();
+  form.set("file", new Blob(["hello"], { type: "image/png" }), "a.png");
+
+  const response = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: form,
+    }),
+  );
+  assert.equal(response.status, 201);
 });
 
 test("uploads enforce maxBodyBytes from actual multipart bytes, not just Content-Length", async () => {
@@ -582,31 +684,22 @@ test("uploads enforce maxBodyBytes from actual multipart bytes, not just Content
   );
   assert.equal(oversizedDeclared.status, 413);
 
-  const misleadingLengthForm = new FormData();
-  misleadingLengthForm.set(
-    "file",
-    new Blob(["x".repeat(1_000)], { type: "image/png" }),
-    "too-large.png",
-  );
+  const misleading = rawMultipartBody("x".repeat(1_000));
   const misleadingLength = await handler(
     new Request("https://x/asset/uploads/attachment", {
       method: "POST",
-      body: misleadingLengthForm,
-      headers: { "content-length": "1" },
+      body: misleading.body,
+      headers: { ...misleading.headers, "content-length": "1" },
     }),
   );
   assert.equal(misleadingLength.status, 413);
 
-  const missingLengthForm = new FormData();
-  missingLengthForm.set(
-    "file",
-    new Blob(["x".repeat(1_000)], { type: "image/png" }),
-    "too-large.png",
-  );
+  const missing = rawMultipartBody("x".repeat(1_000));
   const missingLength = await handler(
     new Request("https://x/asset/uploads/attachment", {
       method: "POST",
-      body: missingLengthForm,
+      body: missing.body,
+      headers: missing.headers,
     }),
   );
   assert.equal(missingLength.status, 413);
