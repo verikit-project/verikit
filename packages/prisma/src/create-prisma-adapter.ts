@@ -21,9 +21,12 @@ export interface PrismaModelDelegate {
   findMany(args?: any): Promise<any[]>;
   count(args?: any): Promise<number>;
   findUnique(args: any): Promise<any>;
+  findFirst?(args: any): Promise<any>;
   create(args: any): Promise<any>;
   update(args: any): Promise<any>;
+  updateMany?(args: any): Promise<{ count: number }>;
   delete(args: any): Promise<any>;
+  deleteMany?(args: any): Promise<{ count: number }>;
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
@@ -170,6 +173,33 @@ export function createPrismaAdapter<
     };
   }
 
+  function scopeWhere(scope: Record<string, unknown> | undefined) {
+    if (!scope || Object.keys(scope).length === 0) return undefined;
+    return Object.fromEntries(
+      Object.entries(scope).map(([name, value]) => {
+        const scalar = fields[name];
+        if (!scalar) {
+          throw new Error(
+            `@verikit/prisma: resource "${resource.name}" scope field "${name}" has no Prisma mapping.`,
+          );
+        }
+        return [scalar, value];
+      }),
+    );
+  }
+
+  function combinedWhere(
+    scope: Record<string, unknown> | undefined,
+    extra?: Record<string, unknown>,
+  ) {
+    const constraints = [scopeWhere(scope), extra].filter(Boolean);
+    return constraints.length === 0
+      ? undefined
+      : constraints.length === 1
+        ? constraints[0]
+        : { AND: constraints };
+  }
+
   return {
     async list(params: ResourceListParams) {
       // A search term against a resource with no searchable fields can never match
@@ -179,7 +209,10 @@ export function createPrismaAdapter<
         return { records: [], total: 0 };
       }
 
-      const where = params.search ? searchWhere(params.search) : undefined;
+      const where = combinedWhere(
+        params.scope,
+        params.search ? searchWhere(params.search) : undefined,
+      );
       const sort = params.sort;
       const sortScalar = sort && fields[sort.field];
       const orderBy =
@@ -207,17 +240,24 @@ export function createPrismaAdapter<
       };
     },
 
-    async find(pathId: string) {
+    async find(pathId: string, scope?: Record<string, unknown>) {
       const value = fromPath(pathId);
 
       if (value === undefined) {
         return undefined;
       }
 
-      const row = await model.findUnique({
-        where: { [id.field]: value },
-        select,
-      });
+      if (scope && !model.findFirst) {
+        throw new Error(
+          "@verikit/prisma: scoped reads require a Prisma delegate with findFirst().",
+        );
+      }
+      const row = scope
+        ? await model.findFirst!({
+            where: combinedWhere(scope, { [id.field]: value }),
+            select,
+          })
+        : await model.findUnique({ where: { [id.field]: value }, select });
 
       return present(row);
     },
@@ -228,7 +268,11 @@ export function createPrismaAdapter<
       return present(row)!;
     },
 
-    async update(pathId: string, values: Record<string, unknown>) {
+    async update(
+      pathId: string,
+      values: Record<string, unknown>,
+      scope?: Record<string, unknown>,
+    ) {
       const value = fromPath(pathId);
 
       if (value === undefined) {
@@ -236,6 +280,22 @@ export function createPrismaAdapter<
       }
 
       const data = mapValuesToData(values, fields);
+
+      // Prisma's update() only accepts a unique selector, so it cannot express
+      // `{ id, organizationId }`. updateMany makes the tenant predicate atomic;
+      // the scoped find then returns the canonical public record.
+      if (scope) {
+        if (!model.updateMany) {
+          throw new Error(
+            "@verikit/prisma: scoped updates require a Prisma delegate with updateMany().",
+          );
+        }
+        const result = await model.updateMany({
+          where: combinedWhere(scope, { [id.field]: value }),
+          data,
+        });
+        return result.count === 0 ? undefined : this.find(pathId, scope);
+      }
 
       try {
         const row = await model.update({
@@ -254,10 +314,22 @@ export function createPrismaAdapter<
       }
     },
 
-    async delete(pathId: string) {
+    async delete(pathId: string, scope?: Record<string, unknown>) {
       const value = fromPath(pathId);
 
       if (value === undefined) {
+        return;
+      }
+
+      if (scope) {
+        if (!model.deleteMany) {
+          throw new Error(
+            "@verikit/prisma: scoped deletes require a Prisma delegate with deleteMany().",
+          );
+        }
+        await model.deleteMany({
+          where: combinedWhere(scope, { [id.field]: value }),
+        });
         return;
       }
 

@@ -1,6 +1,15 @@
 import type { FieldMap, RelationshipMap, Resource } from "@verikit/core";
 import type { ResourceAdapter, ResourceListParams } from "@verikit/server";
-import { asc, count, desc, eq, is, type Table } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  is,
+  type SQL,
+  type Table,
+} from "drizzle-orm";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 import type { MySqlDatabase } from "drizzle-orm/mysql-core";
 import { MySqlTable } from "drizzle-orm/mysql-core";
@@ -72,6 +81,22 @@ export function createDrizzleAdapter<
   function toPublicRecord(record: Record<string, unknown>) {
     return { ...record, id: String(record.id) };
   }
+  function scopeCondition(
+    scope: Record<string, unknown> | undefined,
+  ): SQL | undefined {
+    if (!scope) return undefined;
+    const conditions: SQL[] = [];
+    for (const [name, value] of Object.entries(scope)) {
+      const resolved = columnsByField.get(name);
+      if (!resolved) {
+        throw new Error(
+          `@verikit/drizzle: resource "${resource.name}" scope field "${name}" has no matching column.`,
+        );
+      }
+      conditions.push(eq(resolved.column, value));
+    }
+    return conditions.length ? and(...conditions) : undefined;
+  }
   const searchableColumns = Object.entries(schema.fields)
     .filter(([, field]) => field.searchable)
     .map(([name]) => {
@@ -98,11 +123,11 @@ export function createDrizzleAdapter<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the query-builder chain's shape differs per dialect; conditionally built below regardless of which one `db` is
   const client = db as any;
 
-  async function selectById(value: unknown) {
+  async function selectById(value: unknown, scope?: Record<string, unknown>) {
     const [record] = await client
       .select(publicSelection)
       .from(table)
-      .where(eq(idColumn, value))
+      .where(and(eq(idColumn, value), scopeCondition(scope)))
       .limit(1);
 
     return record ? toPublicRecord(record) : undefined;
@@ -152,9 +177,10 @@ export function createDrizzleAdapter<
         return { records: [], total: 0 };
       }
 
-      const where = params.search
+      const search = params.search
         ? searchCondition(searchableColumns, params.search)
         : undefined;
+      const where = and(search, scopeCondition(params.scope));
 
       // better-sqlite3 is fully synchronous: its native `transaction()` wrapper throws
       // "Transaction function cannot return a promise" if the callback is `async`, so the
@@ -187,14 +213,14 @@ export function createDrizzleAdapter<
       });
     },
 
-    async find(id: string) {
+    async find(id: string, scope?: Record<string, unknown>) {
       const value = coerceId(idColumn, id);
 
       if (value === undefined) {
         return undefined;
       }
 
-      return selectById(value);
+      return selectById(value, scope);
     },
 
     async create(values: Record<string, unknown>) {
@@ -211,7 +237,11 @@ export function createDrizzleAdapter<
       return toPublicRecord(record);
     },
 
-    async update(id: string, values: Record<string, unknown>) {
+    async update(
+      id: string,
+      values: Record<string, unknown>,
+      scope?: Record<string, unknown>,
+    ) {
       const value = coerceId(idColumn, id);
 
       // No record can have this id (a non-numeric id against a numeric column), or the
@@ -233,26 +263,28 @@ export function createDrizzleAdapter<
       // legitimate no-op: the caller already confirmed the record exists, so this
       // returns it unchanged rather than sending drizzle a `set({})`, which throws "No values to set" instead of updating zero columns.
       if (Object.keys(row).length === 0) {
-        return selectById(value);
+        return selectById(value, scope);
       }
 
       const [record] = await client
         .update(table)
         .set(row)
-        .where(eq(idColumn, value))
+        .where(and(eq(idColumn, value), scopeCondition(scope)))
         .returning(publicSelection);
 
       return record ? toPublicRecord(record) : undefined;
     },
 
-    async delete(id: string) {
+    async delete(id: string, scope?: Record<string, unknown>) {
       const value = coerceId(idColumn, id);
 
       if (value === undefined) {
         return;
       }
 
-      await client.delete(table).where(eq(idColumn, value));
+      await client
+        .delete(table)
+        .where(and(eq(idColumn, value), scopeCondition(scope)));
     },
   };
 }
