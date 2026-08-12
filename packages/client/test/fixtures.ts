@@ -7,12 +7,8 @@ import {
   type Resource,
 } from "@verikit/core";
 import { action } from "@verikit/runtime";
-import {
-  createServer,
-  type ResourceAdapter,
-  type ResourceListParams,
-  type ResourceListResult,
-} from "@verikit/server";
+import { createServer, type ResourceAdapter } from "@verikit/server";
+import { createInMemoryAdapter as createSharedInMemoryAdapter } from "@verikit/server/testing";
 
 export interface Post extends Record<string, unknown> {
   id: string;
@@ -38,117 +34,18 @@ export function createPostResource(): Resource {
   });
 }
 
-/** Whether `post` matches every key/value pair in `scope` (vacuously true when `scope` is unset). */
-function matchesScope(
-  post: Post,
-  scope: Record<string, unknown> | undefined,
-): boolean {
-  return (
-    !scope ||
-    Object.entries(scope).every(([name, value]) => post[name] === value)
-  );
-}
-
 /**
- * A tiny in-memory `ResourceAdapter`, mirroring `@verikit/server`'s own test fixture
- * (including its `scope`/`filters` enforcement, so client tests exercising access control
- * or structured filtering see the same behavior a real adapter would).
+ * A tiny in-memory `ResourceAdapter`, sharing `@verikit/server`'s own in-memory adapter
+ * implementation (including its `scope`/`filters`/`search` enforcement) so client tests
+ * exercising access control or structured filtering see the same behavior a real adapter would.
  */
 export function createInMemoryAdapter(
   initial: readonly Post[] = [],
 ): ResourceAdapter<Post> {
-  const records: Post[] = initial.map((post) => ({ ...post }));
-
-  return {
-    async list(params: ResourceListParams): Promise<ResourceListResult<Post>> {
-      let filtered = records.filter((post) => matchesScope(post, params.scope));
-
-      if (params.filters) {
-        filtered = filtered.filter((post) =>
-          Object.entries(params.filters!).every(([name, filter]) => {
-            const value = post[name];
-            return (
-              (filter.eq === undefined || value === filter.eq) &&
-              (filter.gte === undefined || value! >= filter.gte) &&
-              (filter.gt === undefined || value! > filter.gt) &&
-              (filter.lte === undefined || value! <= filter.lte) &&
-              (filter.lt === undefined || value! < filter.lt)
-            );
-          }),
-        );
-      }
-
-      if (params.search) {
-        const term = params.search.toLowerCase();
-        filtered = filtered.filter(
-          (post) =>
-            params.searchFields?.includes("title") !== false &&
-            post.title.toLowerCase().includes(term),
-        );
-      }
-
-      if (params.sort) {
-        const { field, direction } = params.sort;
-        filtered = [...filtered].sort((a, b) => {
-          const left = a[field];
-          const right = b[field];
-          const compared = left! < right! ? -1 : left! > right! ? 1 : 0;
-          return direction === "desc" ? -compared : compared;
-        });
-      }
-
-      const start = (params.page - 1) * params.pageSize;
-      return {
-        records: filtered.slice(start, start + params.pageSize),
-        total: filtered.length,
-      };
-    },
-
-    async find(
-      id: string,
-      scope?: Record<string, unknown>,
-    ): Promise<Post | undefined> {
-      return records.find(
-        (post) => post.id === id && matchesScope(post, scope),
-      );
-    },
-
-    async create(values: Record<string, unknown>): Promise<Post> {
-      const post: Post = {
-        id: crypto.randomUUID(),
-        title: "",
-        body: "",
-        published: false,
-        ...values,
-      };
-      records.push(post);
-      return post;
-    },
-
-    async update(
-      id: string,
-      values: Record<string, unknown>,
-      scope?: Record<string, unknown>,
-    ): Promise<Post | undefined> {
-      const index = records.findIndex(
-        (post) => post.id === id && matchesScope(post, scope),
-      );
-      if (index === -1) {
-        return undefined;
-      }
-      records[index] = { ...records[index], ...values } as Post;
-      return records[index];
-    },
-
-    async delete(id: string, scope?: Record<string, unknown>): Promise<void> {
-      const index = records.findIndex(
-        (post) => post.id === id && matchesScope(post, scope),
-      );
-      if (index !== -1) {
-        records.splice(index, 1);
-      }
-    },
-  };
+  return createSharedInMemoryAdapter(initial, {
+    searchableFields: ["title"],
+    createDefaults: () => ({ title: "", body: "", published: false }),
+  });
 }
 
 /**

@@ -74,7 +74,7 @@ export function parseFilters(
     const value = parseFilterValue(raw, field, operator);
     if (value === undefined) continue;
     const filter = (filters[name!] ??= {});
-    filter[operator as keyof ResourceFilter] = value as never;
+    filter[operator] = value as never;
   }
 
   return filters;
