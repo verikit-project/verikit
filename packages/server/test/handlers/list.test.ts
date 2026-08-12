@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { definePermissions } from "@verikit/core";
+import {
+  boolean,
+  definePermissions,
+  defineResource,
+  text,
+  textarea,
+} from "@verikit/core";
 import { handleList } from "../../src/handlers/list.js";
 import { buildRouteTable } from "../../src/routing/route-table.js";
 import {
@@ -17,11 +23,12 @@ function ctxFor(
   adapter: ReturnType<typeof createInMemoryAdapter>,
   url: string,
   permissions?: ReturnType<typeof definePermissions<Actor>>,
+  resource = createPostResource(),
 ) {
   const [entry] = buildRouteTable(
     [
       {
-        resource: createPostResource(),
+        resource,
         adapter,
         permissions: permissions ?? "open",
       },
@@ -121,6 +128,34 @@ test("handleList redacts fields the actor cannot read from every record", async 
   const body = await (await handleList(ctx)).json();
   assert.deepEqual(Object.keys(body.data[0]), ["id", "title", "published"]);
   assert.deepEqual(Object.keys(body.data[1]), ["id", "title", "published"]);
+});
+
+test("handleList drops filters for fields the actor cannot read", async () => {
+  const resource = defineResource("post", {
+    fields: {
+      title: text().required(),
+      body: textarea().filterable(),
+      published: boolean().default(false),
+    },
+  });
+  const permissions = definePermissions<Actor>()
+    .can("list", true)
+    .field("title", { read: true })
+    .field("published", { read: true });
+  const ctx = ctxFor(
+    createInMemoryAdapter(samplePosts),
+    "https://x/post?filter[body]=first",
+    permissions,
+    resource,
+  );
+
+  const body = await (await handleList(ctx)).json();
+  assert.equal(body.meta.total, 2);
+  assert.deepEqual(
+    body.data.map((post: Post) => post.id),
+    ["1", "2"],
+  );
+  assert.equal("body" in body.data[0], false);
 });
 
 test("handleList applies a sort field that's part of the resource's schema", async () => {

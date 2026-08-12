@@ -29,7 +29,19 @@ export async function handleList(
 
   const { sort, ...rest } = parseListParams(url, options);
   const scope = await resolveScope(entry, actor);
-  const filters = parseFilters(url, entry.fields);
+  const hidden = await unreadableFieldNames(
+    entry.fields,
+    entry.config.permissions,
+    { actor },
+  );
+  // Filtering changes both records and pagination totals, so an unreadable
+  // field must be excluded before the adapter sees it. Otherwise a caller
+  // could infer the field through `meta.total` despite response redaction.
+  const filters = Object.fromEntries(
+    Object.entries(parseFilters(url, entry.fields)).filter(
+      ([name]) => !hidden.has(name),
+    ),
+  );
 
   // `sort.field` is caller-controlled and reaches the adapter verbatim. Dropping
   // anything outside the resource's own `.sortable()` field names keeps an adapter that
@@ -44,14 +56,6 @@ export async function handleList(
   };
 
   const result = await entry.config.adapter.list(params);
-  const hidden = await unreadableFieldNames(
-    entry.fields,
-    entry.config.permissions,
-    {
-      actor,
-    },
-  );
-
   const records = result.records.map((record) =>
     presentRecord(record as Record<string, unknown>, entry.fields, hidden),
   );
