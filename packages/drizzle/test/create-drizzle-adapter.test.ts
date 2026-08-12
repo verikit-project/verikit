@@ -179,6 +179,109 @@ test("list paginates and reports the total across all pages", async () => {
   assert.equal(page3.records.length, 1);
 });
 
+test("find/update/delete/list honor a scope, and reject an unmapped scope field", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+
+  const mine = await adapter.create({ title: "Mine", body: "" });
+  const theirs = await adapter.create({ title: "Theirs", body: "" });
+
+  assert.deepEqual(await adapter.find(mine.id, { title: "Mine" }), mine);
+  assert.equal(await adapter.find(theirs.id, { title: "Mine" }), undefined);
+
+  const updated = await adapter.update(
+    mine.id,
+    { body: "updated" },
+    { title: "Mine" },
+  );
+  assert.equal(updated?.body, "updated");
+  assert.equal(
+    await adapter.update(theirs.id, { body: "nope" }, { title: "Mine" }),
+    undefined,
+  );
+
+  const scopedList = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    scope: { title: "Mine" },
+  });
+  assert.equal(scopedList.total, 1);
+
+  await adapter.delete(theirs.id, { title: "Mine" });
+  assert.notEqual(await adapter.find(theirs.id), undefined);
+
+  await adapter.delete(theirs.id, { title: "Theirs" });
+  assert.equal(await adapter.find(theirs.id), undefined);
+
+  await assert.rejects(
+    () => adapter.find(mine.id, { notAField: "x" }),
+    /has no matching column/,
+  );
+
+  assert.deepEqual(await adapter.find(mine.id, {}), updated);
+});
+
+test("list applies exact and range filters", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createPostResource());
+
+  await adapter.create({ title: "Alpha", body: "", published: true });
+  await adapter.create({ title: "Beta", body: "", published: false });
+  await adapter.create({ title: "Gamma", body: "", published: false });
+
+  const exact = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: { published: { eq: true } },
+  });
+  assert.equal(exact.total, 1);
+  assert.equal(exact.records[0]?.title, "Alpha");
+
+  const ranged = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: { title: { gte: "Beta", lt: "Gamma" } },
+  });
+  assert.equal(ranged.total, 1);
+  assert.equal(ranged.records[0]?.title, "Beta");
+
+  const strictlyGreater = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: { title: { gt: "Beta" } },
+  });
+  assert.equal(strictlyGreater.total, 1);
+  assert.equal(strictlyGreater.records[0]?.title, "Gamma");
+
+  const upperBound = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: { title: { lte: "Beta" } },
+  });
+  assert.equal(upperBound.total, 2);
+
+  const nullEq = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: { body: { eq: null } },
+  });
+  assert.equal(nullEq.total, 0);
+
+  const ignoredField = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: { notAField: { eq: "x" } },
+  });
+  assert.equal(ignoredField.total, 3);
+
+  const emptyFilters = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    filters: {},
+  });
+  assert.equal(emptyFilters.total, 3);
+});
+
 test("list runs its row and count queries inside a single transaction", async () => {
   const db = createTestDb();
   const adapter = createDrizzleAdapter(db, createPostResource());

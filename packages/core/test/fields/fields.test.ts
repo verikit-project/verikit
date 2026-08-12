@@ -41,6 +41,7 @@ test("base field builder applies universal schema metadata", () => {
     .default("Anonymous")
     .searchable()
     .sortable()
+    .filterable()
     .hidden()
     .readOnly()
     .meta({ component: "compact" })
@@ -58,6 +59,7 @@ test("base field builder applies universal schema metadata", () => {
     defaultValue: "Anonymous",
     searchable: true,
     sortable: true,
+    filterable: true,
     hidden: true,
     readOnly: true,
     meta: { component: "compact" },
