@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { boolean, number } from "@verikit/core";
 import {
+  parseFilters,
   readRequestBytes,
   parseJsonObjectBody,
   parseListParams,
@@ -53,6 +55,21 @@ test("parseListParams parses sort/order, defaulting direction to asc", () => {
     parseListParams(new URL("https://x/posts?sort=title&order=desc")),
     { page: 1, pageSize: 25, sort: { field: "title", direction: "desc" } },
   );
+});
+
+test("parseFilters permits null only for exact equality, never a range operator", () => {
+  const fields = {
+    age: number().filterable().toSchema("age"),
+    published: boolean().filterable().toSchema("published"),
+  };
+  const filters = parseFilters(
+    new URL(
+      "https://x/posts?filter[age]=null&filter[age][gte]=null&filter[age][lt]=null&filter[published][gt]=null",
+    ),
+    fields,
+  );
+
+  assert.deepEqual(filters, { age: { eq: null } });
 });
 
 test("parseJsonObjectBody treats an empty body as {}", async () => {

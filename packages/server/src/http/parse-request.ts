@@ -67,10 +67,11 @@ export function parseFilters(
   for (const [key, raw] of url.searchParams) {
     const match = pattern.exec(key);
     if (!match) continue;
-    const [, name, operator = "eq"] = match;
+    const [, name, rawOperator] = match;
+    const operator = (rawOperator ?? "eq") as keyof ResourceFilter;
     const field = fields[name!];
     if (!field?.filterable) continue;
-    const value = parseFilterValue(raw, field);
+    const value = parseFilterValue(raw, field, operator);
     if (value === undefined) continue;
     const filter = (filters[name!] ??= {});
     filter[operator as keyof ResourceFilter] = value as never;
@@ -82,8 +83,12 @@ export function parseFilters(
 function parseFilterValue(
   raw: string,
   field: FieldSchema,
+  operator: keyof ResourceFilter,
 ): string | number | boolean | null | undefined {
-  if (raw === "null") return null;
+  // SQL range comparisons with NULL are neither valid Prisma filters nor
+  // meaningful SQL predicates. The sentinel is intentionally supported only
+  // by exact equality, where adapters translate it to `IS NULL`/`equals: null`.
+  if (raw === "null") return operator === "eq" ? null : undefined;
   if (field.fieldType === "boolean") {
     return raw === "true" ? true : raw === "false" ? false : undefined;
   }
