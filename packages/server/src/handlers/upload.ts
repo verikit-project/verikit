@@ -54,10 +54,7 @@ export async function handleUpload(
   }
   if (ctx.maxBodyBytes !== false) {
     const declared = Number(ctx.request.headers.get("content-length"));
-    if (
-      Number.isFinite(declared) &&
-      declared > (ctx.maxBodyBytes ?? 1_048_576)
-    ) {
+    if (Number.isFinite(declared) && declared > ctx.maxBodyBytes) {
       return errorResponse(413, "Payload too large.");
     }
   }
