@@ -6,6 +6,7 @@ import {
   dataResponse,
 } from "../http/responses.js";
 import { readRequestBytes } from "../http/parse-request.js";
+import { maybeCheckResourceOperation } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
 import type { FileStorage } from "../storage.js";
 
@@ -51,8 +52,21 @@ export async function handleUpload(
     return errorResponse(501, "File storage is not configured.");
   }
   if (ctx.entry.config.permissions !== "open") {
+    const permissions = ctx.entry.config.permissions;
+    // An upload has no record of its own yet — it's a prerequisite step for
+    // either a later create or a later update, so it's gated on being able to
+    // reach at least one of those flows rather than a single fixed operation.
+    // This mirrors the resource-level gate `create.ts`/`update.ts` already
+    // enforce instead of leaving uploads to field-level write access alone.
+    const [creatable, updatable] = await Promise.all([
+      maybeCheckResourceOperation(permissions, "create", { actor: ctx.actor }),
+      maybeCheckResourceOperation(permissions, "update", { actor: ctx.actor }),
+    ]);
+    if (!creatable.allowed && !updatable.allowed) {
+      return forbiddenResponse(updatable.message ?? creatable.message);
+    }
     const access = await checkFieldAccess(
-      ctx.entry.config.permissions.getRuntime(),
+      permissions.getRuntime(),
       fieldName,
       "write",
       { actor: ctx.actor },
