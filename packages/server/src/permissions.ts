@@ -113,7 +113,7 @@ export function presentRecord(
 /**
  * Validates a create/update body: gated per-field via `validateWritableFields` unless the resource is explicitly marked `"open"`, in which case it falls back to plain `validateResourceAsync`.
  */
-export function validateResourceInput<TActor, TRecord>(
+export async function validateResourceInput<TActor, TRecord>(
   fields: Record<string, FieldSchema>,
   values: Record<string, unknown>,
   permissions: PermissionsBuilder<TActor, TRecord> | "open",
@@ -127,25 +127,38 @@ export function validateResourceInput<TActor, TRecord>(
   }
 
   // Server-owned fields (e.g. organizationId) must still be validated, but must
-  // not require a client write grant. Validate client-controlled fields against
-  // permissions first, then validate the complete merged record normally.
+  // not require a client write grant. Partition the fields once and validate
+  // each side exactly once: client fields through the permission-gated path,
+  // trusted fields through plain schema validation, then merge the results.
+  // (Each helper only reads `values[name]` for names in its own `fields`
+  // argument, so passing the full merged `values` to both is safe and avoids
+  // filtering it twice.)
   const clientFields = Object.fromEntries(
     Object.entries(fields).filter(
       ([name]) => !Object.hasOwn(trustedValues, name),
     ),
   );
-  const clientValues = Object.fromEntries(
-    Object.entries(values).filter(
-      ([name]) => !Object.hasOwn(trustedValues, name),
+  const trustedFields = Object.fromEntries(
+    Object.entries(fields).filter(([name]) =>
+      Object.hasOwn(trustedValues, name),
     ),
   );
 
-  return validateWritableFields(
-    clientFields,
-    clientValues,
-    permissions,
-    context,
-  ).then((clientResult) =>
-    clientResult.success ? validateResourceAsync(fields, values) : clientResult,
-  );
+  const [clientResult, trustedResult] = await Promise.all([
+    validateWritableFields(clientFields, values, permissions, context),
+    validateResourceAsync(trustedFields, values),
+  ]);
+
+  if (!clientResult.success) {
+    return clientResult;
+  }
+
+  if (!trustedResult.success) {
+    return trustedResult;
+  }
+
+  return {
+    success: true,
+    value: { ...clientResult.value, ...trustedResult.value },
+  };
 }
