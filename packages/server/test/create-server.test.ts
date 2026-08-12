@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   definePermissions,
   defineResource,
+  file,
   image,
   number,
   text,
@@ -675,6 +676,62 @@ test("uploads with an explicit empty accept list allow any file type through", a
     }),
   );
   assert.equal(response.status, 201);
+});
+
+test("uploads honor case-insensitive extension accept patterns", async () => {
+  const resource = defineResource("asset", {
+    fields: { attachment: file().accept([".pdf", ".docx"]) },
+  });
+  let stored = false;
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+    storage: {
+      async put({ file: uploaded }) {
+        stored = true;
+        return {
+          url: `https://files.example/${uploaded.name}`,
+          name: uploaded.name,
+          type: uploaded.type,
+          size: uploaded.size,
+        };
+      },
+    },
+  });
+
+  const accepted = new FormData();
+  accepted.set(
+    "file",
+    new Blob(["pdf"], { type: "application/pdf" }),
+    "REPORT.PDF",
+  );
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/asset/uploads/attachment", {
+          method: "POST",
+          body: accepted,
+        }),
+      )
+    ).status,
+    201,
+  );
+  assert.equal(stored, true);
+
+  const rejected = new FormData();
+  rejected.set("file", new Blob(["text"], { type: "text/plain" }), "notes.txt");
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/asset/uploads/attachment", {
+          method: "POST",
+          body: rejected,
+        }),
+      )
+    ).status,
+    415,
+  );
 });
 
 test("createServer returns 404 for an unmatched path and 405 for a wrong method", async () => {

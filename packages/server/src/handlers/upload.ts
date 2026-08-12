@@ -17,12 +17,23 @@ interface UploadField {
 
 function accepts(
   type: string,
+  name: string,
   accepted: readonly string[] | undefined,
 ): boolean {
   if (!accepted || accepted.length === 0) return true;
-  return accepted.some((rule) =>
-    rule.endsWith("/*") ? type.startsWith(rule.slice(0, -1)) : type === rule,
-  );
+  const normalizedType = type.toLowerCase();
+  const normalizedName = name.toLowerCase();
+
+  return accepted.some((rule) => {
+    const normalizedRule = rule.toLowerCase();
+    if (normalizedRule.endsWith("/*")) {
+      return normalizedType.startsWith(normalizedRule.slice(0, -1));
+    }
+    if (normalizedRule.startsWith(".")) {
+      return normalizedName.endsWith(normalizedRule);
+    }
+    return normalizedType === normalizedRule;
+  });
 }
 
 /** Handles `POST {base}/uploads/:field` multipart requests. */
@@ -83,7 +94,7 @@ export async function handleUpload(
   if (uploadField.maxSize !== undefined && file.size > uploadField.maxSize) {
     return errorResponse(413, "File exceeds the field's maximum size.");
   }
-  if (!accepts(file.type, uploadField.accept)) {
+  if (!accepts(file.type, file.name, uploadField.accept)) {
     return errorResponse(415, "File type is not accepted by this field.");
   }
   const stored = await storage.put({
