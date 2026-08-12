@@ -43,6 +43,14 @@ export function createInMemoryAdapter(
     async list(params: ResourceListParams): Promise<ResourceListResult<Post>> {
       let filtered = records;
 
+      if (params.scope) {
+        filtered = filtered.filter((post) =>
+          Object.entries(params.scope!).every(
+            ([name, value]) => post[name] === value,
+          ),
+        );
+      }
+
       if (params.search) {
         const term = params.search.toLowerCase();
         filtered = filtered.filter(
@@ -69,8 +77,18 @@ export function createInMemoryAdapter(
       };
     },
 
-    async find(id: string): Promise<Post | undefined> {
-      return records.find((post) => post.id === id);
+    async find(
+      id: string,
+      scope?: Record<string, unknown>,
+    ): Promise<Post | undefined> {
+      return records.find(
+        (post) =>
+          post.id === id &&
+          (!scope ||
+            Object.entries(scope).every(
+              ([name, value]) => post[name] === value,
+            )),
+      );
     },
 
     async create(values: Record<string, unknown>): Promise<Post> {
@@ -91,8 +109,16 @@ export function createInMemoryAdapter(
     async update(
       id: string,
       values: Record<string, unknown>,
+      scope?: Record<string, unknown>,
     ): Promise<Post | undefined> {
-      const index = records.findIndex((post) => post.id === id);
+      const index = records.findIndex(
+        (post) =>
+          post.id === id &&
+          (!scope ||
+            Object.entries(scope).every(
+              ([name, value]) => post[name] === value,
+            )),
+      );
       if (index === -1) {
         return undefined;
       }
@@ -100,8 +126,15 @@ export function createInMemoryAdapter(
       return records[index];
     },
 
-    async delete(id: string): Promise<void> {
-      const index = records.findIndex((post) => post.id === id);
+    async delete(id: string, scope?: Record<string, unknown>): Promise<void> {
+      const index = records.findIndex(
+        (post) =>
+          post.id === id &&
+          (!scope ||
+            Object.entries(scope).every(
+              ([name, value]) => post[name] === value,
+            )),
+      );
       if (index !== -1) {
         records.splice(index, 1);
       }

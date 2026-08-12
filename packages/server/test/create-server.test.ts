@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { definePermissions } from "@verikit/core";
+import {
+  definePermissions,
+  defineResource,
+  text,
+  textarea,
+  boolean,
+} from "@verikit/core";
 import { action } from "@verikit/runtime";
 import { createServer } from "../src/create-server.js";
 import {
@@ -73,6 +79,96 @@ test("createServer exposes list/search/create/find/update/delete/action routes",
 
   const findAfterDelete = await handler(new Request("https://x/post/1"));
   assert.equal(findAfterDelete.status, 404);
+});
+
+test("actor-aware scopes isolate every storage operation and own create values", async () => {
+  const resource = defineResource("project", {
+    fields: {
+      title: text().required().searchable(),
+      body: textarea(),
+      published: boolean().default(false),
+      organizationId: text().required(),
+    },
+    access: {
+      scope: ({ actor }) => ({
+        organizationId: (actor as { organizationId: string }).organizationId,
+      }),
+      onCreate: ({ actor }) => ({
+        organizationId: (actor as { organizationId: string }).organizationId,
+      }),
+    },
+  });
+  const adapter = createInMemoryAdapter([
+    { ...post, id: "mine", organizationId: "org-a" },
+    { ...post, id: "theirs", organizationId: "org-b" },
+  ]);
+  const inspect = action("inspect").execute(({ record }) => record);
+  const handler = createServer({
+    resources: [{ resource, adapter, actions: [inspect], permissions: "open" }],
+    context: () => ({ organizationId: "org-a" }),
+  });
+
+  const list = await handler(new Request("https://x/project"));
+  const listed = await list.json();
+  assert.deepEqual(
+    listed.data.map((record: Post) => record.id),
+    ["mine"],
+  );
+  assert.equal(listed.meta.total, 1);
+
+  assert.equal(
+    (await handler(new Request("https://x/project/theirs"))).status,
+    404,
+  );
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/project/theirs", {
+          method: "PATCH",
+          body: JSON.stringify({ title: "stolen" }),
+        }),
+      )
+    ).status,
+    404,
+  );
+
+  const updated = await handler(
+    new Request("https://x/project/mine", {
+      method: "PATCH",
+      body: JSON.stringify({ title: "still mine", organizationId: "org-b" }),
+    }),
+  );
+  assert.equal(updated.status, 200);
+  assert.equal((await updated.json()).data.organizationId, "org-a");
+
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/project/theirs", { method: "DELETE" }),
+      )
+    ).status,
+    404,
+  );
+  assert.equal(
+    (
+      await handler(
+        new Request("https://x/project/actions/inspect", {
+          method: "POST",
+          body: JSON.stringify({ recordId: "theirs" }),
+        }),
+      )
+    ).status,
+    404,
+  );
+
+  const created = await handler(
+    new Request("https://x/project", {
+      method: "POST",
+      body: JSON.stringify({ title: "new", organizationId: "org-b" }),
+    }),
+  );
+  assert.equal(created.status, 201);
+  assert.equal((await created.json()).data.organizationId, "org-a");
 });
 
 test("createServer returns 404 for an unmatched path and 405 for a wrong method", async () => {
