@@ -51,6 +51,21 @@ export function createInMemoryAdapter(
         );
       }
 
+      if (params.filters) {
+        filtered = filtered.filter((post) =>
+          Object.entries(params.filters!).every(([name, filter]) => {
+            const value = post[name];
+            return (
+              (filter.eq === undefined || value === filter.eq) &&
+              (filter.gte === undefined || value! >= filter.gte) &&
+              (filter.gt === undefined || value! > filter.gt) &&
+              (filter.lte === undefined || value! <= filter.lte) &&
+              (filter.lt === undefined || value! < filter.lt)
+            );
+          }),
+        );
+      }
+
       if (params.search) {
         const term = params.search.toLowerCase();
         filtered = filtered.filter(

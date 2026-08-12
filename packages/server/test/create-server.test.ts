@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   definePermissions,
   defineResource,
+  image,
   text,
   textarea,
   boolean,
@@ -169,6 +170,81 @@ test("actor-aware scopes isolate every storage operation and own create values",
   );
   assert.equal(created.status, 201);
   assert.equal((await created.json()).data.organizationId, "org-a");
+});
+
+test("list supports opt-in exact field filters", async () => {
+  const resource = defineResource("post", {
+    fields: {
+      title: text().required().filterable(),
+      body: textarea(),
+      published: boolean().default(false).filterable(),
+    },
+  });
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter([
+          { ...post, id: "yes", published: true },
+          { ...post, id: "no", published: false },
+        ]),
+        permissions: "open",
+      },
+    ],
+  });
+
+  const response = await handler(
+    new Request("https://x/post?filter[published]=true"),
+  );
+  const body = await response.json();
+  assert.equal(response.status, 200);
+  assert.deepEqual(
+    body.data.map((record: Post) => record.id),
+    ["yes"],
+  );
+  assert.equal(body.meta.total, 1);
+});
+
+test("file fields upload through the configured storage backend", async () => {
+  const stored: { name: string; type: string; size: number }[] = [];
+  const resource = defineResource("asset", {
+    fields: { attachment: image().maxSize(10) },
+  });
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+    storage: {
+      async put({ file }) {
+        stored.push({ name: file.name, type: file.type, size: file.size });
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+  const form = new FormData();
+  form.set("file", new Blob(["hello"], { type: "image/png" }), "avatar.png");
+
+  const response = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: form,
+    }),
+  );
+  assert.equal(response.status, 201);
+  assert.deepEqual(await response.json(), {
+    data: {
+      url: "https://files.example/avatar.png",
+      name: "avatar.png",
+      type: "image/png",
+      size: 5,
+    },
+  });
+  assert.equal(stored.length, 1);
 });
 
 test("createServer returns 404 for an unmatched path and 405 for a wrong method", async () => {
