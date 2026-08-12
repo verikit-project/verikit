@@ -28,6 +28,18 @@ export function buildListQuery(params: ListParams): URLSearchParams {
     query.set("order", params.sort.direction ?? "asc");
   }
 
+  for (const [field, filter] of Object.entries(params.filters ?? {})) {
+    for (const [operator, value] of Object.entries(filter)) {
+      if (value !== undefined) {
+        const key =
+          operator === "eq"
+            ? `filter[${field}]`
+            : `filter[${field}][${operator}]`;
+        query.set(key, String(value));
+      }
+    }
+  }
+
   return query;
 }
 
@@ -47,10 +59,11 @@ function buildUrl(
 async function resolveHeaders(
   source: HeadersSource | undefined,
   hasBody: boolean,
+  isFormData = false,
 ): Promise<Headers> {
   const headers = new Headers();
 
-  if (hasBody) {
+  if (hasBody && !isFormData) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -120,14 +133,20 @@ export interface SendRequestParams {
  */
 export async function sendRequest(params: SendRequestParams): Promise<unknown> {
   const hasBody = params.body !== undefined;
-  const headers = await resolveHeaders(params.headers, hasBody);
+  const isFormData =
+    typeof FormData !== "undefined" && params.body instanceof FormData;
+  const headers = await resolveHeaders(params.headers, hasBody, isFormData);
 
   const response = await params.fetchImpl(
     buildUrl(params.baseUrl, params.segments, params.query),
     {
       method: params.method,
       headers,
-      body: hasBody ? JSON.stringify(params.body) : undefined,
+      body: !hasBody
+        ? undefined
+        : isFormData
+          ? (params.body as FormData)
+          : JSON.stringify(params.body),
       signal: params.signal,
     },
   );
