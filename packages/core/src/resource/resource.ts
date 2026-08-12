@@ -49,6 +49,24 @@ export type FieldReferenceFactory<TFields extends FieldMap> = <
   name: TName,
 ) => FieldReference<TName>;
 
+/** A server-only equality constraint applied to a resource's storage queries. */
+export type ResourceScope = Record<string, unknown>;
+
+/**
+ * Server-only access hooks. They intentionally do not appear in `ResourceSchema`:
+ * actors and tenancy rules must never be sent to a browser.
+ */
+export interface ResourceAccess {
+  /** Limits every read, update, and delete to records matching these field values. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the resource is reusable across servers with different actor types
+  scope?: (context: { actor: any }) => ResourceScope | Promise<ResourceScope>;
+  /** Server-owned values merged over a create request after validation. */
+  onCreate?: (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the resource is reusable across servers with different actor types
+    context: { actor: any },
+  ) => ResourceScope | Promise<ResourceScope>;
+}
+
 /** A titled group of layout children. */
 export interface SectionNode {
   type: "section";
@@ -144,6 +162,8 @@ export interface ResourceConfig<
   relationships?:
     | TRelationships
     | ((field: FieldReferenceFactory<TFields>) => TRelationships);
+  /** Server-only ownership/tenancy rules; never serialized by `toSchema()`. */
+  access?: ResourceAccess;
   meta?: Record<string, unknown>;
 }
 
@@ -238,6 +258,7 @@ export class Resource<
   readonly table?: TTable;
   readonly fields: TFields;
   readonly relationships: TRelationships;
+  readonly access?: ResourceAccess;
   readonly meta?: Record<string, unknown>;
 
   // Stored with the builder parameters erased to `any` so TFields/TRelationships do
@@ -278,6 +299,7 @@ export class Resource<
     this.table = config.table;
     this.fields = cloneFieldMap(config.fields);
     this.relationships = cloneRelationshipMap(relationships);
+    this.access = config.access ? { ...config.access } : undefined;
     this.meta = config.meta ? cloneValue(config.meta) : undefined;
     this.formFactory = formFactory;
   }
@@ -303,6 +325,7 @@ export class Resource<
         table: this.table,
         fields: this.fields,
         relationships: this.relationships,
+        access: this.access,
         meta: this.meta,
       },
       factory,
