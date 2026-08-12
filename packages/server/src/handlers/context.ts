@@ -9,4 +9,5 @@ export interface HandlerContext<TActor = any> {
   actor: TActor;
   request: Request;
   url: URL;
+  maxBodyBytes?: number | false;
 }

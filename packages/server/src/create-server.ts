@@ -12,6 +12,7 @@ import {
   methodNotAllowedResponse,
   notFoundResponse,
 } from "./http/responses.js";
+import { DEFAULT_MAX_BODY_BYTES } from "./http/parse-request.js";
 import { buildRouteTable, resolveRoute } from "./routing/route-table.js";
 import type { RouteAction } from "./routing/match-route.js";
 
@@ -63,9 +64,33 @@ export interface CreateServerOptions<TActor = unknown> {
    * `@verikit/runtime` for the same convention.
    */
   onError?: (error: unknown, request: Request, route: ServerErrorRoute) => void;
+  /**
+   * Maximum JSON request body size, in bytes, for create/update/action routes.
+   * Defaults to 1 MiB. Pass `false` to disable this package-level guard when an
+   * upstream framework/platform already enforces the limit you want.
+   */
+  maxBodyBytes?: number | false;
 }
 
 const DEFAULT_SEARCH_PAGE_SIZE = 10;
+
+function normalizeMaxBodyBytes(
+  value: number | false | undefined,
+): number | false {
+  if (value === undefined) {
+    return DEFAULT_MAX_BODY_BYTES;
+  }
+
+  if (value === false) {
+    return false;
+  }
+
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error("maxBodyBytes must be a positive integer, or false.");
+  }
+
+  return value;
+}
 
 /**
  * Derives a web-standard `(Request) => Promise<Response>` handler from a set of resources: CRUD, a search alias, and named-action routes, each wired through `@verikit/core` permissions/validation and `@verikit/runtime`'s `runAction`. Storage is never touched directly every operation goes through the resource's `ResourceAdapter`. @throws {Error} If two resources resolve to the same route, or a resource declares two actions with the same name checked once, at creation time.
@@ -74,6 +99,7 @@ export function createServer<TActor = unknown>(
   options: CreateServerOptions<TActor>,
 ): (request: Request) => Promise<Response> {
   const routeTable = buildRouteTable(options.resources, options.basePath ?? "");
+  const maxBodyBytes = normalizeMaxBodyBytes(options.maxBodyBytes);
 
   return async function handleRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
@@ -95,7 +121,7 @@ export function createServer<TActor = unknown>(
 
     try {
       const actor = (await options.context?.(request)) as TActor;
-      const ctx = { entry: resolved.entry, actor, request, url };
+      const ctx = { entry: resolved.entry, actor, request, url, maxBodyBytes };
 
       switch (action.kind) {
         case "list":

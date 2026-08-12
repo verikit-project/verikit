@@ -26,10 +26,14 @@ export async function handleCreate(ctx: HandlerContext): Promise<Response> {
     return forbiddenResponse(permission.message);
   }
 
-  const body = await parseJsonObjectBody(request);
+  const body = await parseJsonObjectBody(request, {
+    maxBodyBytes: ctx.maxBodyBytes,
+  });
 
   if (!body.ok) {
-    return errorResponse(400, "Invalid JSON body.");
+    return body.reason === "too-large"
+      ? errorResponse(413, "Payload too large.")
+      : errorResponse(400, "Invalid JSON body.");
   }
 
   const validated = await validateResourceInput(

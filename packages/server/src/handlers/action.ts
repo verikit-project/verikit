@@ -54,10 +54,14 @@ export async function handleAction(
     return notFoundResponse(`Unknown action "${name}".`);
   }
 
-  const parsedBody = await parseJsonObjectBody(request);
+  const parsedBody = await parseJsonObjectBody(request, {
+    maxBodyBytes: ctx.maxBodyBytes,
+  });
 
   if (!parsedBody.ok) {
-    return errorResponse(400, "Invalid JSON body.");
+    return parsedBody.reason === "too-large"
+      ? errorResponse(413, "Payload too large.")
+      : errorResponse(400, "Invalid JSON body.");
   }
 
   const body = parsedBody.value as ActionRequestBody;

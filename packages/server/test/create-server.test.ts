@@ -270,6 +270,86 @@ test("createServer maps a throwing context hook to the same 500 envelope and onE
   });
 });
 
+test("createServer rejects oversized create, update, and action bodies with 413", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const publish = action("publish").execute(() => "published");
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter,
+        actions: [publish],
+        permissions: "open",
+      },
+    ],
+    maxBodyBytes: 8,
+  });
+
+  const create = await handler(
+    new Request("https://x/post", {
+      method: "POST",
+      body: JSON.stringify({ title: "Too large" }),
+    }),
+  );
+  assert.equal(create.status, 413);
+
+  const update = await handler(
+    new Request("https://x/post/1", {
+      method: "PATCH",
+      body: JSON.stringify({ title: "Too large" }),
+    }),
+  );
+  assert.equal(update.status, 413);
+
+  const runAction = await handler(
+    new Request("https://x/post/actions/publish", {
+      method: "POST",
+      body: JSON.stringify({ input: { note: "Too large" } }),
+    }),
+  );
+  assert.equal(runAction.status, 413);
+});
+
+test("createServer allows oversized bodies when maxBodyBytes is false", async () => {
+  const adapter = createInMemoryAdapter();
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter,
+        permissions: "open",
+      },
+    ],
+    maxBodyBytes: false,
+  });
+
+  const response = await handler(
+    new Request("https://x/post", {
+      method: "POST",
+      body: JSON.stringify({ title: "A body larger than eight bytes" }),
+    }),
+  );
+
+  assert.equal(response.status, 201);
+});
+
+test("createServer validates maxBodyBytes at construction time", () => {
+  assert.throws(
+    () =>
+      createServer({
+        resources: [
+          {
+            resource: createPostResource(),
+            adapter: createInMemoryAdapter(),
+            permissions: "open",
+          },
+        ],
+        maxBodyBytes: 0,
+      }),
+    /maxBodyBytes/,
+  );
+});
+
 test("createServer throws at construction time on a duplicate resource route", () => {
   assert.throws(() =>
     createServer({

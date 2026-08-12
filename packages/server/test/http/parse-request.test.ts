@@ -75,7 +75,10 @@ test("parseJsonObjectBody rejects invalid JSON", async () => {
     method: "POST",
     body: "{not json",
   });
-  assert.deepEqual(await parseJsonObjectBody(request), { ok: false });
+  assert.deepEqual(await parseJsonObjectBody(request), {
+    ok: false,
+    reason: "invalid-json",
+  });
 });
 
 test("parseJsonObjectBody rejects non-object JSON (arrays, primitives)", async () => {
@@ -83,11 +86,44 @@ test("parseJsonObjectBody rejects non-object JSON (arrays, primitives)", async (
     method: "POST",
     body: "[1,2,3]",
   });
-  assert.deepEqual(await parseJsonObjectBody(arrayRequest), { ok: false });
+  assert.deepEqual(await parseJsonObjectBody(arrayRequest), {
+    ok: false,
+    reason: "invalid-json",
+  });
 
   const stringRequest = new Request("https://x/posts", {
     method: "POST",
     body: '"hello"',
   });
-  assert.deepEqual(await parseJsonObjectBody(stringRequest), { ok: false });
+  assert.deepEqual(await parseJsonObjectBody(stringRequest), {
+    ok: false,
+    reason: "invalid-json",
+  });
+});
+
+test("parseJsonObjectBody rejects bodies over maxBodyBytes", async () => {
+  const request = new Request("https://x/posts", {
+    method: "POST",
+    body: JSON.stringify({ title: "This is too large" }),
+  });
+
+  assert.deepEqual(await parseJsonObjectBody(request, { maxBodyBytes: 8 }), {
+    ok: false,
+    reason: "too-large",
+  });
+});
+
+test("parseJsonObjectBody allows oversized bodies when maxBodyBytes is false", async () => {
+  const request = new Request("https://x/posts", {
+    method: "POST",
+    body: JSON.stringify({ title: "This is deliberately larger than 8 bytes" }),
+  });
+
+  assert.deepEqual(
+    await parseJsonObjectBody(request, { maxBodyBytes: false }),
+    {
+      ok: true,
+      value: { title: "This is deliberately larger than 8 bytes" },
+    },
+  );
 });

@@ -38,10 +38,14 @@ export async function handleUpdate(
     return notFoundResponse();
   }
 
-  const body = await parseJsonObjectBody(request);
+  const body = await parseJsonObjectBody(request, {
+    maxBodyBytes: ctx.maxBodyBytes,
+  });
 
   if (!body.ok) {
-    return errorResponse(400, "Invalid JSON body.");
+    return body.reason === "too-large"
+      ? errorResponse(413, "Payload too large.")
+      : errorResponse(400, "Invalid JSON body.");
   }
 
   // PATCH is partial: only validate fields actually present in the body, so a
