@@ -30,6 +30,16 @@ export interface ListParams {
   pageSize?: number;
   search?: string;
   sort?: { field: string; direction?: "asc" | "desc" };
+  filters?: Record<
+    string,
+    {
+      eq?: string | number | boolean | null;
+      gte?: string | number;
+      gt?: string | number;
+      lte?: string | number;
+      lt?: string | number;
+    }
+  >;
 }
 
 export interface ListResponse<TRecord> {
@@ -75,6 +85,17 @@ export interface ResourceClient<TRecord = Record<string, unknown>> {
     options?: RequestOptions,
   ): Promise<TRecord>;
   delete(id: string, options?: RequestOptions): Promise<void>;
+  upload(
+    field: string,
+    file: Blob,
+    options?: RequestOptions & { filename?: string },
+  ): Promise<{
+    url: string;
+    key?: string;
+    name: string;
+    type: string;
+    size: number;
+  }>;
   action<TResult = unknown>(
     name: string,
     input?: Record<string, unknown>,
