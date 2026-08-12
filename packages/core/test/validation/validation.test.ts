@@ -530,6 +530,33 @@ test("standard schema validators unwrap values and issues", () => {
   });
 });
 
+test("validators exposing both ~standard and parse prefer standard schema for sync validation", () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: () => ({
+          issues: [
+            {
+              message: "must be lowercase",
+              path: [{ key: "profile" }, { key: "name" }],
+            },
+          ],
+        }),
+      },
+      parse: () => {
+        throw new Error("raw parser error");
+      },
+    })
+    .toSchema("name");
+
+  assert.deepEqual(validateField(schema, "Ada"), {
+    success: false,
+    issues: [{ path: ["profile", "name"], message: "must be lowercase" }],
+  });
+});
+
 test("validateField rejects promise-returning ~standard validators synchronously", () => {
   const schema = text()
     .validation({
@@ -626,6 +653,33 @@ test("validateFieldAsync unwraps async standard schema issues", async () => {
   assert.deepEqual(await validateFieldAsync(schema, "taken"), {
     success: false,
     issues: [{ path: ["slug"], message: "not available" }],
+  });
+});
+
+test("validators exposing both ~standard and parse prefer standard schema for async validation", async () => {
+  const schema = text()
+    .validation({
+      "~standard": {
+        version: 1,
+        vendor: "test",
+        validate: async () => ({
+          issues: [
+            {
+              message: "not available",
+              path: [{ key: "profile" }, "slug"],
+            },
+          ],
+        }),
+      },
+      parse: async () => {
+        throw new Error("raw async parser error");
+      },
+    })
+    .toSchema("slug");
+
+  assert.deepEqual(await validateFieldAsync(schema, "taken"), {
+    success: false,
+    issues: [{ path: ["profile", "slug"], message: "not available" }],
   });
 });
 

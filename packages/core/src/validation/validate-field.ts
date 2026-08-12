@@ -126,15 +126,15 @@ export function validateField(
   }
 
   try {
-    if (validator.parse) {
-      const result = validator.parse(builtIn.value);
-      rejectAsyncValidator(result);
-      return ok(result);
-    }
     if (validator["~standard"]) {
       const result = validator["~standard"].validate(builtIn.value);
       rejectAsyncValidator(result);
       return fromStandardResult(result);
+    }
+    if (validator.parse) {
+      const result = validator.parse(builtIn.value);
+      rejectAsyncValidator(result);
+      return ok(result);
     }
     return builtIn;
   } catch (error) {
@@ -160,13 +160,13 @@ export async function validateFieldAsync(
   }
 
   try {
-    if (validator.parse) {
-      return ok(await validator.parse(builtIn.value));
-    }
     if (validator["~standard"]) {
       return fromStandardResult(
         await validator["~standard"].validate(builtIn.value),
       );
+    }
+    if (validator.parse) {
+      return ok(await validator.parse(builtIn.value));
     }
     return builtIn;
   } catch (error) {
