@@ -9,7 +9,12 @@ import {
   createDrizzleAdapter,
   type AnyDrizzleDatabase,
 } from "../src/create-drizzle-adapter.js";
-import { searchCondition } from "../src/columns.js";
+import {
+  isUniqueConstraintError,
+  resolveFieldColumns,
+  searchCondition,
+  uniqueConstraintFields,
+} from "../src/columns.js";
 import {
   createCounterResource,
   createLegacyPostResource,
@@ -18,6 +23,7 @@ import {
   createTestDb,
   legacyPosts,
   posts,
+  tags,
 } from "./fixtures.js";
 
 test("create/find/update/delete round-trip through the real table", async () => {
@@ -542,6 +548,65 @@ test("boolean columns round-trip as real booleans, not 0/1", async () => {
     published: true,
   });
   assert.equal(created.published, true);
+});
+
+test("isUniqueConstraintError recognizes a Postgres 23505 error, not other codes or plain errors", () => {
+  assert.equal(isUniqueConstraintError({ code: "23505" }), true);
+  assert.equal(isUniqueConstraintError({ code: "23503" }), false);
+  assert.equal(isUniqueConstraintError(new Error("plain")), false);
+  assert.equal(isUniqueConstraintError(null), false);
+});
+
+test("uniqueConstraintFields resolves a Postgres error's detail-reported column to a field name", () => {
+  const columnsByField = resolveFieldColumns(
+    tags,
+    createTagResource().toSchema().fields,
+  );
+  const error = {
+    code: "23505",
+    detail: "Key (name)=(release) already exists.",
+  };
+
+  assert.deepEqual(uniqueConstraintFields(error, columnsByField), ["name"]);
+});
+
+test("uniqueConstraintFields returns an empty array when the error matches neither driver's shape", () => {
+  const columnsByField = resolveFieldColumns(
+    tags,
+    createTagResource().toSchema().fields,
+  );
+
+  assert.deepEqual(
+    uniqueConstraintFields(new Error("connection reset"), columnsByField),
+    [],
+  );
+});
+
+test("create rethrows an error that isn't a unique-constraint violation", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createTagResource());
+
+  await assert.rejects(
+    () => adapter.create({}),
+    (error: unknown) =>
+      error instanceof Error &&
+      !(error instanceof UniqueConstraintError) &&
+      /NOT NULL constraint failed/.test(error.message),
+  );
+});
+
+test("update rethrows an error that isn't a unique-constraint violation", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createTagResource());
+  const created = await adapter.create({ name: "release" });
+
+  await assert.rejects(
+    () => adapter.update(created.id, { name: null }),
+    (error: unknown) =>
+      error instanceof Error &&
+      !(error instanceof UniqueConstraintError) &&
+      /NOT NULL constraint failed/.test(error.message),
+  );
 });
 
 test("create translates a unique-constraint violation into a UniqueConstraintError naming the field", async () => {
