@@ -104,6 +104,57 @@ test("resource submission infers, validates, maps errors, and calls onSubmit", a
   assert.equal(invalidInference.success, false);
 });
 
+test("submitVerikitResourceForm and inferAndValidateResource drop a readOnly field's value, even when required", async () => {
+  const fieldsWithReadOnly: VerikitFormFields = {
+    ...fields,
+    id: text().required().readOnly().toSchema("id"),
+  };
+
+  const submitted: unknown[] = [];
+  const success = await submitVerikitResourceForm({
+    fields: fieldsWithReadOnly,
+    // "id" has no value at all here it's required, but readOnly, so it must
+    // never block submission on a value that will never actually be sent.
+    values: { email: "person@example.com", name: "Ada", seats: "2" },
+    onSubmit: (values) => {
+      submitted.push(values);
+      return "ok";
+    },
+  });
+
+  assert.equal(success.success, true);
+  assert.deepEqual(success.value, {
+    email: "person@example.com",
+    name: "Ada",
+    seats: 2,
+  });
+  assert.deepEqual(submitted, [success.value]);
+
+  // A client-supplied value for a readOnly field is dropped, not merely ignored
+  // when absent.
+  const withClientValue = await submitVerikitResourceForm({
+    fields: fieldsWithReadOnly,
+    values: {
+      email: "person@example.com",
+      name: "Ada",
+      seats: "2",
+      id: "client-supplied",
+    },
+  });
+  assert.equal(withClientValue.success, true);
+  assert.equal(withClientValue.value.id, undefined);
+
+  const validated = await inferAndValidateResource(fieldsWithReadOnly, {
+    email: "person@example.com",
+    name: "Ada",
+    seats: "3",
+  });
+  assert.deepEqual(validated, {
+    success: true,
+    value: { email: "person@example.com", name: "Ada", seats: 3 },
+  });
+});
+
 test("action submission infers action form input before runAction", async () => {
   const publish = action("publish")
     .form({

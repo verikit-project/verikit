@@ -17,6 +17,7 @@ import {
   hasValueAtPath,
   pathKey,
   setValueAtPath,
+  unsetValueAtPath,
   type SchemaPath,
 } from "../layout/path.js";
 import {
@@ -122,13 +123,34 @@ function shouldValidateTreeField(
   return shouldValidateField(key, field, wrapper);
 }
 
-function relevantTreeFields(
+/**
+ * Splits every field reachable in the tree into the ones inference/validation
+ * should process, and the paths of `.readOnly()` fields (see
+ * `FieldSchema.readOnly`)  excluded from that same set so a required
+ * readOnly field never blocks submission over a value it'll never actually
+ * send. Unlike `submitVerikitResourceForm`'s flat-field path, this pipeline
+ * builds its output by overlaying processed entries onto the original
+ * `values` (see `applySuccessfulResults`), so simply omitting a readOnly
+ * field from the processed set isn't enough  its raw value would otherwise
+ * still be sitting in the base object, untouched. Callers overlay
+ * `readOnlyPaths` with `undefined` afterward to actually clear it.
+ */
+function partitionTreeFields(
   tree: readonly SchemaNode[],
   values: VerikitFormValues,
-): TreeFieldEntry[] {
-  return collectTreeFields(tree, values, []).filter((entry) =>
-    shouldValidateTreeField(entry.field, entry.path, values),
-  );
+): { entries: TreeFieldEntry[]; readOnlyPaths: SchemaPath[] } {
+  const all = collectTreeFields(tree, values, []);
+
+  return {
+    entries: all
+      .filter((entry) => !entry.field.readOnly)
+      .filter((entry) =>
+        shouldValidateTreeField(entry.field, entry.path, values),
+      ),
+    readOnlyPaths: all
+      .filter((entry) => entry.field.readOnly)
+      .map((entry) => entry.path),
+  };
 }
 
 function treeFieldErrors(
@@ -192,7 +214,7 @@ export async function submitVerikitSchemaTreeForm<TResult = undefined>({
 }: SubmitVerikitSchemaTreeFormOptions<TResult>): Promise<
   VerikitResourceSubmitResult<TResult | undefined>
 > {
-  const entries = relevantTreeFields(tree, values);
+  const { entries, readOnlyPaths } = partitionTreeFields(tree, values);
   const inferred = entries.map(({ path, field }) => ({
     path,
     field,
@@ -229,11 +251,19 @@ export async function submitVerikitSchemaTreeForm<TResult = undefined>({
   }
 
   const validatedValues = applySuccessfulResults(inferredValues, validated);
+  // A genuine key removal, not merely clearing to `undefined`: this result's
+  // `value` can be spread over other data downstream (e.g. an optimistic
+  // cache merge), where a present-but-`undefined` key would wrongly clobber
+  // an existing value instead of leaving it untouched.
+  const finalValues = readOnlyPaths.reduce<VerikitFormValues>(
+    (current, path) => unsetValueAtPath(current, path) as VerikitFormValues,
+    validatedValues,
+  );
 
   return {
     success: true,
-    value: validatedValues,
-    result: await onSubmit?.(validatedValues),
+    value: finalValues,
+    result: await onSubmit?.(finalValues),
     fieldErrors: {},
   };
 }

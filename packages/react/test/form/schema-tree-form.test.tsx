@@ -106,6 +106,32 @@ test("submitVerikitSchemaTreeForm walks every reachable node, skipping relations
   });
 });
 
+test("submitVerikitSchemaTreeForm drops a readOnly field's value, even when required", async () => {
+  const treeWithReadOnly: SchemaNode[] = [
+    requiredField("name"),
+    text().required().readOnly().toSchema("id"),
+  ];
+
+  // "id" has no value at all here it's required, but readOnly, so it must
+  // never block submission on a value that will never actually be sent.
+  const result = await submitVerikitSchemaTreeForm({
+    tree: treeWithReadOnly,
+    values: { name: "Ada" },
+  });
+  assert.equal(result.success, true);
+  assert.deepEqual(result.success && result.value, { name: "Ada" });
+
+  const withClientValue = await submitVerikitSchemaTreeForm({
+    tree: treeWithReadOnly,
+    values: { name: "Ada", id: "client-supplied" },
+  });
+  assert.equal(withClientValue.success, true);
+  assert.equal(
+    withClientValue.success && withClientValue.value.id,
+    undefined,
+  );
+});
+
 test("submitVerikitSchemaTreeForm treats an empty repeater as having no rows to validate", async () => {
   const result = await submitVerikitSchemaTreeForm({
     tree: richTree,

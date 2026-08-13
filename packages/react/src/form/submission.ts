@@ -129,18 +129,33 @@ export function omitFieldError(
   return remaining;
 }
 
+/**
+* A field marked `.readOnly()` is always excluded from create/update
+* submissions, regardless of write permissions. See `FieldSchema.readOnly`.
+*
+* Read-only fields are filtered out before inference and validation so that
+* a `required()` read-only field (such as a server-computed display value)
+* does not block a submission that will never include that field.
+  */
+function writableFields(fields: VerikitFormFields): VerikitFormFields {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([, schema]) => !schema.readOnly),
+  );
+}
+
 /** Infers raw values and validates the inferred resource values. */
 export async function inferAndValidateResource(
   fields: VerikitFormFields,
   values: VerikitFormValues,
 ): Promise<ValidationResult<VerikitFormValues>> {
-  const inferred = inferResource(fields, values);
+  const relevantFields = writableFields(fields);
+  const inferred = inferResource(relevantFields, values);
 
   if (!inferred.success) {
     return inferred;
   }
 
-  return validateResourceAsync(fields, inferred.value);
+  return validateResourceAsync(relevantFields, inferred.value);
 }
 
 /** Infers, validates, and submits a resource-backed form. */
@@ -151,7 +166,8 @@ export async function submitVerikitResourceForm<TResult = undefined>({
 }: SubmitVerikitResourceFormOptions<TResult>): Promise<
   VerikitResourceSubmitResult<TResult | undefined>
 > {
-  const inferred = inferResource(fields, values);
+  const relevantFields = writableFields(fields);
+  const inferred = inferResource(relevantFields, values);
 
   if (!inferred.success) {
     return {
@@ -162,7 +178,7 @@ export async function submitVerikitResourceForm<TResult = undefined>({
     };
   }
 
-  const validated = await validateResourceAsync(fields, inferred.value);
+  const validated = await validateResourceAsync(relevantFields, inferred.value);
 
   if (!validated.success) {
     return {
