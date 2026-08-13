@@ -1,11 +1,17 @@
 import type { FieldMap, RelationshipMap, Resource } from "@verikit/core";
-import type { ResourceAdapter, ResourceListParams } from "@verikit/server";
+import {
+  UniqueConstraintError,
+  type ResourceAdapter,
+  type ResourceListParams,
+} from "@verikit/server";
 import {
   buildSelect,
   isRecordNotFoundError,
+  isUniqueConstraintError,
   mapFilterToPrisma,
   mapValuesToData,
   presentRow,
+  uniqueConstraintFields,
   type PrismaFieldMap,
 } from "./mapping.js";
 
@@ -288,8 +294,17 @@ export function createPrismaAdapter<
 
     async create(values: Record<string, unknown>) {
       const data = mapValuesToData(values, fields);
-      const row = await model.create({ data, select });
-      return present(row)!;
+
+      try {
+        const row = await model.create({ data, select });
+        return present(row)!;
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          throw new UniqueConstraintError(uniqueConstraintFields(error, fields));
+        }
+
+        throw error;
+      }
     },
 
     async update(
@@ -311,26 +326,34 @@ export function createPrismaAdapter<
       if (scope) {
         const where = combinedWhere(scope, { [id.field]: value });
 
-        // returns the written row directly,
-        // so the scoped write and the canonical-record read happen in one round
-        // trip instead of two. Older Prisma delegates fall back to updateMany
-        // plus a follow-up scoped find.
-        if (model.updateManyAndReturn) {
-          const [row] = await model.updateManyAndReturn({
-            where,
-            data,
-            select,
-          });
-          return present(row);
-        }
+        try {
+          // returns the written row directly,
+          // so the scoped write and the canonical-record read happen in one round
+          // trip instead of two. Older Prisma delegates fall back to updateMany
+          // plus a follow-up scoped find.
+          if (model.updateManyAndReturn) {
+            const [row] = await model.updateManyAndReturn({
+              where,
+              data,
+              select,
+            });
+            return present(row);
+          }
 
-        if (!model.updateMany) {
-          throw new Error(
-            "@verikit/prisma: scoped updates require a Prisma delegate with updateMany() or updateManyAndReturn().",
-          );
+          if (!model.updateMany) {
+            throw new Error(
+              "@verikit/prisma: scoped updates require a Prisma delegate with updateMany() or updateManyAndReturn().",
+            );
+          }
+          const result = await model.updateMany({ where, data });
+          return result.count === 0 ? undefined : this.find(pathId, scope);
+        } catch (error) {
+          if (isUniqueConstraintError(error)) {
+            throw new UniqueConstraintError(uniqueConstraintFields(error, fields));
+          }
+
+          throw error;
         }
-        const result = await model.updateMany({ where, data });
-        return result.count === 0 ? undefined : this.find(pathId, scope);
       }
 
       try {
@@ -344,6 +367,10 @@ export function createPrismaAdapter<
       } catch (error) {
         if (isRecordNotFoundError(error)) {
           return undefined;
+        }
+
+        if (isUniqueConstraintError(error)) {
+          throw new UniqueConstraintError(uniqueConstraintFields(error, fields));
         }
 
         throw error;

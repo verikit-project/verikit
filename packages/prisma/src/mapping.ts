@@ -103,3 +103,70 @@ export function isRecordNotFoundError(error: unknown): boolean {
     (error as { code: unknown }).code === "P2025"
   );
 }
+
+/**
+ * True for Prisma's "unique constraint violated" error (`P2002`). Checked
+ * structurally for the same reason as `isRecordNotFoundError`.
+ */
+export function isUniqueConstraintError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === "P2002"
+  );
+}
+
+/**
+ * Reads the offending scalar name(s) off a `P2002` error, wherever the running Prisma
+ * version put them. Prisma 6 (and any client on a direct datasource connection) reports
+ * `meta.target`: an array of scalar names on Postgres/SQLite, or the constraint's own name
+ * as a single string on MySQL (which won't match any scalar, and is filtered out below
+ * rather than mismapped). Prisma 7's mandatory driver-adapter architecture instead nests
+ * them under `meta.driverAdapterError.cause.constraint.fields`, checked first since it's
+ * this package's actual (SQLite driver-adapter) test path.
+ */
+function uniqueConstraintScalars(error: unknown): string[] {
+  const meta = (
+    error as {
+      meta?: {
+        target?: unknown;
+        driverAdapterError?: { cause?: { constraint?: { fields?: unknown } } };
+      };
+    }
+  ).meta;
+
+  const driverAdapterFields = meta?.driverAdapterError?.cause?.constraint?.fields;
+  if (Array.isArray(driverAdapterFields)) {
+    return driverAdapterFields.filter(
+      (entry): entry is string => typeof entry === "string",
+    );
+  }
+
+  const target = meta?.target;
+  return Array.isArray(target)
+    ? target.filter((entry): entry is string => typeof entry === "string")
+    : typeof target === "string"
+      ? [target]
+      : [];
+}
+
+/**
+ * Resolves a `P2002` error's offending scalar name(s) to resource field names via the
+ * adapter's field -> Prisma scalar map.
+ */
+export function uniqueConstraintFields(
+  error: unknown,
+  fields: PrismaFieldMap,
+): string[] {
+  const scalars = uniqueConstraintScalars(error);
+
+  const resolved = scalars
+    .map(
+      (scalar) =>
+        Object.entries(fields).find(([, value]) => value === scalar)?.[0],
+    )
+    .filter((name): name is string => name !== undefined);
+
+  return resolved.length > 0 ? resolved : scalars;
+}
