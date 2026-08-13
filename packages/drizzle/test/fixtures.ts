@@ -36,6 +36,14 @@ export const counters = sqliteTable("counters", {
   label: sqliteText("label").notNull(),
 });
 
+/** A single unique column, to exercise `UniqueConstraintError` translation. */
+export const tags = sqliteTable("tags", {
+  id: sqliteText("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: sqliteText("name").notNull().unique(),
+});
+
 export function createTestDb() {
   const sqlite = new Database(":memory:");
   const db = drizzle(sqlite);
@@ -61,6 +69,13 @@ export function createTestDb() {
     create table counters (
       id integer primary key autoincrement,
       label text not null
+    )
+  `);
+
+  db.run(sql`
+    create table tags (
+      id text primary key,
+      name text not null unique
     )
   `);
 
@@ -94,6 +109,15 @@ export function createCounterResource() {
     table: counters,
     fields: {
       label: text().required(),
+    },
+  });
+}
+
+export function createTagResource() {
+  return defineResource("tag", {
+    table: tags,
+    fields: {
+      name: text().required().unique(),
     },
   });
 }

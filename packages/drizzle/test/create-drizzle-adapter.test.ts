@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { boolean, defineResource, from, text } from "@verikit/core";
+import { UniqueConstraintError } from "@verikit/server";
 import { sql } from "drizzle-orm";
 import { int as mysqlInt, mysqlTable } from "drizzle-orm/mysql-core";
 import { sqliteTable, text as sqliteText } from "drizzle-orm/sqlite-core";
@@ -13,6 +14,7 @@ import {
   createCounterResource,
   createLegacyPostResource,
   createPostResource,
+  createTagResource,
   createTestDb,
   legacyPosts,
   posts,
@@ -540,6 +542,37 @@ test("boolean columns round-trip as real booleans, not 0/1", async () => {
     published: true,
   });
   assert.equal(created.published, true);
+});
+
+test("create translates a unique-constraint violation into a UniqueConstraintError naming the field", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createTagResource());
+
+  await adapter.create({ name: "release" });
+
+  await assert.rejects(
+    () => adapter.create({ name: "release" }),
+    (error: unknown) =>
+      error instanceof UniqueConstraintError &&
+      error.fields.length === 1 &&
+      error.fields[0] === "name",
+  );
+});
+
+test("update translates a unique-constraint violation into a UniqueConstraintError naming the field", async () => {
+  const db = createTestDb();
+  const adapter = createDrizzleAdapter(db, createTagResource());
+
+  await adapter.create({ name: "release" });
+  const other = await adapter.create({ name: "draft" });
+
+  await assert.rejects(
+    () => adapter.update(other.id, { name: "release" }),
+    (error: unknown) =>
+      error instanceof UniqueConstraintError &&
+      error.fields.length === 1 &&
+      error.fields[0] === "name",
+  );
 });
 
 test("searchCondition returns undefined for no columns", () => {

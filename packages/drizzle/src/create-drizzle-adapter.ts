@@ -1,5 +1,9 @@
 import type { FieldMap, RelationshipMap, Resource } from "@verikit/core";
-import type { ResourceAdapter, ResourceListParams } from "@verikit/server";
+import {
+  UniqueConstraintError,
+  type ResourceAdapter,
+  type ResourceListParams,
+} from "@verikit/server";
 import {
   and,
   asc,
@@ -21,10 +25,12 @@ import { MySqlTable } from "drizzle-orm/mysql-core";
 import type { PgDatabase } from "drizzle-orm/pg-core";
 import {
   coerceId,
+  isUniqueConstraintError,
   mapValuesToRow,
   resolveFieldColumns,
   resolveIdColumn,
   searchCondition,
+  uniqueConstraintFields,
 } from "./columns.js";
 
 /**
@@ -272,11 +278,22 @@ export function createDrizzleAdapter<
         schema.fields,
         columnsByField,
       );
-      const [record] = await client
-        .insert(table)
-        .values(row)
-        .returning(publicSelection);
-      return toPublicRecord(record);
+
+      try {
+        const [record] = await client
+          .insert(table)
+          .values(row)
+          .returning(publicSelection);
+        return toPublicRecord(record);
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          throw new UniqueConstraintError(
+            uniqueConstraintFields(error, columnsByField),
+          );
+        }
+
+        throw error;
+      }
     },
 
     async update(
@@ -308,13 +325,23 @@ export function createDrizzleAdapter<
         return selectById(value, scope);
       }
 
-      const [record] = await client
-        .update(table)
-        .set(row)
-        .where(and(eq(idColumn, value), scopeCondition(scope)))
-        .returning(publicSelection);
+      try {
+        const [record] = await client
+          .update(table)
+          .set(row)
+          .where(and(eq(idColumn, value), scopeCondition(scope)))
+          .returning(publicSelection);
 
-      return record ? toPublicRecord(record) : undefined;
+        return record ? toPublicRecord(record) : undefined;
+      } catch (error) {
+        if (isUniqueConstraintError(error)) {
+          throw new UniqueConstraintError(
+            uniqueConstraintFields(error, columnsByField),
+          );
+        }
+
+        throw error;
+      }
     },
 
     async delete(id: string, scope?: Record<string, unknown>) {

@@ -112,6 +112,80 @@ function escapeLikeTerm(term: string): string {
 }
 
 /**
+ * True for a node-postgres/postgres.js unique-violation error (SQLSTATE `23505`), or a
+ * better-sqlite3 `UNIQUE constraint failed` error. These are the two drivers this package
+ * actually exercises (see `AnyDrizzleDatabase`); a different Postgres/SQLite driver library
+ * that reports errors in an incompatible shape won't be recognized here.
+ */
+export function isUniqueConstraintError(error: unknown): boolean {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === "23505"
+  ) {
+    return true;
+  }
+
+  return error instanceof Error && error.message.includes("UNIQUE constraint failed");
+}
+
+/**
+ * Extracts the raw column name(s) a unique-violation error names, straight from the driver's
+ * own message: Postgres's `detail` reads `Key (col1, col2)=(...) already exists.`;
+ * better-sqlite3's message reads `UNIQUE constraint failed: table.col1, table.col2`.
+ */
+function rawUniqueConstraintColumns(error: unknown): string[] {
+  const detail =
+    typeof error === "object" && error !== null && "detail" in error
+      ? (error as { detail: unknown }).detail
+      : undefined;
+
+  if (typeof detail === "string") {
+    const match = /^Key \(([^)]+)\)=/.exec(detail);
+    if (match) {
+      return match[1]!.split(",").map((column) => column.trim());
+    }
+  }
+
+  if (error instanceof Error) {
+    const match = /UNIQUE constraint failed: (.+)$/.exec(error.message);
+    if (match) {
+      return match[1]!
+        .split(",")
+        .map((entry) => entry.trim().split(".").pop())
+        .filter((entry): entry is string => Boolean(entry));
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Resolves a unique-violation error's raw column name(s) back to resource field names via
+ * `columnsByField`. Falls back to the raw (unresolved) column names if none of them match a
+ * declared field's column, e.g. a unique index on a column with no matching field.
+ */
+export function uniqueConstraintFields(
+  error: unknown,
+  columnsByField: Map<string, ResolvedColumn>,
+): string[] {
+  const rawColumns = rawUniqueConstraintColumns(error);
+  const fieldByColumnName = new Map(
+    [...columnsByField.entries()].map(([field, resolved]) => [
+      resolved.column.name,
+      field,
+    ]),
+  );
+
+  const resolved = rawColumns
+    .map((column) => fieldByColumnName.get(column))
+    .filter((name): name is string => name !== undefined);
+
+  return resolved.length > 0 ? resolved : rawColumns;
+}
+
+/**
  * Builds a case-insensitive, cross-dialect "contains" condition across the given columns. Deliberately avoids drizzle's `ilike()` (Postgres-only SQL keyword) in favor of `lower(...) like lower(...)`, which Postgres, SQLite, and MySQL all understand the same way.
  */
 export function searchCondition(columns: Column[], term: string) {
