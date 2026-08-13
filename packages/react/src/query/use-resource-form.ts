@@ -18,6 +18,12 @@ export interface UseResourceFormOptions<TRecord> {
   defaultValues?: VerikitFormValues;
   /** Called with the created or updated record after a successful submit. */
   onSuccess?: (record: TRecord) => void;
+  /**
+   * Called when the create/update mutation itself fails (e.g. a network error
+   * or a permission-denied response) — not for client-side field validation
+   * failures, which surface via `fieldErrors`/`submitError` instead.
+   */
+  onError?: (error: Error) => void;
 }
 
 /** State and helpers returned by {@link useResourceForm}. */
@@ -41,10 +47,15 @@ export interface UseResourceFormResult<
  */
 export function useResourceForm<TRecord = Record<string, unknown>>(
   resource: UseResourceFormSource,
-  { id, defaultValues, onSuccess }: UseResourceFormOptions<TRecord> = {},
+  {
+    id,
+    defaultValues,
+    onSuccess,
+    onError,
+  }: UseResourceFormOptions<TRecord> = {},
 ): UseResourceFormResult<TRecord> {
-  const create = useCreateResource<TRecord>(resource.name);
-  const update = useUpdateResource<TRecord>(resource.name);
+  const create = useCreateResource<TRecord>(resource.name, { onError });
+  const update = useUpdateResource<TRecord>(resource.name, { onError });
 
   const form = useVerikitForm<TRecord>({
     fields: resource,

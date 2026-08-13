@@ -31,7 +31,7 @@ export function restoreResourceQueries(
 // matched against is always the string path segment from `ResourceAdapter`'s
 // contract, so stringify a numeric id here rather than letting a numeric-id
 // resource silently never match anything in cache.
-function recordId(record: unknown): string | undefined {
+export function recordId(record: unknown): string | undefined {
   const value = (record as { id?: unknown } | null)?.id;
 
   if (typeof value === "string") {

@@ -36,6 +36,7 @@ export function ResourceForm<TRecord = Record<string, unknown>>({
   id,
   defaultValues,
   onSuccess,
+  onError,
   registry,
   submitLabel = "Save",
   className,
@@ -44,6 +45,7 @@ export function ResourceForm<TRecord = Record<string, unknown>>({
     id,
     defaultValues,
     onSuccess,
+    onError,
   });
   const fields = Object.values(result.fields).filter((field) => !field.hidden);
 

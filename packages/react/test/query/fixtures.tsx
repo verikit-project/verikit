@@ -31,13 +31,31 @@ export interface FakeResourceCalls {
  * A hand-rolled fake `VerikitClient` (single resource, call-counting) mirrors the fake-fetch/in-memory-adapter pattern `@verikit/client`'s own tests use, so these hook tests stay fast and deterministic without a real server or network path.
  */
 export interface FakeClientFailures {
-  list?: boolean;
-  update?: boolean;
-  delete?: boolean;
+  list?: boolean | Error;
+  create?: boolean | Error;
+  update?: boolean | Error;
+  delete?: boolean | Error;
 }
 
 type FakeMethod =
   "list" | "find" | "create" | "update" | "delete" | "upload" | "action";
+
+/**
+ * Resolves a `FakeClientFailures` flag to the error a fake method call should
+ * throw once (`true` for a generic message, or a specific `Error`  e.g. a
+ * `VerikitClientError` with a `.status`, for tests simulating a particular
+ * server response like a permission-denied 403), or `undefined` if unset.
+ */
+function consumeFailure(
+  flag: boolean | Error | undefined,
+  defaultMessage: string,
+): Error | undefined {
+  if (!flag) {
+    return undefined;
+  }
+
+  return flag instanceof Error ? flag : new Error(defaultMessage);
+}
 
 export function createFakeClient(initial: readonly FakeRecord[] = []): {
   client: VerikitClient;
@@ -97,9 +115,14 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       state.lastListParams = params;
       await waitForGate("list");
 
-      if (failNext.list) {
-        failNext.list = false;
-        throw new Error("Simulated list failure.");
+      const listFailure = consumeFailure(
+        failNext.list,
+        "Simulated list failure.",
+      );
+      failNext.list = false;
+
+      if (listFailure) {
+        throw listFailure;
       }
 
       return {
@@ -139,6 +162,17 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     async create(input, _options) {
       calls.create += 1;
       await waitForGate("create");
+
+      const createFailure = consumeFailure(
+        failNext.create,
+        "Simulated create failure.",
+      );
+      failNext.create = false;
+
+      if (createFailure) {
+        throw createFailure;
+      }
+
       const record = {
         id: crypto.randomUUID(),
         title: "",
@@ -152,9 +186,14 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       calls.update += 1;
       await waitForGate("update");
 
-      if (failNext.update) {
-        failNext.update = false;
-        throw new Error("Simulated update failure.");
+      const updateFailure = consumeFailure(
+        failNext.update,
+        "Simulated update failure.",
+      );
+      failNext.update = false;
+
+      if (updateFailure) {
+        throw updateFailure;
       }
 
       const index = records.findIndex((candidate) => candidate.id === id);
@@ -171,9 +210,14 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       calls.delete += 1;
       await waitForGate("delete");
 
-      if (failNext.delete) {
-        failNext.delete = false;
-        throw new Error("Simulated delete failure.");
+      const deleteFailure = consumeFailure(
+        failNext.delete,
+        "Simulated delete failure.",
+      );
+      failNext.delete = false;
+
+      if (deleteFailure) {
+        throw deleteFailure;
       }
 
       const index = records.findIndex((candidate) => candidate.id === id);

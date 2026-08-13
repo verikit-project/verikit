@@ -8,14 +8,55 @@ export function installJsdom(): () => void {
   const dom = new JSDOM("<!doctype html><body></body>");
   const { window } = dom;
 
+  // jsdom implements neither of these (both are well-known jsdom gaps, not
+  // oversights here). Base UI's floating-ui-backed components (Dialog,
+  // Select, ...) call them from a layout effect while positioning/mounting
+  // their popup, which throws a bare `ReferenceError` there (e.g. `Element
+  // is not defined`, from floating-ui's own `instanceof Element` check)
+  // when they're missing  no popup content ever reaches the DOM. Minimal
+  // stubs are enough: nothing under test asserts on actual resize/media-
+  // query behavior, only on the popup content that mounting unblocks.
+  class ResizeObserverPolyfill {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  function matchMediaPolyfill(query: string): MediaQueryList {
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    } as unknown as MediaQueryList;
+  }
+
+  const win = window as unknown as Record<string, unknown>;
+  win.ResizeObserver = ResizeObserverPolyfill;
+  win.matchMedia = matchMediaPolyfill;
+
   const globals = {
     window,
     document: window.document,
     navigator: window.navigator,
     HTMLElement: window.HTMLElement,
+    Element: window.Element,
     Node: window.Node,
     Text: window.Text,
     Event: window.Event,
+    // floating-ui's `isOverflowElement` calls this as a bare global too.
+    getComputedStyle: window.getComputedStyle.bind(window),
+    ResizeObserver: ResizeObserverPolyfill,
+    matchMedia: matchMediaPolyfill,
+    // Node has no browser event loop, so a real rAF/cAF pair would never
+    // fire; a setTimeout-based stand-in is enough for code that only needs
+    // "runs on a later tick", not real frame timing.
+    requestAnimationFrame: (callback: FrameRequestCallback) =>
+      setTimeout(() => callback(Date.now()), 16) as unknown as number,
+    cancelAnimationFrame: (handle: number) => clearTimeout(handle),
     // Tells React's `act()` it's safe to warn/flush synchronously here.
     IS_REACT_ACT_ENVIRONMENT: true,
   };

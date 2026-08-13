@@ -1,15 +1,34 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { boolean, date, defineResource, number, text } from "@verikit/core";
+import { VerikitClientError } from "@verikit/client";
 import { act } from "react";
 import { installJsdom, typeIntoInput } from "../dom-setup.js";
-import { ResourceTable } from "../../src/resource/index.js";
 import {
   createFakeClient,
   setupHarness,
   waitFor,
   type FakeRecord,
 } from "../query/fixtures.js";
+
+// Imported dynamically, after `installJsdom()` runs in `before()` below,
+// rather than as a normal static import. `ResourceTable` (via its dialogs)
+// pulls in `@base-ui/react`'s floating-ui-backed Dialog, whose module-scope
+// setup runs once, the first time anything imports it, and feature-detects
+// the DOM at that moment. A static import here would evaluate before
+// `before()` ever runs (imports are always hoisted above other module code),
+// so floating-ui would see no `document`/`window` yet and permanently treat
+// itself as running outside a browser  its popups would then never mount,
+// with no thrown error to explain why.
+let ResourceTable: typeof import("../../src/resource/index.js").ResourceTable;
+
+function findButtonByText(text: string): HTMLButtonElement {
+  const button = Array.from(document.querySelectorAll("button")).find(
+    (candidate) => candidate.textContent === text,
+  );
+  assert.ok(button, `no button with text "${text}"`);
+  return button as HTMLButtonElement;
+}
 
 const postResource = defineResource("posts", {
   fields: {
@@ -21,8 +40,9 @@ const postResource = defineResource("posts", {
 
 let uninstallJsdom: () => void;
 
-before(() => {
+before(async () => {
   uninstallJsdom = installJsdom();
+  ({ ResourceTable } = await import("../../src/resource/index.js"));
 });
 
 after(async () => {
@@ -324,6 +344,414 @@ test("clicking a sortable number column's header defaults to descending", async 
     field: "views",
     direction: "desc",
   });
+
+  harness.cleanup();
+});
+
+test("actions renders a New button plus Edit/Delete row actions", async () => {
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  assert.match(harness.container.textContent ?? "", /New/);
+  assert.ok(harness.container.querySelector('[aria-label="Edit"]'));
+  assert.ok(harness.container.querySelector('[aria-label="Delete"]'));
+
+  harness.cleanup();
+});
+
+test("the New button opens a create dialog; submitting creates a record and closes it", async () => {
+  const fixture = createFakeClient([]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() => fixture.calls.list === 1);
+
+  act(() => {
+    findButtonByText("New").click();
+  });
+  await waitFor(() => Boolean(document.querySelector('input[name="title"]')));
+
+  typeIntoInput(
+    document.querySelector('input[name="title"]') as HTMLInputElement,
+    "New post",
+  );
+  act(() => {
+    findButtonByText("Create").click();
+  });
+
+  await waitFor(() => fixture.calls.create === 1);
+  assert.equal(fixture.records[0]?.title, "New post");
+  await waitFor(() => !document.querySelector('input[name="title"]'));
+
+  harness.cleanup();
+});
+
+test("create denied by permission hides the New button after a failed attempt", async () => {
+  const fixture = createFakeClient([]);
+  fixture.failNext.create = new VerikitClientError(403, "Forbidden.");
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() => fixture.calls.list === 1);
+
+  act(() => {
+    findButtonByText("New").click();
+  });
+  await waitFor(() => Boolean(document.querySelector('input[name="title"]')));
+
+  typeIntoInput(
+    document.querySelector('input[name="title"]') as HTMLInputElement,
+    "Whatever",
+  );
+  act(() => {
+    findButtonByText("Create").click();
+  });
+
+  await waitFor(() => fixture.calls.create === 1);
+  await waitFor(
+    () =>
+      !Array.from(harness.container.querySelectorAll("button")).some((button) =>
+        button.textContent?.includes("New"),
+      ),
+  );
+
+  harness.cleanup();
+});
+
+test("the Edit button opens a dialog pre-filled with the row's values; submitting updates the record", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  act(() => {
+    (
+      harness.container.querySelector(
+        '[aria-label="Edit"]',
+      ) as HTMLButtonElement
+    ).click();
+  });
+  await waitFor(() => Boolean(document.querySelector('input[name="title"]')));
+
+  const titleInput = document.querySelector(
+    'input[name="title"]',
+  ) as HTMLInputElement;
+  assert.equal(titleInput.value, "Hello");
+
+  typeIntoInput(titleInput, "Updated");
+  act(() => {
+    findButtonByText("Save changes").click();
+  });
+
+  await waitFor(() => fixture.calls.update === 1);
+  assert.equal(fixture.records[0]?.title, "Updated");
+  await waitFor(() => !document.querySelector('input[name="title"]'));
+
+  harness.cleanup();
+});
+
+test("closing the Edit dialog via its close button discards the pending edit", async () => {
+  const fixture = createFakeClient([
+    { id: "1", title: "Hello" },
+    { id: "2", title: "World" },
+  ]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  const editButtons = () =>
+    harness.container.querySelectorAll('[aria-label="Edit"]');
+  act(() => {
+    (editButtons()[0] as HTMLButtonElement).click();
+  });
+  await waitFor(() => Boolean(document.querySelector('input[name="title"]')));
+  assert.equal(
+    (document.querySelector('input[name="title"]') as HTMLInputElement).value,
+    "Hello",
+  );
+
+  act(() => {
+    (
+      document.querySelector('[aria-label="Close"]') as HTMLButtonElement
+    ).click();
+  });
+  await waitFor(() => !document.querySelector('input[name="title"]'));
+  assert.equal(fixture.calls.update, 0);
+
+  // Reopening on a different row proves the dialog's own close path (not
+  // just a successful submit) actually reset `editRecord`, rather than
+  // leaving the first row's record wired up underneath.
+  act(() => {
+    (editButtons()[1] as HTMLButtonElement).click();
+  });
+  await waitFor(() => Boolean(document.querySelector('input[name="title"]')));
+  assert.equal(
+    (document.querySelector('input[name="title"]') as HTMLInputElement).value,
+    "World",
+  );
+
+  harness.cleanup();
+});
+
+test("update denied by permission hides that row's Edit button, leaving Delete visible", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  fixture.failNext.update = new VerikitClientError(403, "Forbidden.");
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  act(() => {
+    (
+      harness.container.querySelector(
+        '[aria-label="Edit"]',
+      ) as HTMLButtonElement
+    ).click();
+  });
+  await waitFor(() => Boolean(document.querySelector('input[name="title"]')));
+
+  typeIntoInput(
+    document.querySelector('input[name="title"]') as HTMLInputElement,
+    "Updated",
+  );
+  act(() => {
+    findButtonByText("Save changes").click();
+  });
+
+  await waitFor(() => fixture.calls.update === 1);
+  await waitFor(() => !harness.container.querySelector('[aria-label="Edit"]'));
+  assert.ok(harness.container.querySelector('[aria-label="Delete"]'));
+
+  harness.cleanup();
+});
+
+test("the Delete button opens a confirmation dialog; Cancel closes it without deleting", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  act(() => {
+    (
+      harness.container.querySelector(
+        '[aria-label="Delete"]',
+      ) as HTMLButtonElement
+    ).click();
+  });
+  await waitFor(() =>
+    Boolean(document.body.textContent?.includes("Delete this posts?")),
+  );
+
+  act(() => {
+    findButtonByText("Cancel").click();
+  });
+
+  await waitFor(
+    () => !document.body.textContent?.includes("Delete this posts?"),
+  );
+  assert.equal(fixture.calls.delete, 0);
+
+  harness.cleanup();
+});
+
+test("confirming Delete calls the delete mutation and closes the dialog on success", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  act(() => {
+    (
+      harness.container.querySelector(
+        '[aria-label="Delete"]',
+      ) as HTMLButtonElement
+    ).click();
+  });
+  await waitFor(() =>
+    Boolean(document.body.textContent?.includes("Delete this posts?")),
+  );
+
+  act(() => {
+    findButtonByText("Delete").click();
+  });
+
+  await waitFor(() => fixture.calls.delete === 1);
+  await waitFor(
+    () => !document.body.textContent?.includes("Delete this posts?"),
+  );
+
+  harness.cleanup();
+});
+
+test("a non-permission delete failure shows the inline error and keeps the Delete button visible", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  fixture.failNext.delete = true;
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  act(() => {
+    (
+      harness.container.querySelector(
+        '[aria-label="Delete"]',
+      ) as HTMLButtonElement
+    ).click();
+  });
+  await waitFor(() =>
+    Boolean(document.body.textContent?.includes("Delete this posts?")),
+  );
+
+  act(() => {
+    findButtonByText("Delete").click();
+  });
+
+  await waitFor(() => Boolean(document.querySelector('[role="alert"]')));
+  assert.match(
+    document.querySelector('[role="alert"]')?.textContent ?? "",
+    /Simulated delete failure/,
+  );
+  assert.ok(harness.container.querySelector('[aria-label="Delete"]'));
+
+  harness.cleanup();
+});
+
+test("the Delete confirm button disables and relabels while the mutation is in flight", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+  const release = fixture.block("delete");
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  act(() => {
+    (
+      harness.container.querySelector(
+        '[aria-label="Delete"]',
+      ) as HTMLButtonElement
+    ).click();
+  });
+  await waitFor(() =>
+    Boolean(document.body.textContent?.includes("Delete this posts?")),
+  );
+
+  act(() => {
+    findButtonByText("Delete").click();
+  });
+
+  await waitFor(() => Boolean(document.body.textContent?.includes("Deleting")));
+  assert.equal(findButtonByText("Deleting…").disabled, true);
+
+  act(() => {
+    release();
+  });
+  await waitFor(() => fixture.calls.delete === 1);
+
+  harness.cleanup();
+});
+
+test("delete denied by permission hides that row's Delete button and suppresses the inline error", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  fixture.failNext.delete = new VerikitClientError(403, "Forbidden.");
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  act(() => {
+    (
+      harness.container.querySelector(
+        '[aria-label="Delete"]',
+      ) as HTMLButtonElement
+    ).click();
+  });
+  await waitFor(() =>
+    Boolean(document.body.textContent?.includes("Delete this posts?")),
+  );
+
+  act(() => {
+    findButtonByText("Delete").click();
+  });
+
+  await waitFor(() => fixture.calls.delete === 1);
+  await waitFor(
+    () => !harness.container.querySelector('[aria-label="Delete"]'),
+  );
+  assert.equal(document.querySelector('[role="alert"]'), null);
+  assert.ok(harness.container.querySelector('[aria-label="Edit"]'));
+
+  harness.cleanup();
+});
+
+test("actions and renderActions render together in the same row", async () => {
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord>
+      resource={postResource}
+      actions
+      renderActions={() => (
+        <button type="button" data-testid="custom-action">
+          Custom
+        </button>
+      )}
+    />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  assert.ok(harness.container.querySelector('[aria-label="Edit"]'));
+  assert.ok(harness.container.querySelector('[aria-label="Delete"]'));
+  assert.ok(harness.container.querySelector('[data-testid="custom-action"]'));
 
   harness.cleanup();
 });

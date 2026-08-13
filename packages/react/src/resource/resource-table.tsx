@@ -1,20 +1,52 @@
-import type { ReactElement, ReactNode } from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsUpDownIcon,
+  PencilIcon,
+  PlusIcon,
+  Trash2Icon,
 } from "lucide-react";
 import type { RowData } from "@tanstack/react-table";
 import { Button } from "#components/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "#components/dialog";
 import { Input } from "#components/input";
 import { cn } from "#lib/utils";
+import { recordId } from "../query/optimistic.js";
+import { useDeleteResource } from "../query/use-resource-mutations.js";
 import {
   useResourceTable,
   type UseResourceTableOptions,
   type UseResourceTableSource,
 } from "../query/use-resource-table.js";
+import { ResourceForm } from "./resource-form.js";
+
+/**
+ * True for an error whose `status` is 403 (permission denied). Duck-typed on
+ * `status`, not `instanceof VerikitClientError`  the same convention that
+ * class's own doc comment specifies, for callers distinguishing error cases.
+ */
+function isPermissionDenied(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    (error as { status: unknown }).status === 403
+  );
+}
+
+/** Which built-in row actions a permission-denied response has hidden, keyed by record id. */
+type DeniedRowActions = Record<string, { update?: boolean; delete?: boolean }>;
 
 /** Props for {@link ResourceTable}. */
 export interface ResourceTableProps<
@@ -23,9 +55,22 @@ export interface ResourceTableProps<
   /** The resource (or its schema) whose fields drive columns, sorting, and paging. */
   resource: UseResourceTableSource;
   /**
-   * Renders per-row actions (e.g. edit/delete buttons). Omit to render none
-   * this component makes no decision about which actions an actor may see;
-   * that stays the consumer's call.
+   * Renders the built-in Create button (opens a `ResourceForm` dialog) and
+   * Edit/Delete row actions (Edit opens a `ResourceForm` dialog pre-filled
+   * from the row's own data; Delete opens a confirmation dialog backed by
+   * `useDeleteResource`).
+   *
+   * This component has no way to know ahead of time which of those an actor
+   * may use  actors never reach the browser (see `ResourceAccess`), so
+   * permissions are only ever discovered by attempting the operation. A
+   * control whose attempt comes back 403 is hidden for the rest of this
+   * component's lifetime rather than shown as a dead end.
+   */
+  actions?: boolean;
+  /**
+   * Renders per-row actions (e.g. custom edit/delete buttons). Composed
+   * alongside the built-in actions when `actions` is also set, not in place
+   * of them.
    */
   renderActions?: (record: TRecord) => ReactNode;
   /** Content shown in place of rows when the list is empty. Defaults to a plain message. */
@@ -76,14 +121,16 @@ function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
  * `useResourceTable` with real markup  a search box, sortable headers,
  * pagination, and a stacked card layout below the `md` breakpoint (toggled
  * purely via CSS, so both layouts render server-side)  so a consumer
- * doesn't have to hand-write table markup to use the headless hook. Row
- * actions are opt-in via `renderActions`.
+ * doesn't have to hand-write table markup to use the headless hook. Standard
+ * Create/Edit/Delete are opt-in via `actions`; custom row actions are opt-in
+ * via `renderActions`.
  */
 export function ResourceTable<
   TRecord extends RowData = Record<string, unknown>,
 >({
   resource,
   pageSize,
+  actions = false,
   renderActions,
   emptyState,
   className,
@@ -92,12 +139,102 @@ export function ResourceTable<
     pageSize,
   });
 
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createDenied, setCreateDenied] = useState(false);
+  const [editRecord, setEditRecord] = useState<TRecord | null>(null);
+  const [deleteRecord, setDeleteRecord] = useState<TRecord | null>(null);
+  const [deniedRows, setDeniedRows] = useState<DeniedRowActions>({});
+
+  const deleteMutation = useDeleteResource(resource.name, {
+    onError: (mutationError, id) => {
+      if (isPermissionDenied(mutationError)) {
+        setDeniedRows((current) => ({
+          ...current,
+          [id]: { ...current[id], delete: true },
+        }));
+      }
+    },
+    onSuccess: () => setDeleteRecord(null),
+  });
+
+  function openDeleteDialog(record: TRecord): void {
+    deleteMutation.reset();
+    setDeleteRecord(record);
+  }
+
+  function handleEditError(id: string) {
+    return (mutationError: Error) => {
+      if (isPermissionDenied(mutationError)) {
+        setDeniedRows((current) => ({
+          ...current,
+          [id]: { ...current[id], update: true },
+        }));
+      }
+    };
+  }
+
+  function handleCreateError(mutationError: Error): void {
+    if (isPermissionDenied(mutationError)) {
+      setCreateDenied(true);
+    }
+  }
+
+  function builtInRowActions(record: TRecord): ReactNode {
+    // `ResourceAdapter`'s contract guarantees every record carries a
+    // canonical string (or stringifiable numeric) id, same trust boundary
+    // `recordId` itself already documents at its other call sites.
+    const id = recordId(record)!;
+    const denied = deniedRows[id];
+
+    return (
+      <>
+        {denied?.update ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Edit"
+            onClick={() => setEditRecord(record)}
+          >
+            <PencilIcon />
+          </Button>
+        )}
+        {denied?.delete ? null : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Delete"
+            onClick={() => openDeleteDialog(record)}
+          >
+            <Trash2Icon />
+          </Button>
+        )}
+      </>
+    );
+  }
+
+  // Only called from a `hasActionsColumn ? ... : null` branch below, so
+  // `actions`/`renderActions` being both unset here can't happen.
+  function rowActions(record: TRecord): ReactNode {
+    return (
+      <div className="flex items-center justify-end gap-1">
+        {actions ? builtInRowActions(record) : null}
+        {renderActions ? renderActions(record) : null}
+      </div>
+    );
+  }
+
+  const editId = editRecord ? recordId(editRecord) : undefined;
+  const deleteId = deleteRecord ? recordId(deleteRecord) : undefined;
+  const hasActionsColumn = actions || Boolean(renderActions);
+
   // TanStack always returns at least one header group for a mounted table
   // (even with zero registered columns, its `headers` array is just empty),
   // so this is never undefined.
   const headerGroup = table.getHeaderGroups()[0]!;
   const rows = table.getRowModel().rows;
-  const columnCount = headerGroup.headers.length + (renderActions ? 1 : 0);
+  const columnCount = headerGroup.headers.length + (hasActionsColumn ? 1 : 0);
   const resolvedEmptyState = emptyState ?? "No records found.";
 
   return (
@@ -112,6 +249,12 @@ export function ResourceTable<
           onChange={(event) => table.setGlobalFilter(event.currentTarget.value)}
           className="max-w-xs"
         />
+        {actions && !createDenied ? (
+          <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+            <PlusIcon />
+            New
+          </Button>
+        ) : null}
       </div>
 
       {error ? (
@@ -140,7 +283,7 @@ export function ResourceTable<
                   )}
                 </th>
               ))}
-              {renderActions ? <th className="px-3 py-2" /> : null}
+              {hasActionsColumn ? <th className="px-3 py-2" /> : null}
             </tr>
           </thead>
           <tbody>
@@ -170,9 +313,9 @@ export function ResourceTable<
                       {cellText(cell.getValue())}
                     </td>
                   ))}
-                  {renderActions ? (
+                  {hasActionsColumn ? (
                     <td className="px-3 py-2 text-right">
-                      {renderActions(row.original)}
+                      {rowActions(row.original)}
                     </td>
                   ) : null}
                 </tr>
@@ -207,9 +350,9 @@ export function ResourceTable<
                   </span>
                 </div>
               ))}
-              {renderActions ? (
+              {hasActionsColumn ? (
                 <div className="flex justify-end gap-2 pt-2">
-                  {renderActions(row.original)}
+                  {rowActions(row.original)}
                 </div>
               ) : null}
             </div>
@@ -245,6 +388,96 @@ export function ResourceTable<
           </Button>
         </div>
       </div>
+
+      {actions ? (
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>New {resource.name}</DialogTitle>
+            </DialogHeader>
+            <ResourceForm<TRecord>
+              resource={resource}
+              onSuccess={() => setCreateOpen(false)}
+              onError={handleCreateError}
+              submitLabel="Create"
+            />
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
+      {actions ? (
+        <Dialog
+          open={editRecord !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditRecord(null);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit {resource.name}</DialogTitle>
+            </DialogHeader>
+            {editRecord ? (
+              <ResourceForm<TRecord>
+                resource={resource}
+                // Contract-guaranteed alongside `editRecord`, same trust
+                // boundary as `builtInRowActions`' id  see `editId`'s
+                // derivation above.
+                id={editId!}
+                // `TRecord`'s only real constraint is TanStack Table's `RowData`,
+                // which imposes no shape - `@verikit/client` records are always
+                // plain field maps at runtime, so this cast is safe.
+                defaultValues={editRecord as Record<string, unknown>}
+                onSuccess={() => setEditRecord(null)}
+                onError={handleEditError(editId!)}
+                submitLabel="Save changes"
+              />
+            ) : null}
+          </DialogContent>
+        </Dialog>
+      ) : null}
+
+      {actions ? (
+        <Dialog
+          open={deleteRecord !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDeleteRecord(null);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete this {resource.name}?</DialogTitle>
+              <DialogDescription>This can&apos;t be undone.</DialogDescription>
+            </DialogHeader>
+            {deleteMutation.error &&
+            !isPermissionDenied(deleteMutation.error) ? (
+              <p role="alert" className="text-sm text-destructive">
+                {deleteMutation.error.message}
+              </p>
+            ) : null}
+            <DialogFooter>
+              <DialogClose
+                render={
+                  <Button type="button" variant="outline">
+                    Cancel
+                  </Button>
+                }
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(deleteId!)}
+              >
+                {deleteMutation.isPending ? "Deleting…" : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : null}
     </div>
   );
 }
