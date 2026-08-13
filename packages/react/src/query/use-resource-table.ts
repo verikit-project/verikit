@@ -74,7 +74,7 @@ export function useResourceTable<
   const columns = useMemo<ColumnDef<ResourceTableFeatures, TRecord>[]>(
     () =>
       Object.values(fields)
-        .filter((field) => !field.hidden)
+        .filter((field) => !field.hidden && !field.tableHidden)
         .map((field) => ({
           accessorKey: field.name,
           header: field.label ?? field.name,

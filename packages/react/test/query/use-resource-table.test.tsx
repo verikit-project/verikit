@@ -63,6 +63,35 @@ test("useResourceTable derives one column per visible field, skipping hidden one
   harness.cleanup();
 });
 
+test("useResourceTable skips tableHidden fields as columns, unlike a plain hidden field it's only a table concern", async () => {
+  const resourceWithTableHidden = defineResource("notes", {
+    fields: {
+      title: text().required(),
+      internalNote: text().tableHidden(),
+    },
+  });
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(resourceWithTableHidden);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => result!.isLoading === false);
+
+  const headers = result!.table.getHeaderGroups()[0]?.headers;
+  assert.deepEqual(
+    headers?.map((header) => header.id),
+    ["title"],
+  );
+
+  harness.cleanup();
+});
+
 test("useResourceTable's pagination controls drive the list request's page/pageSize", async () => {
   const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(fixture.client);

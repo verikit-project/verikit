@@ -38,6 +38,46 @@ export function pathKey(path: SchemaPath): string {
 }
 
 /**
+ * Immutably removes the key at `path`, cloning only the containers along the
+ * way (mirroring `setValueAtPath`'s own permissive style for a missing
+ * intermediate container, rather than special-casing it). A no-op for an
+ * empty path, a non-object source, or a terminal path segment landing on an
+ * array  schema-tree field paths always terminate in a field name (a
+ * string key on an object), never an array index, since repeater rows are
+ * objects with named fields.
+ */
+export function unsetValueAtPath(source: unknown, path: SchemaPath): unknown {
+  if (path.length === 0 || typeof source !== "object" || source === null) {
+    return source;
+  }
+
+  const [key, ...rest] = path;
+
+  if (rest.length === 0) {
+    if (Array.isArray(source)) {
+      return source;
+    }
+
+    const { [key as string]: _removed, ...remaining } = source as Record<
+      string,
+      unknown
+    >;
+    return remaining;
+  }
+
+  const container = Array.isArray(source)
+    ? [...source]
+    : { ...(source as Record<string, unknown>) };
+
+  (container as Record<string | number, unknown>)[key] = unsetValueAtPath(
+    (container as Record<string | number, unknown>)[key],
+    rest,
+  );
+
+  return container;
+}
+
+/**
  * Immutably sets `value` at `path`, cloning only the containers along the way.
  */
 export function setValueAtPath(
