@@ -1,3 +1,42 @@
+import type { FieldSchema, ValidationIssue } from "@verikit/core";
+
+/**
+ * Thrown by an adapter's `create`/`update` when the storage layer rejects a
+ * write for violating a unique constraint. `fields` names the resource
+ * field(s) involved (translated from whatever column/constraint identifier
+ * the storage client reports), so `@verikit/server` can surface it as a
+ * per-field validation issue instead of an opaque 500.
+ */
+export class UniqueConstraintError extends Error {
+  /** Resource field names whose unique constraint was violated. */
+  readonly fields: readonly string[];
+
+  constructor(fields: readonly string[]) {
+    super(`Unique constraint violated on: ${fields.join(", ")}`);
+    this.name = "UniqueConstraintError";
+    this.fields = fields;
+  }
+}
+
+/**
+ * Builds one validation issue per field named on a `UniqueConstraintError`,
+ * using that field's `uniqueMessage` when the schema sets one, or a generic
+ * fallback naming the field otherwise.
+ */
+export function uniqueConstraintIssues(
+  error: UniqueConstraintError,
+  fields: Record<string, FieldSchema>,
+): ValidationIssue[] {
+  return error.fields.map((name) => {
+    const label = fields[name]?.label ?? name;
+
+    return {
+      path: [name],
+      message: fields[name]?.uniqueMessage ?? `A record with this ${label} already exists.`,
+    };
+  });
+}
+
 /**
  * Parameters passed to `ResourceAdapter.list()` for both the list and search routes.
  */
@@ -67,6 +106,14 @@ export interface ResourceAdapter<TRecord = Record<string, unknown>> {
     id: string,
     scope?: Record<string, unknown>,
   ): Promise<TRecord | undefined>;
+  /**
+   * Creates a record from the given values.
+   *
+   * Adapters whose storage client reports a unique-constraint violation by
+   * throwing must translate that error to a `UniqueConstraintError` naming
+   * the resource field(s) involved, so `@verikit/server` can report it as a
+   * per-field validation issue instead of an opaque 500.
+   */
   create(values: Record<string, unknown>): Promise<TRecord>;
   /**
    * Updates the record with the given id and returns it.
@@ -78,6 +125,10 @@ export interface ResourceAdapter<TRecord = Record<string, unknown>> {
    *
    * Adapters whose storage client reports this case by throwing must translate
    * that error to `undefined`.
+   *
+   * Adapters whose storage client reports a unique-constraint violation by
+   * throwing must translate that error to a `UniqueConstraintError`, per
+   * `create`'s doc above.
    */
   update(
     id: string,

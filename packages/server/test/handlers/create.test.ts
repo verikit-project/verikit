@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { definePermissions } from "@verikit/core";
+import { UniqueConstraintError } from "../../src/adapter.js";
 import { handleCreate } from "../../src/handlers/create.js";
 import { buildRouteTable } from "../../src/routing/route-table.js";
 import { createInMemoryAdapter, createPostResource } from "../fixtures.js";
@@ -84,6 +85,35 @@ test("handleCreate enforces per-field write access when permissions are configur
 
   const response = await handleCreate(ctx);
   assert.equal(response.status, 400);
+});
+
+test("handleCreate returns 400 with a field validation issue when the adapter reports a unique-constraint violation", async () => {
+  const adapter = createInMemoryAdapter();
+  adapter.create = async () => {
+    throw new UniqueConstraintError(["title"]);
+  };
+  const ctx = ctxFor(adapter, { title: "Hi" });
+
+  const response = await handleCreate(ctx);
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(body.error.issues, [
+    { path: ["title"], message: "A record with this title already exists." },
+  ]);
+});
+
+test("handleCreate rethrows an adapter error that isn't a UniqueConstraintError", async () => {
+  const adapter = createInMemoryAdapter();
+  adapter.create = async () => {
+    throw new Error("connection reset");
+  };
+  const ctx = ctxFor(adapter, { title: "Hi" });
+
+  await assert.rejects(
+    () => handleCreate(ctx),
+    (error: unknown) => error instanceof Error && error.message === "connection reset",
+  );
 });
 
 test("handleCreate returns only fields readable by the actor", async () => {

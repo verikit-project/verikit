@@ -10,6 +10,7 @@ import {
   unreadableFieldNames,
   validateResourceInput,
 } from "../permissions.js";
+import { UniqueConstraintError, uniqueConstraintIssues } from "../adapter.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
 
@@ -77,7 +78,17 @@ export async function handleUpdate(
     });
   }
 
-  const record = await entry.config.adapter.update(id, validated.value, scope);
+  let record: Record<string, unknown> | undefined;
+  try {
+    record = await entry.config.adapter.update(id, validated.value, scope);
+  } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      return errorResponse(400, "Validation failed.", {
+        issues: uniqueConstraintIssues(error, entry.fields),
+      });
+    }
+    throw error;
+  }
 
   // The record existed and was permission-checked above, but that check and the update
   // itself aren't atomic: a concurrent delete can still land in between, which the
