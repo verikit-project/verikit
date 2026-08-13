@@ -7,7 +7,7 @@ import type {
   ResourceClient,
   VerikitClient,
 } from "@verikit/client";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 import { act, type ReactElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { VerikitProvider } from "../../src/client/index.js";
@@ -252,9 +252,9 @@ export function setupHarness(client: VerikitClient): TestHarness {
 
   function Providers({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={queryClient}>
-        <VerikitProvider client={client}>{children}</VerikitProvider>
-      </QueryClientProvider>
+      <VerikitProvider client={client} queryClient={queryClient}>
+        {children}
+      </VerikitProvider>
     );
   }
 
