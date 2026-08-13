@@ -47,7 +47,9 @@ export function ResourceForm<TRecord = Record<string, unknown>>({
     onSuccess,
     onError,
   });
-  const fields = Object.values(result.fields).filter((field) => !field.hidden);
+  const fields = Object.values(result.fields).filter(
+    (field) => !field.hidden && !field.formHidden,
+  );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

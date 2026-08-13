@@ -40,6 +40,29 @@ test("renders one input per visible field and a submit button", async () => {
   harness.cleanup();
 });
 
+test("skips a formHidden field's input, unlike a plain hidden field it's only a form concern", async () => {
+  const resourceWithFormHidden = defineResource("posts", {
+    fields: {
+      title: text().required(),
+      internalNote: text().formHidden(),
+    },
+  });
+  const { client } = createFakeClient([]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceForm<FakeRecord> resource={resourceWithFormHidden} />,
+  );
+
+  assert.ok(harness.container.querySelector('input[name="title"]'));
+  assert.equal(
+    harness.container.querySelector('input[name="internalNote"]'),
+    null,
+  );
+
+  harness.cleanup();
+});
+
 test("submitting creates a record and reports it via onSuccess", async () => {
   const { client, calls } = createFakeClient([]);
   const harness = setupHarness(client);
