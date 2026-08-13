@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { definePermissions } from "@verikit/core";
+import { UniqueConstraintError } from "../../src/adapter.js";
 import { handleUpdate } from "../../src/handlers/update.js";
 import { buildRouteTable } from "../../src/routing/route-table.js";
 import {
@@ -107,6 +108,35 @@ test("handleUpdate returns 404 (not 403) when the actor lacks update access, so 
 
   const response = await handleUpdate(ctx, "1");
   assert.equal(response.status, 404);
+});
+
+test("handleUpdate returns 400 with a field validation issue when the adapter reports a unique-constraint violation", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  adapter.update = async () => {
+    throw new UniqueConstraintError(["title"]);
+  };
+  const ctx = ctxFor(adapter, { title: "Taken" });
+
+  const response = await handleUpdate(ctx, "1");
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.deepEqual(body.error.issues, [
+    { path: ["title"], message: "A record with this title already exists." },
+  ]);
+});
+
+test("handleUpdate rethrows an adapter error that isn't a UniqueConstraintError", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  adapter.update = async () => {
+    throw new Error("connection reset");
+  };
+  const ctx = ctxFor(adapter, { title: "x" });
+
+  await assert.rejects(
+    () => handleUpdate(ctx, "1"),
+    (error: unknown) => error instanceof Error && error.message === "connection reset",
+  );
 });
 
 test("handleUpdate returns only fields readable by the actor", async () => {

@@ -10,6 +10,7 @@ import {
   unreadableFieldNames,
   validateResourceInput,
 } from "../permissions.js";
+import { UniqueConstraintError, uniqueConstraintIssues } from "../adapter.js";
 import type { HandlerContext } from "./context.js";
 import { resolveCreateValues } from "../access.js";
 
@@ -58,7 +59,17 @@ export async function handleCreate(ctx: HandlerContext): Promise<Response> {
 
   // Access-owned values intentionally win over the request body: a client can never
   // select a different organization simply by submitting its organizationId.
-  const record = await entry.config.adapter.create(validated.value);
+  let record: unknown;
+  try {
+    record = await entry.config.adapter.create(validated.value);
+  } catch (error) {
+    if (error instanceof UniqueConstraintError) {
+      return errorResponse(400, "Validation failed.", {
+        issues: uniqueConstraintIssues(error, entry.fields),
+      });
+    }
+    throw error;
+  }
   const publicRecord = record as Record<string, unknown>;
   const hidden = await unreadableFieldNames(
     entry.fields,
