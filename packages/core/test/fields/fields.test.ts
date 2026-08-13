@@ -43,6 +43,8 @@ test("base field builder applies universal schema metadata", () => {
     .sortable()
     .filterable()
     .hidden()
+    .formHidden()
+    .tableHidden()
     .readOnly()
     .meta({ component: "compact" })
     .toSchema("name");
@@ -61,6 +63,8 @@ test("base field builder applies universal schema metadata", () => {
     sortable: true,
     filterable: true,
     hidden: true,
+    formHidden: true,
+    tableHidden: true,
     readOnly: true,
     meta: { component: "compact" },
   });

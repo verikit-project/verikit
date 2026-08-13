@@ -104,7 +104,15 @@ export interface FieldSchema {
    * Field should not be displayed in forms or tables (stored but hidden from UI)
    */
   hidden?: boolean;
-  /** Field is visible but cannot be edited; display-only in forms */
+  /** Field should not be displayed in forms, but still appears as a table column. */
+  formHidden?: boolean;
+  /** Field should not appear as a table column, but still appears in forms. */
+  tableHidden?: boolean;
+  /**
+   * Field is visible in both forms and tables but never editable: rendered
+   * display-only in forms, and its value is never included in a create or
+   * update submission regardless of write permissions.
+   */
   readOnly?: boolean;
   /**
    * Fallback value if the field is not provided (e.g., radio default, checkbox unchecked)
@@ -340,7 +348,20 @@ export class FieldBuilder<
     return this.withState({ hidden: true } as Partial<TSchema>);
   }
 
-  /** Makes the field display-only in forms. */
+  /** Hides the field from forms only; it still appears as a table column. */
+  formHidden(): FieldBuilderWithValue<this, TValue, TSchema> {
+    return this.withState({ formHidden: true } as Partial<TSchema>);
+  }
+
+  /** Hides the field from table columns only; it still appears in forms. */
+  tableHidden(): FieldBuilderWithValue<this, TValue, TSchema> {
+    return this.withState({ tableHidden: true } as Partial<TSchema>);
+  }
+
+  /**
+   * Makes the field display-only in forms, and unconditionally excludes its
+   * value from create/update submissions (regardless of write permissions).
+   */
   readOnly(): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ readOnly: true } as Partial<TSchema>);
   }
