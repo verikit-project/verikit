@@ -3,7 +3,12 @@ import type { ClientOptions, ResourceClient, VerikitClient } from "./types.js";
 
 /** Builds a `VerikitClient` bound to `options.baseUrl`. */
 export function createClient(options: ClientOptions): VerikitClient {
-  const fetchImpl = options.fetch ?? fetch;
+  // `sendRequest` calls this as `params.fetchImpl(...)`, a method-call whose
+  // receiver is the `params` object, not `globalThis`. The global `fetch` is a
+  // platform method that requires its receiver to be `globalThis`/`window` in
+  // browsers, so an unbound reference throws "Illegal invocation" once called
+  // this way. `.bind(globalThis)` fixes the receiver regardless of call site.
+  const fetchImpl = options.fetch ?? fetch.bind(globalThis);
 
   return {
     resource<TRecord = Record<string, unknown>>(

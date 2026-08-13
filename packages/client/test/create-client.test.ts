@@ -388,3 +388,26 @@ test("createClient defaults to the global fetch when none is supplied", () => {
   const client = createClient({ baseUrl: "https://x.test" });
   assert.equal(typeof client.resource("posts").list, "function");
 });
+
+test("createClient's default fetch survives being called as params.fetchImpl(...), not fetch(...) (regression: browsers throw 'Illegal invocation' on a detached fetch reference)", async (t) => {
+  // request.ts invokes the stored fetch as `params.fetchImpl(...)`, so `this`
+  // inside it is the `params` object unless the reference was bound. Real
+  // browser `fetch` enforces its receiver be `globalThis`/`window` and throws
+  // if it isn't; Node's global fetch doesn't enforce this, so it can't catch
+  // an unbound reference on its own. This fake reproduces the browser check.
+  const originalFetch = globalThis.fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+  globalThis.fetch = function (this: unknown) {
+    if (this !== globalThis) {
+      throw new TypeError("Illegal invocation");
+    }
+    return Promise.resolve(Response.json({ data: { id: "1" } }));
+  } as typeof fetch;
+
+  const client = createClient({ baseUrl: "https://x.test" });
+  const record = await client.resource("posts").find("1");
+
+  assert.deepEqual(record, { id: "1" });
+});
