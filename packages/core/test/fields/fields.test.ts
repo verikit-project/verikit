@@ -46,6 +46,7 @@ test("base field builder applies universal schema metadata", () => {
     .formHidden()
     .tableHidden()
     .readOnly()
+    .unique()
     .meta({ component: "compact" })
     .toSchema("name");
 
@@ -66,8 +67,17 @@ test("base field builder applies universal schema metadata", () => {
     formHidden: true,
     tableHidden: true,
     readOnly: true,
+    unique: true,
     meta: { component: "compact" },
   });
+});
+
+test("unique() accepts an optional custom message", () => {
+  assert.equal(text().unique().toSchema("email").uniqueMessage, undefined);
+  assert.equal(
+    text().unique("That email is taken.").toSchema("email").uniqueMessage,
+    "That email is taken.",
+  );
 });
 
 test("field names must be non-empty when finalized", () => {

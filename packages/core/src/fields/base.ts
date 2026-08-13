@@ -115,6 +115,21 @@ export interface FieldSchema {
    */
   readOnly?: boolean;
   /**
+   * Field is backed by a unique constraint in storage. Adapters that detect a
+   * unique-constraint violation for this field report it as a validation
+   * issue on this field using `uniqueMessage` (or a generic default) instead
+   * of letting the raw storage error surface. Purely descriptive: setting
+   * this does not itself create or enforce a database constraint, the
+   * underlying table/model must declare that separately.
+   */
+  unique?: boolean;
+  /**
+   * Custom message used when this field's unique constraint is violated.
+   * Only meaningful when `unique` is true; falls back to a generic message
+   * naming the field when omitted.
+   */
+  uniqueMessage?: string;
+  /**
    * Fallback value if the field is not provided (e.g., radio default, checkbox unchecked)
    */
   defaultValue?: unknown;
@@ -364,6 +379,18 @@ export class FieldBuilder<
    */
   readOnly(): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ readOnly: true } as Partial<TSchema>);
+  }
+
+  /**
+   * Marks the field as backed by a unique constraint in storage, with an
+   * optional custom message for adapters to use when that constraint is
+   * violated. See `FieldSchema.unique`.
+   */
+  unique(message?: string): FieldBuilderWithValue<this, TValue, TSchema> {
+    return this.withState({
+      unique: true,
+      ...(message !== undefined && { uniqueMessage: message }),
+    } as Partial<TSchema>);
   }
 
   /**
