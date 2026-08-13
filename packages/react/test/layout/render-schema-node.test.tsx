@@ -21,10 +21,11 @@ import {
   RenderSchemaTree,
   setValueAtPath,
 } from "../../src/layout/index.js";
-// hasValueAtPath is an internal helper (used by the schema-tree form
-// bridge to tell "cleared to undefined" apart from "never touched") and
-// deliberately isn't part of layout/index.js's public surface.
-import { hasValueAtPath } from "../../src/layout/path.js";
+// hasValueAtPath/unsetValueAtPath are internal helpers used by the
+// schema-tree form bridge (the former to tell "cleared to undefined" apart
+// from "never touched", the latter to drop a readOnly field's value) and
+// deliberately aren't part of layout/index.js's public surface.
+import { hasValueAtPath, unsetValueAtPath } from "../../src/layout/path.js";
 
 type AnyElement = ReactElement<Record<string, unknown>>;
 
@@ -80,6 +81,46 @@ test("setValueAtPath clones containers along the path without mutating the sourc
     items: [{ name: "x" }],
   });
   assert.deepEqual(setValueAtPath({ a: 1 }, [], { b: 2 }), { b: 2 });
+});
+
+test("unsetValueAtPath removes a key without mutating the source, and is a no-op when there's nothing to remove", () => {
+  const source = { a: { b: 1, c: 2 }, items: [{ name: "x" }, { name: "y" }] };
+
+  const updated = unsetValueAtPath(source, ["a", "b"]) as typeof source;
+  assert.deepEqual(updated.a, { c: 2 });
+  assert.deepEqual(source.a, { b: 1, c: 2 });
+  assert.notEqual(updated, source);
+  assert.equal(updated.items, source.items);
+
+  // Nested inside an array container (e.g. a readOnly field inside a
+  // repeater row): only the targeted row is cloned, its siblings untouched.
+  const updatedNested = unsetValueAtPath(source, [
+    "items",
+    0,
+    "name",
+  ]) as typeof source;
+  assert.deepEqual(updatedNested.items[0], {});
+  assert.equal(updatedNested.items[1], source.items[1]);
+
+  // An empty path, a non-object source (including `null`, whose `typeof` is
+  // famously `"object"`), and a terminal path segment landing on an array
+  // are all no-ops: schema-tree field paths never terminate on an array in
+  // practice (a field name is always the last segment), but the function
+  // stays a safe no-op rather than corrupting an array by "deleting" an
+  // index from it.
+  assert.equal(unsetValueAtPath(source, []), source);
+  assert.equal(unsetValueAtPath(null, ["a"]), null);
+  assert.equal(unsetValueAtPath(42, ["a"]), 42);
+  const array = [1, 2, 3];
+  assert.equal(unsetValueAtPath(array, ["0"]), array);
+
+  // A missing intermediate container still clones its way down (mirroring
+  // `setValueAtPath`'s own permissive style) rather than special-casing the
+  // miss; the walk simply has nothing to remove once it gets there.
+  assert.deepEqual(unsetValueAtPath({ a: 1 }, ["missing", "b"]), {
+    a: 1,
+    missing: undefined,
+  });
 });
 
 test("field nodes read nested values via path and forward change/blur paths", () => {

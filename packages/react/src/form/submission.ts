@@ -130,13 +130,13 @@ export function omitFieldError(
 }
 
 /**
-* A field marked `.readOnly()` is always excluded from create/update
-* submissions, regardless of write permissions. See `FieldSchema.readOnly`.
-*
-* Read-only fields are filtered out before inference and validation so that
-* a `required()` read-only field (such as a server-computed display value)
-* does not block a submission that will never include that field.
-  */
+ * A field marked `.readOnly()` is always excluded from create/update
+ * submissions, regardless of write permissions. See `FieldSchema.readOnly`.
+ *
+ * Read-only fields are filtered out before inference and validation so that
+ * a `required()` read-only field (such as a server-computed display value)
+ * does not block a submission that will never include that field.
+ */
 function writableFields(fields: VerikitFormFields): VerikitFormFields {
   return Object.fromEntries(
     Object.entries(fields).filter(([, schema]) => !schema.readOnly),

@@ -126,10 +126,7 @@ test("submitVerikitSchemaTreeForm drops a readOnly field's value, even when requ
     values: { name: "Ada", id: "client-supplied" },
   });
   assert.equal(withClientValue.success, true);
-  assert.equal(
-    withClientValue.success && withClientValue.value.id,
-    undefined,
-  );
+  assert.equal(withClientValue.success && withClientValue.value.id, undefined);
 });
 
 test("submitVerikitSchemaTreeForm treats an empty repeater as having no rows to validate", async () => {
