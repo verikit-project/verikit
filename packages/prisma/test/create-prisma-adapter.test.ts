@@ -6,7 +6,11 @@ import {
   createPrismaAdapter,
   type PrismaModelDelegate,
 } from "../src/create-prisma-adapter.js";
-import { mapFilterToPrisma } from "../src/mapping.js";
+import {
+  isUniqueConstraintError,
+  mapFilterToPrisma,
+  uniqueConstraintFields,
+} from "../src/mapping.js";
 import {
   createCounterAdapter,
   createLegacyPostAdapter,
@@ -24,6 +28,64 @@ test("mapFilterToPrisma translates each ResourceFilter key to Prisma's own filte
   assert.deepEqual(mapFilterToPrisma({ lte: 1 }), { lte: 1 });
   assert.deepEqual(mapFilterToPrisma({ lt: 1 }), { lt: 1 });
   assert.deepEqual(mapFilterToPrisma({}), {});
+});
+
+test("isUniqueConstraintError is true only for a P2002-coded error", () => {
+  assert.equal(
+    isUniqueConstraintError(Object.assign(new Error(), { code: "P2002" })),
+    true,
+  );
+  assert.equal(
+    isUniqueConstraintError(Object.assign(new Error(), { code: "P2025" })),
+    false,
+  );
+  assert.equal(isUniqueConstraintError(new Error("plain")), false);
+  assert.equal(isUniqueConstraintError(null), false);
+  assert.equal(isUniqueConstraintError("P2002"), false);
+});
+
+test("uniqueConstraintFields prefers Prisma 7's driver-adapter constraint.fields over meta.target", () => {
+  const error = {
+    meta: {
+      target: ["title"],
+      driverAdapterError: { cause: { constraint: { fields: ["title"] } } },
+    },
+  };
+  assert.deepEqual(
+    uniqueConstraintFields(error, { title: "title", body: "body" }),
+    ["title"],
+  );
+});
+
+test("uniqueConstraintFields reads Prisma 6's array-valued meta.target", () => {
+  const error = { meta: { target: ["title"] } };
+  assert.deepEqual(
+    uniqueConstraintFields(error, { title: "title", body: "body" }),
+    ["title"],
+  );
+});
+
+test("uniqueConstraintFields reads MySQL's single-string meta.target, unresolved if it names no known scalar", () => {
+  const error = { meta: { target: "posts_title_key" } };
+  assert.deepEqual(
+    uniqueConstraintFields(error, { title: "title", body: "body" }),
+    ["posts_title_key"],
+  );
+});
+
+test("uniqueConstraintFields returns an empty array when the error has no meta at all", () => {
+  assert.deepEqual(
+    uniqueConstraintFields(new Error("no meta"), { title: "title" }),
+    [],
+  );
+});
+
+test("uniqueConstraintFields falls back to the raw scalar name when it matches no declared field", () => {
+  const error = { meta: { target: ["secret"] } };
+  assert.deepEqual(
+    uniqueConstraintFields(error, { title: "title", body: "body" }),
+    ["secret"],
+  );
 });
 
 test("create/find/update/delete round-trip through a real Prisma client", async (t) => {
@@ -114,6 +176,33 @@ test("delete is idempotent for a record already deleted by a concurrent caller",
   await db.post.delete({ where: { id: created.id } });
 
   await adapter.delete(created.id);
+});
+
+test("create rethrows a non-P2002 error instead of swallowing it", async () => {
+  const timeout = Object.assign(new Error("Query timed out"), {
+    code: "P2024",
+  });
+  const model: PrismaModelDelegate = {
+    findMany: async () => [],
+    count: async () => 0,
+    findUnique: async () => null,
+    create: async () => {
+      throw timeout;
+    },
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+
+  await assert.rejects(
+    () => adapter.create({ title: "x" }),
+    (error) => error === timeout,
+  );
 });
 
 test("update rethrows a non-P2025, non-P2002 error instead of swallowing it", async () => {
@@ -325,6 +414,37 @@ test("scoped update falls back to updateMany + a follow-up find when the delegat
 
   const missed = await adapter.update("2", { body: "nope" }, { title: "Mine" });
   assert.equal(missed, undefined);
+});
+
+test("scoped update translates a P2002 unique-constraint violation into a UniqueConstraintError naming the field", async () => {
+  const conflict = Object.assign(new Error("Unique constraint failed"), {
+    code: "P2002",
+    meta: { target: ["title"] },
+  });
+  const model: PrismaModelDelegate = {
+    findMany: async () => [],
+    count: async () => 0,
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    updateManyAndReturn: async () => {
+      throw conflict;
+    },
+    delete: async () => ({}),
+  };
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+  });
+
+  await assert.rejects(
+    () => adapter.update("1", { title: "Taken" }, { title: "Mine" }),
+    (error: unknown) =>
+      error instanceof UniqueConstraintError &&
+      error.fields.length === 1 &&
+      error.fields[0] === "title",
+  );
 });
 
 test("list applies exact and range filters, and rejects an unmapped filter field", async (t) => {
