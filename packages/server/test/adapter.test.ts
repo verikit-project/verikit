@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { text } from "@verikit/core";
-import { UniqueConstraintError, uniqueConstraintIssues } from "../src/adapter.js";
+import {
+  UniqueConstraintError,
+  uniqueConstraintIssues,
+} from "../src/adapter.js";
 
 test("UniqueConstraintError carries the offending field names", () => {
   const error = new UniqueConstraintError(["email", "username"]);

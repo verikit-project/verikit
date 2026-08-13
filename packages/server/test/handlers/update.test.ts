@@ -135,7 +135,8 @@ test("handleUpdate rethrows an adapter error that isn't a UniqueConstraintError"
 
   await assert.rejects(
     () => handleUpdate(ctx, "1"),
-    (error: unknown) => error instanceof Error && error.message === "connection reset",
+    (error: unknown) =>
+      error instanceof Error && error.message === "connection reset",
   );
 });
 

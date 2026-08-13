@@ -136,7 +136,8 @@ function uniqueConstraintScalars(error: unknown): string[] {
     }
   ).meta;
 
-  const driverAdapterFields = meta?.driverAdapterError?.cause?.constraint?.fields;
+  const driverAdapterFields =
+    meta?.driverAdapterError?.cause?.constraint?.fields;
   if (Array.isArray(driverAdapterFields)) {
     return driverAdapterFields.filter(
       (entry): entry is string => typeof entry === "string",
