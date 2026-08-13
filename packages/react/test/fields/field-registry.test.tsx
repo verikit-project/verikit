@@ -357,6 +357,26 @@ test("render field renders nothing for a hidden field, regardless of value", () 
   assert.equal(rendered, null);
 });
 
+test("render field renders nothing for a formHidden field, same as a fully hidden one", () => {
+  const rendered = RenderField({
+    field: field({ fieldType: "text", formHidden: true, label: "Internal ID" }),
+    value: "abc-123",
+  });
+
+  assert.equal(rendered, null);
+});
+
+test("render field renders normally for a tableHidden field (tableHidden only affects table columns)", () => {
+  const rendered = asElement(
+    RenderField({
+      field: field({ fieldType: "text", tableHidden: true, label: "Notes" }),
+      value: "visible in the form",
+    }),
+  );
+
+  assert.equal(typeof rendered.type, "function");
+});
+
 test("shadcn primitives render through field components", () => {
   const html = renderToStaticMarkup(
     <>
