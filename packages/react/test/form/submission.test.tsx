@@ -155,6 +155,43 @@ test("submitVerikitResourceForm and inferAndValidateResource drop a readOnly fie
   });
 });
 
+test("submitVerikitResourceForm and inferAndValidateResource drop a formHidden field's value, even when required", async () => {
+  const fieldsWithFormHidden: VerikitFormFields = {
+    ...fields,
+    internalNote: text().required().formHidden().toSchema("internalNote"),
+  };
+
+  const submitted: unknown[] = [];
+  const success = await submitVerikitResourceForm({
+    fields: fieldsWithFormHidden,
+    // "internalNote" is required but formHidden, so it never appears in the
+    // form and must not block a submission that will never include it.
+    values: { email: "person@example.com", name: "Ada", seats: "2" },
+    onSubmit: (values) => {
+      submitted.push(values);
+      return "ok";
+    },
+  });
+
+  assert.equal(success.success, true);
+  assert.deepEqual(success.value, {
+    email: "person@example.com",
+    name: "Ada",
+    seats: 2,
+  });
+  assert.deepEqual(submitted, [success.value]);
+
+  const validated = await inferAndValidateResource(fieldsWithFormHidden, {
+    email: "person@example.com",
+    name: "Ada",
+    seats: "3",
+  });
+  assert.deepEqual(validated, {
+    success: true,
+    value: { email: "person@example.com", name: "Ada", seats: 3 },
+  });
+});
+
 test("action submission infers action form input before runAction", async () => {
   const publish = action("publish")
     .form({
