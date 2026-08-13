@@ -1,6 +1,6 @@
 {
   "name": "@verikit/drizzle",
-  "version": "0.19.2",
+  "version": "0.19.3",
   "description": "Drizzle ORM storage adapter for @verikit/server resources.",
   "type": "module",
   "main": "./dist/index.js",
