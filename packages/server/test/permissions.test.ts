@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { definePermissions } from "@verikit/core";
+import { defineResource, definePermissions, text } from "@verikit/core";
 import {
   maybeCheckResourceOperation,
   presentRecord,
@@ -171,4 +171,65 @@ test("validateResourceInput validates trusted fields via plain schema validation
     { title: null },
   );
   assert.equal(trustedInvalid.success, false);
+});
+
+function createSlugResource() {
+  return defineResource("post", {
+    fields: {
+      title: text().required(),
+      slug: text().required().readOnly(),
+    },
+  });
+}
+
+test("validateResourceInput drops a readOnly field's client-submitted value, even with a write grant", async () => {
+  const fields = createSlugResource().toSchema().fields;
+  const permissions = definePermissions<Actor>()
+    .field("title", { write: () => true })
+    .field("slug", { write: () => true });
+
+  const result = await validateResourceInput(
+    fields,
+    { title: "Hi", slug: "client-supplied" },
+    permissions,
+    { actor: { role: "viewer" } },
+  );
+
+  assert.deepEqual(result, { success: true, value: { title: "Hi" } });
+});
+
+test("validateResourceInput still validates and includes a readOnly field's value when it's also server-owned (trusted)", async () => {
+  const fields = createSlugResource().toSchema().fields;
+  const permissions = definePermissions<Actor>().field("title", {
+    write: () => true,
+  });
+
+  // Mirrors how `create.ts`/`update.ts` actually call this: trusted values
+  // are merged into `values` (overriding any client-submitted value for the
+  // same key) before this function ever sees them.
+  const result = await validateResourceInput(
+    fields,
+    { title: "Hi", slug: "server-generated" },
+    permissions,
+    { actor: { role: "viewer" } },
+    { slug: "server-generated" },
+  );
+
+  assert.deepEqual(result, {
+    success: true,
+    value: { title: "Hi", slug: "server-generated" },
+  });
+});
+
+test("validateResourceInput drops a readOnly field's value even on an open resource", async () => {
+  const fields = createSlugResource().toSchema().fields;
+
+  const result = await validateResourceInput(
+    fields,
+    { title: "Hi", slug: "client-supplied" },
+    "open",
+    { actor: { role: "viewer" } },
+  );
+
+  assert.deepEqual(result, { success: true, value: { title: "Hi" } });
 });

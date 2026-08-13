@@ -111,8 +111,19 @@ export function presentRecord(
 }
 
 /**
- * Validates a create/update body: gated per-field via `validateWritableFields` unless the resource is explicitly marked `"open"`, in which case it falls back to plain `validateResourceAsync`.
- */
+
+* Validates a create/update body. Field-level write permissions are enforced
+* via `validateWritableFields` unless the resource is explicitly `"open"`,
+* in which case validation falls back to `validateResourceAsync`.
+*
+* Fields marked `.readOnly()` are never client-writable, regardless of write
+* permissions or whether the resource is `"open"` (see `FieldSchema.readOnly`).
+* Although `@verikit/react` forms already omit read-only values, this is
+* enforced here as defence in depth for other clients or stale cached forms.
+*
+* Server-owned read-only fields supplied through `trustedValues` are still
+* validated and included. Only their client-provided values are excluded.
+  */
 export async function validateResourceInput<TActor, TRecord>(
   fields: Record<string, FieldSchema>,
   values: Record<string, unknown>,
@@ -120,22 +131,35 @@ export async function validateResourceInput<TActor, TRecord>(
   context: PermissionContext<TActor, TRecord>,
   trustedValues: Record<string, unknown> = {},
 ): Promise<ValidationResult<Record<string, unknown>>> {
+  const clientWritableFields = Object.fromEntries(
+    Object.entries(fields).filter(
+      ([name, schema]) =>
+        !schema.readOnly || Object.hasOwn(trustedValues, name),
+    ),
+  );
+
   if (permissions === "open" || Object.keys(trustedValues).length === 0) {
     return permissions === "open"
-      ? validateResourceAsync(fields, values)
-      : validateWritableFields(fields, values, permissions, context);
+      ? validateResourceAsync(clientWritableFields, values)
+      : validateWritableFields(
+          clientWritableFields,
+          values,
+          permissions,
+          context,
+        );
   }
 
-  // Server-owned fields (e.g. organizationId) must still be validated, but must
-  // not require a client write grant. Partition the fields in one pass and
-  // validate each side exactly once: client fields through the permission-gated
-  // path, trusted fields through plain schema validation, then merge the
-  // results. (Each helper only reads `values[name]` for names in its own
-  // `fields` argument, so passing the full merged `values` to both is safe.)
+  // Server-owned fields (e.g. `organizationId`) must still be validated without
+  // requiring client write permission. Partition the fields once, validate client
+  // fields through the permission-gated path and trusted fields through plain
+  // schema validation, then merge the results.
+  //
+  // Both helpers receive the full merged `values`, but only read values for the
+  // fields provided to them, so each field is validated exactly once.
   const clientFields: Record<string, FieldSchema> = {};
   const trustedFields: Record<string, FieldSchema> = {};
 
-  for (const [name, schema] of Object.entries(fields)) {
+  for (const [name, schema] of Object.entries(clientWritableFields)) {
     (Object.hasOwn(trustedValues, name) ? trustedFields : clientFields)[name] =
       schema;
   }
