@@ -112,7 +112,8 @@ test("handleCreate rethrows an adapter error that isn't a UniqueConstraintError"
 
   await assert.rejects(
     () => handleCreate(ctx),
-    (error: unknown) => error instanceof Error && error.message === "connection reset",
+    (error: unknown) =>
+      error instanceof Error && error.message === "connection reset",
   );
 });
 

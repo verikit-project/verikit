@@ -32,7 +32,9 @@ export function uniqueConstraintIssues(
 
     return {
       path: [name],
-      message: fields[name]?.uniqueMessage ?? `A record with this ${label} already exists.`,
+      message:
+        fields[name]?.uniqueMessage ??
+        `A record with this ${label} already exists.`,
     };
   });
 }

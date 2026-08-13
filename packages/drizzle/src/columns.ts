@@ -127,7 +127,9 @@ export function isUniqueConstraintError(error: unknown): boolean {
     return true;
   }
 
-  return error instanceof Error && error.message.includes("UNIQUE constraint failed");
+  return (
+    error instanceof Error && error.message.includes("UNIQUE constraint failed")
+  );
 }
 
 /**

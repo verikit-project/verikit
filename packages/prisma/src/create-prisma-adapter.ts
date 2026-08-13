@@ -300,7 +300,9 @@ export function createPrismaAdapter<
         return present(row)!;
       } catch (error) {
         if (isUniqueConstraintError(error)) {
-          throw new UniqueConstraintError(uniqueConstraintFields(error, fields));
+          throw new UniqueConstraintError(
+            uniqueConstraintFields(error, fields),
+          );
         }
 
         throw error;
@@ -349,7 +351,9 @@ export function createPrismaAdapter<
           return result.count === 0 ? undefined : this.find(pathId, scope);
         } catch (error) {
           if (isUniqueConstraintError(error)) {
-            throw new UniqueConstraintError(uniqueConstraintFields(error, fields));
+            throw new UniqueConstraintError(
+              uniqueConstraintFields(error, fields),
+            );
           }
 
           throw error;
@@ -370,7 +374,9 @@ export function createPrismaAdapter<
         }
 
         if (isUniqueConstraintError(error)) {
-          throw new UniqueConstraintError(uniqueConstraintFields(error, fields));
+          throw new UniqueConstraintError(
+            uniqueConstraintFields(error, fields),
+          );
         }
 
         throw error;
