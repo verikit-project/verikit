@@ -1,6 +1,6 @@
 {
   "name": "@verikit/client",
-  "version": "0.19.3",
+  "version": "0.19.4",
   "description": "Thin fetch client for @verikit/server's REST API.",
   "type": "module",
   "main": "./dist/index.js",
