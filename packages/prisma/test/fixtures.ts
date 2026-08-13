@@ -39,6 +39,16 @@ export async function createTestDb(): Promise<PrismaClient> {
     )
   `);
 
+  await prisma.$executeRawUnsafe(`
+    create table tags (
+      id text primary key,
+      name text not null
+    )
+  `);
+  await prisma.$executeRawUnsafe(`
+    create unique index tags_name_key on tags(name)
+  `);
+
   return prisma;
 }
 
@@ -101,5 +111,20 @@ export function createCounterAdapter(db: PrismaClient) {
       },
       toPath: (value: unknown) => String(value),
     },
+  });
+}
+
+/** A single `.unique()` field, to exercise `UniqueConstraintError` translation (P2002). */
+export function createTagResource() {
+  return defineResource("tag", {
+    fields: { name: text().required().unique() },
+  });
+}
+
+export function createTagAdapter(db: PrismaClient) {
+  return createPrismaAdapter(createTagResource(), {
+    model: db.tag,
+    fields: { name: "name" },
+    id: { field: "id" },
   });
 }

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { boolean, defineResource, text } from "@verikit/core";
+import { UniqueConstraintError } from "@verikit/server";
 import {
   createPrismaAdapter,
   type PrismaModelDelegate,
@@ -11,6 +12,7 @@ import {
   createLegacyPostAdapter,
   createPostAdapter,
   createPostResource,
+  createTagAdapter,
   createTestDb,
 } from "./fixtures.js";
 
@@ -114,9 +116,9 @@ test("delete is idempotent for a record already deleted by a concurrent caller",
   await adapter.delete(created.id);
 });
 
-test("update rethrows a non-P2025 error instead of swallowing it", async () => {
-  const conflict = Object.assign(new Error("Unique constraint failed"), {
-    code: "P2002",
+test("update rethrows a non-P2025, non-P2002 error instead of swallowing it", async () => {
+  const timeout = Object.assign(new Error("Query timed out"), {
+    code: "P2024",
   });
   const model: PrismaModelDelegate = {
     findMany: async () => [],
@@ -124,7 +126,7 @@ test("update rethrows a non-P2025 error instead of swallowing it", async () => {
     findUnique: async () => null,
     create: async () => ({}),
     update: async () => {
-      throw conflict;
+      throw timeout;
     },
     delete: async () => ({}),
   };
@@ -137,7 +139,40 @@ test("update rethrows a non-P2025 error instead of swallowing it", async () => {
 
   await assert.rejects(
     () => adapter.update("1", { title: "x" }),
-    (error) => error === conflict,
+    (error) => error === timeout,
+  );
+});
+
+test("create translates a P2002 unique-constraint violation into a UniqueConstraintError naming the field", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createTagAdapter(db);
+
+  await adapter.create({ name: "release" });
+
+  await assert.rejects(
+    () => adapter.create({ name: "release" }),
+    (error: unknown) =>
+      error instanceof UniqueConstraintError &&
+      error.fields.length === 1 &&
+      error.fields[0] === "name",
+  );
+});
+
+test("update translates a P2002 unique-constraint violation into a UniqueConstraintError naming the field", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createTagAdapter(db);
+
+  await adapter.create({ name: "release" });
+  const other = await adapter.create({ name: "draft" });
+
+  await assert.rejects(
+    () => adapter.update(other.id, { name: "release" }),
+    (error: unknown) =>
+      error instanceof UniqueConstraintError &&
+      error.fields.length === 1 &&
+      error.fields[0] === "name",
   );
 });
 
