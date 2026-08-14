@@ -83,9 +83,7 @@ export async function handleUpdate(
   }
 
   const clientFieldNames = new Set(
-    Object.keys(body.value).filter(
-      (name) => !Object.hasOwn(scope ?? {}, name),
-    ),
+    Object.keys(body.value).filter((name) => !Object.hasOwn(scope ?? {}, name)),
   );
   const relationshipIssues = await validateRelationshipReferences(
     entry,

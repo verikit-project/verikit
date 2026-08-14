@@ -65,9 +65,8 @@ export async function handleUpload(
   const multipartRequest = new Request(ctx.request.url, {
     method: ctx.request.method,
     headers,
-    // `readRequestBytes` always allocates a fresh, exactly-sized buffer (never a
-    // SharedArrayBuffer), so this is the same bytes with no extra copy  unlike
-    // `new Uint8Array(body.value).buffer`, which would memcpy the whole upload.
+    // `readRequestBytes` returns an exactly-sized ArrayBuffer-backed view,
+    // so reuse its buffer without copying the upload.
     body: body.value.buffer as ArrayBuffer,
   });
   const form = await multipartRequest.formData();

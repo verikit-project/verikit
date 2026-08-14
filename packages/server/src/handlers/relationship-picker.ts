@@ -4,14 +4,8 @@ import type { HandlerContext } from "./context.js";
 import { handleList } from "./list.js";
 
 /**
- * Lists records that may be selected for a `belongsTo` relationship.
- *
- * The picker deliberately delegates to the target resource's ordinary list
- * handler. That keeps target access checks, actor-aware scopes, field
- * redaction, filters, sorting, and search behaviour identical to a direct
- * target-resource request. `hasMany` and `belongsToMany` are not pickers: they
- * describe already-related collections and require a parent record or an
- * explicit join-resource contract respectively.
+ * Lists selectable records for a `belongsTo` relationship using the target
+ * resource's standard list behavior, including permissions and scopes.
  */
 export async function handleRelationshipPicker<TActor>(
   ctx: HandlerContext<TActor>,

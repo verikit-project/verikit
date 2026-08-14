@@ -39,11 +39,8 @@ export interface ServerResourceConfig<TActor = unknown> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
   actions?: ActionBuilder<string, any, TActor, any, any>[];
   /**
-   * Resource-level CRUD/field/action gate. Required so a resource can never end up unguarded
-   * by accident  pass a real `PermissionsBuilder`, or the literal `"open"` to explicitly opt this
-   * resource out of permission checks entirely (see `maybeCheckResourceOperation`). `"open"` is
-   * loud and greppable on purpose: `grep -rn 'permissions: "open"'` finds every intentionally
-   * unguarded resource in a codebase.
+   * Required access control for CRUD, fields, and actions.
+   * Use `"open"` to explicitly opt out of permission checks.
    */
   permissions: PermissionsBuilder<TActor, unknown> | "open";
 }
@@ -61,25 +58,18 @@ export interface CreateServerOptions<TActor = unknown> {
    */
   basePath?: string;
   /**
-   * Called whenever a handler or adapter throws, right before the generic 500 envelope is
-   * returned to the client the response body never includes `error`'s details (it may carry
-   * storage internals a client shouldn't see), so this is the only way to observe what actually
-   * failed. Errors thrown by `onError` itself are caught and ignored, so a broken logger can't
-   * turn a handled failure into an unhandled rejection see `runAction`'s `error` hook in
-   * `@verikit/runtime` for the same convention.
+   * Called when a handler or adapter throws before returning a generic 500 response.
+   * Errors thrown by this hook are ignored.
    */
   onError?: (error: unknown, request: Request, route: ServerErrorRoute) => void;
   /**
-   * Maximum JSON request body size, in bytes, for create/update/action routes.
-   * Defaults to 1 MiB. Pass `false` to disable this package-level guard when an
-   * upstream framework/platform already enforces the limit you want.
+   * Maximum JSON body size for create, update, and action routes.
+   * Defaults to 1 MiB; set to `false` to disable the limit.
    */
   maxBodyBytes?: number | false;
   /**
-   * Optional CORS handling for browser clients. Omit to leave CORS entirely to
-   * the framework/deployment layer. When configured, matching preflight
-   * `OPTIONS` requests return 204 and matching normal responses receive CORS
-   * headers.
+   * Configures CORS handling for browser clients.
+   * Omit to leave CORS to the framework or deployment layer.
    */
   cors?: CorsOptions;
 }
@@ -377,9 +367,7 @@ export function createServer<TActor = unknown>(
           );
       }
     } catch (error) {
-      // Adapter (or other handler) exceptions shouldn't surface as an unhandled rejection
-      // or a raw error to the caller map them to the package's own JSON error envelope.
-      // The underlying error is intentionally not included in the response; it may carry storage internals a client shouldn't see.
+      // Map handler and adapter errors to a generic response without exposing internals.
       try {
         options.onError?.(error, request, {
           resource: resolved.entry.config.resource.name,

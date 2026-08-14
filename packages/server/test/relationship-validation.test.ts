@@ -81,7 +81,13 @@ function setup(options: { withOrganization?: boolean } = {}) {
 test("a resource with no relationships is a no-op", async () => {
   const post = defineResource("post", { fields: { title: text() } });
   const table = buildRouteTable(
-    [{ resource: post, adapter: createInMemoryAdapter([]), permissions: "open" }],
+    [
+      {
+        resource: post,
+        adapter: createInMemoryAdapter([]),
+        permissions: "open",
+      },
+    ],
     "",
   );
 
@@ -197,7 +203,11 @@ test("an in-scope id the actor still can't read (denied by target permissions) i
   });
   const table = buildRouteTable(
     [
-      { resource: project, adapter: createInMemoryAdapter([]), permissions: "open" },
+      {
+        resource: project,
+        adapter: createInMemoryAdapter([]),
+        permissions: "open",
+      },
       {
         resource: organization,
         adapter: createInMemoryAdapter([

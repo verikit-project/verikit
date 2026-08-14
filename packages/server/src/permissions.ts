@@ -88,13 +88,8 @@ export function redactFields(
 }
 
 /**
- * Produces the only record shape the HTTP API may expose: the adapter's canonical
- * string `id` plus declared resource fields that the actor is allowed to read.
- *
- * Adapters are required to return this shape themselves, but this server-side
- * allow-list is a defence-in-depth boundary. It prevents an adapter accidentally
- * leaking ORM-only columns (for example `passwordHash`) if it returns a whole
- * storage row instead of a projection.
+ * Returns the API-safe record shape: its `id` and readable resource fields.
+ * Acts as a final allow-list against leaking undeclared adapter data.
  */
 export function presentRecord(
   record: Record<string, unknown>,
@@ -111,19 +106,9 @@ export function presentRecord(
 }
 
 /**
-
-* Validates a create/update body. Field-level write permissions are enforced
-* via `validateWritableFields` unless the resource is explicitly `"open"`,
-* in which case validation falls back to `validateResourceAsync`.
-*
-* Fields marked `.readOnly()` are never client-writable, regardless of write
-* permissions or whether the resource is `"open"` (see `FieldSchema.readOnly`).
-* Although `@verikit/react` forms already omit read-only values, this is
-* enforced here as defence in depth for other clients or stale cached forms.
-*
-* Server-owned read-only fields supplied through `trustedValues` are still
-* validated and included. Only their client-provided values are excluded.
-  */
+ * Validates create/update input, enforcing field permissions unless `"open"`.
+ * Read-only fields reject client input but accept validated `trustedValues`.
+ */
 export async function validateResourceInput<TActor, TRecord>(
   fields: Record<string, FieldSchema>,
   values: Record<string, unknown>,
@@ -149,13 +134,8 @@ export async function validateResourceInput<TActor, TRecord>(
         );
   }
 
-  // Server-owned fields (e.g. `organizationId`) must still be validated without
-  // requiring client write permission. Partition the fields once, validate client
-  // fields through the permission-gated path and trusted fields through plain
-  // schema validation, then merge the results.
-  //
-  // Both helpers receive the full merged `values`, but only read values for the
-  // fields provided to them, so each field is validated exactly once.
+  // Validate client fields with permissions and trusted fields against the schema.
+  // Both use the merged values for context, while each field is validated once.
   const clientFields: Record<string, FieldSchema> = {};
   const trustedFields: Record<string, FieldSchema> = {};
 
@@ -164,12 +144,8 @@ export async function validateResourceInput<TActor, TRecord>(
       schema;
   }
 
-  // Sequential, not `Promise.all`: trusted fields can carry their own async
-  // validators (e.g. a uniqueness check with a real side effect), which
-  // shouldn't run at all once client validation has already failed  a
-  // request that's going to 400 regardless shouldn't also pay for (or
-  // trigger the side effects of) validating fields the client never even
-  // controlled.
+  // Validate sequentially to avoid running costly or side-effecting trusted-field
+  // validators after client validation has already failed.
   const clientResult = await validateWritableFields(
     clientFields,
     values,

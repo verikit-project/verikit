@@ -1,25 +1,21 @@
-import type { BelongsToRelationshipSchema, ValidationIssue } from "@verikit/core";
+import type {
+  BelongsToRelationshipSchema,
+  ValidationIssue,
+} from "@verikit/core";
 import { resolveScope } from "./access.js";
 import { maybeCheckResourceOperation } from "./permissions.js";
 import type { RouteTableEntry } from "./routing/route-table.js";
 
 /**
- * `RouteTableEntry<TActor>` is generic to let `buildRouteTable` thread a
- * concrete actor type through at its call site, but this module (like
- * `handleCreate`/`handleUpdate`, which is all it's ever called from) treats
- * the actor as opaque  it's only ever forwarded to permission checks. Erase
- * it here rather than making every function in this file generic too,
- * mirroring `HandlerContext`'s own erasure (see its doc comment).
+ * Erases the actor type here since it is only forwarded
+ * to permission checks.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see comment above
 type AnyRouteTableEntry = RouteTableEntry<any>;
 
 /**
- * A resource's `belongsTo` relationships whose foreign key resolves to a
- * plain field name on this resource (i.e. authored via
- * `.via(resource.field("name"))`) exactly the ones a write can actually
- * submit a value for. Adapter-specific foreign key references don't name a
- * field this validation could read a submitted value from.
+ * Returns writable `belongsTo` relationships with field-based foreign keys.
+ * Adapter-specific foreign key references are excluded.
  */
 function resolvableBelongsToRelationships(
   entry: AnyRouteTableEntry,
@@ -58,13 +54,8 @@ function invalidReferenceIssue(
 }
 
 /**
- * Verifies that a submitted `belongsTo` foreign key actually resolves for
- * the acting actor: the target record must exist, fall inside the target
- * resource's own actor-aware scope, and pass the target's record-level
- * `"read"` permission  the same three checks `GET {target}/:id` itself
- * enforces (see `handleFind`). A relationship whose target isn't registered
- * on this server can't be verified, so it's treated the same as an invalid
- * reference (fail closed) rather than silently allowed through.
+ * Validates submitted `belongsTo` references against the target's
+ * existence, scope, and read permission. Unregistered targets fail closed.
  */
 async function checkReference(
   entry: AnyRouteTableEntry,
@@ -104,19 +95,9 @@ async function checkReference(
 }
 
 /**
- * Validates every `belongsTo` foreign key this write actually submits
- * against its target resource, closing the direct-API bypass where a client
- * ignores the relationship picker and writes another tenant's (or otherwise
- * inaccessible) record's id by hand.
- *
- * Only fields named in `clientFieldNames` are checked  those are the ones
- * the client actually controls. Server-owned values (from
- * `access.onCreate`/`access.scope`) are excluded: they're set by the
- * resource author's own code, not client input, so there's no bypass to
- * close there, and re-verifying them on every write would just be a wasted
- * round-trip. A foreign key submitted as `null`/`undefined` (clearing or
- * omitting the relation) is left to ordinary field validation
- * (`required`/`nullable`), not this check.
+ * Validates submitted `belongsTo` foreign keys against their targets.
+ * Only fields in `clientFieldNames` are checked; server-owned and nullish
+ * values are excluded.
  */
 export async function validateRelationshipReferences(
   entry: AnyRouteTableEntry,
@@ -147,5 +128,7 @@ export async function validateRelationshipReferences(
     }),
   );
 
-  return results.filter((issue): issue is ValidationIssue => issue !== undefined);
+  return results.filter(
+    (issue): issue is ValidationIssue => issue !== undefined,
+  );
 }
