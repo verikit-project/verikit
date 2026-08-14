@@ -1,9 +1,6 @@
-import { parseJsonObjectBody } from "../http/parse-request.js";
-import {
-  dataResponse,
-  errorResponse,
-  forbiddenResponse,
-} from "../http/responses.js";
+import { ForbiddenError, ValidationError } from "@verikit/core";
+import { requireJsonObjectBody } from "../http/parse-request.js";
+import { dataResponse } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
   presentRecord,
@@ -31,23 +28,17 @@ export async function handleCreate(
   );
 
   if (!permission.allowed) {
-    return forbiddenResponse(permission.message);
+    throw new ForbiddenError(permission.message);
   }
 
-  const body = await parseJsonObjectBody(request, {
+  const body = await requireJsonObjectBody(request, {
     maxBodyBytes: ctx.maxBodyBytes,
   });
-
-  if (!body.ok) {
-    return body.reason === "too-large"
-      ? errorResponse(413, "Payload too large.")
-      : errorResponse(400, "Invalid JSON body.");
-  }
 
   // Resolve before validation so required tenant fields can be server-owned, and
   // merge last so a submitted organizationId can never override the actor's one.
   const owned = (await resolveCreateValues(entry, actor)) ?? {};
-  const values = { ...body.value, ...owned };
+  const values = { ...body, ...owned };
 
   const validated = await validateResourceInput(
     entry.fields,
@@ -58,13 +49,11 @@ export async function handleCreate(
   );
 
   if (!validated.success) {
-    return errorResponse(400, "Validation failed.", {
-      issues: validated.issues,
-    });
+    throw new ValidationError("Validation failed.", validated.issues);
   }
 
   const clientFieldNames = new Set(
-    Object.keys(body.value).filter((name) => !Object.hasOwn(owned, name)),
+    Object.keys(body).filter((name) => !Object.hasOwn(owned, name)),
   );
   const relationshipIssues = await validateRelationshipReferences(
     entry,
@@ -75,9 +64,7 @@ export async function handleCreate(
   );
 
   if (relationshipIssues.length > 0) {
-    return errorResponse(400, "Validation failed.", {
-      issues: relationshipIssues,
-    });
+    throw new ValidationError("Validation failed.", relationshipIssues);
   }
 
   // Access-owned values intentionally win over the request body: a client can never
@@ -87,9 +74,10 @@ export async function handleCreate(
     record = await entry.config.adapter.create(validated.value);
   } catch (error) {
     if (error instanceof UniqueConstraintError) {
-      return errorResponse(400, "Validation failed.", {
-        issues: uniqueConstraintIssues(error, entry.fields),
-      });
+      throw new ValidationError(
+        "Validation failed.",
+        uniqueConstraintIssues(error, entry.fields),
+      );
     }
     throw error;
   }

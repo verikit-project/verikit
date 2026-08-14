@@ -1,4 +1,5 @@
-import { dataResponse, notFoundResponse } from "../http/responses.js";
+import { NotFoundError } from "@verikit/core";
+import { dataResponse } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
   presentRecord,
@@ -18,7 +19,7 @@ export async function handleFind(
     Record<string, unknown> | undefined;
 
   if (!record) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
   const permission = await maybeCheckResourceOperation(
@@ -27,11 +28,9 @@ export async function handleFind(
     { actor, record },
   );
 
-  // A denied actor gets the same 404 as a missing record: returning 403 here
-  // would let them distinguish "doesn't exist" from "exists but I can't read
-  // it" (an existence oracle) for a record we've already confirmed is real.
+// Return 404 for denied reads to avoid leaking record existence.
   if (!permission.allowed) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
   const hidden = await unreadableFieldNames(

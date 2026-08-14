@@ -1,4 +1,5 @@
-import { noContentResponse, notFoundResponse } from "../http/responses.js";
+import { NotFoundError } from "@verikit/core";
+import { noContentResponse } from "../http/responses.js";
 import { maybeCheckResourceOperation } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
@@ -14,7 +15,7 @@ export async function handleDelete(
     Record<string, unknown> | undefined;
 
   if (!existing) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
   const permission = await maybeCheckResourceOperation(
@@ -23,11 +24,9 @@ export async function handleDelete(
     { actor, record: existing },
   );
 
-  // A denied actor gets the same 404 as a missing record: returning 403 here would let
-  // them distinguish "doesn't exist" from "exists but I can't delete it" (an existence
-  // oracle) for a record we've already confirmed is real.
+// Return 404 for denied deletes to avoid leaking record existence.
   if (!permission.allowed) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
   await entry.config.adapter.delete(id, scope);

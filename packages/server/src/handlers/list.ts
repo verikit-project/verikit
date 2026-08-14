@@ -1,5 +1,6 @@
+import { ForbiddenError } from "@verikit/core";
 import { parseFilters, parseListParams } from "../http/parse-request.js";
-import { dataResponse, forbiddenResponse } from "../http/responses.js";
+import { dataResponse } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
   presentRecord,
@@ -24,7 +25,7 @@ export async function handleList(
   );
 
   if (!permission.allowed) {
-    return forbiddenResponse(permission.message);
+    throw new ForbiddenError(permission.message);
   }
 
   const { sort, ...rest } = parseListParams(url, options);
@@ -34,9 +35,7 @@ export async function handleList(
     entry.config.permissions,
     { actor },
   );
-  // Filtering changes both records and pagination totals, so an unreadable
-  // field must be excluded before the adapter sees it. Otherwise a caller
-  // could infer the field through `meta.total` despite response redaction.
+// Reject filters on unreadable fields to prevent inference through pagination totals.
   const filters = Object.fromEntries(
     Object.entries(parseFilters(url, entry.fields)).filter(
       ([name]) => !hidden.has(name),
@@ -46,11 +45,8 @@ export async function handleList(
     .filter(([name, field]) => field.searchable && !hidden.has(name))
     .map(([name]) => name);
 
-  // `sort.field` is caller-controlled and reaches the adapter verbatim. Dropping
-  // anything outside the resource's own `.sortable()` field names keeps an adapter that
-  // builds a raw `ORDER BY <field>` (or similar) from having to defend against arbitrary
-  // or unintended-cost identifiers itself, since a field only reaches the adapter here
-  // if the schema explicitly opted it in for sorting, not just because it exists.
+// Restrict caller-controlled sort fields to the schema's sortable allow-list
+// before passing them to the adapter.
   const params = {
     ...rest,
     ...(scope && { scope }),

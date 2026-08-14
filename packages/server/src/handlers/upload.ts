@@ -1,10 +1,12 @@
-import { checkFieldAccess, matchesAccept } from "@verikit/core";
 import {
-  errorResponse,
-  forbiddenResponse,
-  notFoundResponse,
-  dataResponse,
-} from "../http/responses.js";
+  checkFieldAccess,
+  ForbiddenError,
+  matchesAccept,
+  NotFoundError,
+  ValidationError,
+  VerikitError,
+} from "@verikit/core";
+import { dataResponse } from "../http/responses.js";
 import { readRequestBytes } from "../http/parse-request.js";
 import { maybeCheckResourceOperation } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
@@ -24,22 +26,25 @@ export async function handleUpload(
 ): Promise<Response> {
   const field = ctx.entry.fields[fieldName];
   if (!field || (field.fieldType !== "file" && field.fieldType !== "image")) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
   const uploadField = field as typeof field & UploadField;
   if (!storage) {
-    return errorResponse(501, "File storage is not configured.");
+    throw new VerikitError(
+      "File storage is not configured.",
+      "NOT_IMPLEMENTED",
+      501,
+    );
   }
   if (ctx.entry.config.permissions !== "open") {
     const permissions = ctx.entry.config.permissions;
-    // Uploads have no record context, so only the record-less "create"
-    // permission can be evaluated here. "update" permissions may depend on
-    // the target record and are enforced by the resource update handler.
+// Uploads lack record context, so only create permission is checked here;
+// record-dependent update permissions are enforced by the update handler.
     const creatable = await maybeCheckResourceOperation(permissions, "create", {
       actor: ctx.actor,
     });
     if (!creatable.allowed) {
-      return forbiddenResponse(creatable.message);
+      throw new ForbiddenError(creatable.message);
     }
     const access = await checkFieldAccess(
       permissions.getRuntime(),
@@ -47,16 +52,20 @@ export async function handleUpload(
       "write",
       { actor: ctx.actor },
     );
-    if (!access.allowed) return forbiddenResponse(access.reason);
+    if (!access.allowed) throw new ForbiddenError(access.reason);
   }
   if (
     !ctx.request.headers.get("content-type")?.startsWith("multipart/form-data")
   ) {
-    return errorResponse(415, "Expected multipart/form-data.");
+    throw new VerikitError(
+      "Expected multipart/form-data.",
+      "UNSUPPORTED_MEDIA_TYPE",
+      415,
+    );
   }
   const body = await readRequestBytes(ctx.request, ctx.maxBodyBytes);
   if (!body.ok) {
-    return errorResponse(413, "Payload too large.");
+    throw new VerikitError("Payload too large.", "PAYLOAD_TOO_LARGE", 413);
   }
   // Reconstruct a request only after the bounded read. Drop Content-Length so a
   // bogus client-supplied value cannot affect the platform multipart parser.
@@ -77,17 +86,25 @@ export async function handleUpload(
     !(candidate instanceof Blob) ||
     typeof (candidate as File).name !== "string"
   )
-    return errorResponse(400, 'Expected a "file" part.');
+    throw new ValidationError('Expected a "file" part.');
   const file = candidate as File;
   if (uploadField.maxSize !== undefined && file.size > uploadField.maxSize) {
-    return errorResponse(413, "File exceeds the field's maximum size.");
+    throw new VerikitError(
+      "File exceeds the field's maximum size.",
+      "PAYLOAD_TOO_LARGE",
+      413,
+    );
   }
   if (
     uploadField.accept &&
     uploadField.accept.length > 0 &&
     !matchesAccept(uploadField.accept, file)
   ) {
-    return errorResponse(415, "File type is not accepted by this field.");
+    throw new VerikitError(
+      "File type is not accepted by this field.",
+      "UNSUPPORTED_MEDIA_TYPE",
+      415,
+    );
   }
   const stored = await storage.put({
     resource: ctx.entry.config.resource.name,

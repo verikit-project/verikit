@@ -1,4 +1,4 @@
-import { notFoundResponse } from "../http/responses.js";
+import { NotFoundError } from "@verikit/core";
 import type { RouteTableEntry } from "../routing/route-table.js";
 import type { HandlerContext } from "./context.js";
 import { handleList } from "./list.js";
@@ -18,7 +18,7 @@ export async function handleRelationshipPicker<TActor>(
   const schema = relationship?.toSchema(relationshipName);
 
   if (!schema || schema.relationshipType !== "belongsTo") {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
   const target = table.find(
@@ -26,7 +26,7 @@ export async function handleRelationshipPicker<TActor>(
   );
 
   if (!target) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
   return handleList({ ...ctx, entry: target });

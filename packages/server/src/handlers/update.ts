@@ -1,9 +1,6 @@
-import { parseJsonObjectBody } from "../http/parse-request.js";
-import {
-  dataResponse,
-  errorResponse,
-  notFoundResponse,
-} from "../http/responses.js";
+import { NotFoundError, ValidationError } from "@verikit/core";
+import { requireJsonObjectBody } from "../http/parse-request.js";
+import { dataResponse } from "../http/responses.js";
 import {
   maybeCheckResourceOperation,
   presentRecord,
@@ -29,7 +26,7 @@ export async function handleUpdate(
     Record<string, unknown> | undefined;
 
   if (!existing) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
   const permission = await maybeCheckResourceOperation(
@@ -38,33 +35,21 @@ export async function handleUpdate(
     { actor, record: existing },
   );
 
-  // A denied actor gets the same 404 as a missing record: returning 403 here would let
-  // them distinguish "doesn't exist" from "exists but I can't update it" (an existence
-  // oracle) for a record we've already confirmed is real.
+// Return 404 for denied updates to avoid leaking record existence.
   if (!permission.allowed) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
-  const body = await parseJsonObjectBody(request, {
+  const body = await requireJsonObjectBody(request, {
     maxBodyBytes: ctx.maxBodyBytes,
   });
 
-  if (!body.ok) {
-    return body.reason === "too-large"
-      ? errorResponse(413, "Payload too large.")
-      : errorResponse(400, "Invalid JSON body.");
-  }
-
-  // PATCH is partial: only validate fields actually present in the body, so a
-  // `required()`/`default()` field already set on the record doesn't force every
-  // unrelated update to resupply it (core's `shouldValidateField` checks required/default fields unconditionally, which is right for `create`'s full payload but wrong for a partial `update`).
-  // Scope fields are server-owned on updates too. Reasserting them prevents a
-  // tenant from moving a record outside its scope with a PATCH request.
-  const values = { ...body.value, ...(scope ?? {}) };
+// PATCH validates only submitted fields. Reapply server-owned scope fields
+// to prevent updates from moving records outside their scope.
+  const values = { ...body, ...(scope ?? {}) };
   const submittedFields = Object.fromEntries(
     Object.entries(entry.fields).filter(
-      ([name]) =>
-        Object.hasOwn(body.value, name) || Object.hasOwn(scope ?? {}, name),
+      ([name]) => Object.hasOwn(body, name) || Object.hasOwn(scope ?? {}, name),
     ),
   );
 
@@ -77,13 +62,11 @@ export async function handleUpdate(
   );
 
   if (!validated.success) {
-    return errorResponse(400, "Validation failed.", {
-      issues: validated.issues,
-    });
+    throw new ValidationError("Validation failed.", validated.issues);
   }
 
   const clientFieldNames = new Set(
-    Object.keys(body.value).filter((name) => !Object.hasOwn(scope ?? {}, name)),
+    Object.keys(body).filter((name) => !Object.hasOwn(scope ?? {}, name)),
   );
   const relationshipIssues = await validateRelationshipReferences(
     entry,
@@ -94,9 +77,7 @@ export async function handleUpdate(
   );
 
   if (relationshipIssues.length > 0) {
-    return errorResponse(400, "Validation failed.", {
-      issues: relationshipIssues,
-    });
+    throw new ValidationError("Validation failed.", relationshipIssues);
   }
 
   let record: Record<string, unknown> | undefined;
@@ -104,18 +85,17 @@ export async function handleUpdate(
     record = await entry.config.adapter.update(id, validated.value, scope);
   } catch (error) {
     if (error instanceof UniqueConstraintError) {
-      return errorResponse(400, "Validation failed.", {
-        issues: uniqueConstraintIssues(error, entry.fields),
-      });
+      throw new ValidationError(
+        "Validation failed.",
+        uniqueConstraintIssues(error, entry.fields),
+      );
     }
     throw error;
   }
 
-  // The record existed and was permission-checked above, but that check and the update
-  // itself aren't atomic: a concurrent delete can still land in between, which the
-  // adapter reports the same way `find` reports "missing": `undefined`, not a thrown error.
+// Handle records deleted between the permission check and update as not found.
   if (!record) {
-    return notFoundResponse();
+    throw new NotFoundError();
   }
 
   const publicRecord = record as Record<string, unknown>;

@@ -1,12 +1,8 @@
+import { ForbiddenError, NotFoundError, ValidationError, VerikitError } from "@verikit/core";
 import type { ActionRunResult } from "@verikit/runtime";
 import { runAction } from "@verikit/runtime";
-import { parseJsonObjectBody } from "../http/parse-request.js";
-import {
-  dataResponse,
-  errorResponse,
-  forbiddenResponse,
-  notFoundResponse,
-} from "../http/responses.js";
+import { requireJsonObjectBody } from "../http/parse-request.js";
+import { dataResponse } from "../http/responses.js";
 import { maybeCheckAction } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
@@ -18,6 +14,10 @@ interface ActionRequestBody {
   recordId?: string;
 }
 
+/**
+ * Maps an action result to a response or the appropriate `VerikitError`.
+ * Unexpected execution failures become internal errors with the original cause preserved.
+ */
 function mapActionResult(result: ActionRunResult<unknown>): Response {
   if (result.success) {
     return dataResponse(result.result, { message: result.message });
@@ -25,19 +25,37 @@ function mapActionResult(result: ActionRunResult<unknown>): Response {
 
   switch (result.reason) {
     case "forbidden":
-      return errorResponse(403, result.message ?? "Forbidden");
+      throw new ForbiddenError(result.message);
     case "confirmation":
-      return errorResponse(409, result.message ?? "Confirmation required.", {
-        extra: { confirmationRequired: true },
-      });
+      throw new VerikitError(
+        result.message ?? "Confirmation required.",
+        "CONFIRMATION_REQUIRED",
+        409,
+        { confirmationRequired: true },
+      );
     case "unavailable":
-      return errorResponse(422, result.message ?? "Action unavailable.");
+      throw new VerikitError(
+        result.message ?? "Action unavailable.",
+        "ACTION_UNAVAILABLE",
+        422,
+      );
     case "validation":
-      return errorResponse(422, "Validation failed.", {
-        issues: result.issues,
-      });
-    case "execution":
-      return errorResponse(500, result.message ?? "Action failed.");
+      // 422, matching this route's other failure statuses, rather than the 400 resource
+      // create/update validation uses  same VALIDATION_ERROR code either way.
+      throw new ValidationError("Validation failed.", result.issues, 422);
+    case "execution": {
+      if (result.error instanceof VerikitError) {
+        throw result.error;
+      }
+
+      const wrapped = new VerikitError(
+        result.message ?? "Action failed.",
+        "INTERNAL_ERROR",
+        500,
+      );
+      wrapped.cause = result.error;
+      throw wrapped;
+    }
   }
 }
 
@@ -52,20 +70,14 @@ export async function handleAction(
   );
 
   if (!actionBuilder) {
-    return notFoundResponse(`Unknown action "${name}".`);
+    throw new NotFoundError(`Unknown action "${name}".`);
   }
 
-  const parsedBody = await parseJsonObjectBody(request, {
+  const parsedBody = await requireJsonObjectBody(request, {
     maxBodyBytes: ctx.maxBodyBytes,
   });
 
-  if (!parsedBody.ok) {
-    return parsedBody.reason === "too-large"
-      ? errorResponse(413, "Payload too large.")
-      : errorResponse(400, "Invalid JSON body.");
-  }
-
-  const body = parsedBody.value as ActionRequestBody;
+  const body = parsedBody as ActionRequestBody;
   let record: unknown;
   const scope = await resolveScope(entry, actor);
 
@@ -73,7 +85,7 @@ export async function handleAction(
     record = await entry.config.adapter.find(body.recordId, scope);
 
     if (!record) {
-      return notFoundResponse(`Record "${body.recordId}" not found.`);
+      throw new NotFoundError(`Record "${body.recordId}" not found.`);
     }
   }
 
@@ -82,13 +94,12 @@ export async function handleAction(
     record,
   });
 
-  // A denied actor with a resolved recordId gets the same 404 as a missing one:
-  // returning 403 here would let them distinguish "doesn't exist" from "exists but I
-  // can't run this action on it" (an existence oracle) for a record we've already confirmed is real. With no recordId there's no record to leak the existence of, so a plain 403 is fine.
+// Return 404 for denied record actions to avoid leaking record existence;
+// use 403 when no record is involved.
   if (!permission.allowed) {
-    return record !== undefined
-      ? notFoundResponse(`Record "${body.recordId}" not found.`)
-      : forbiddenResponse(permission.message);
+    throw record !== undefined
+      ? new NotFoundError(`Record "${body.recordId}" not found.`)
+      : new ForbiddenError(permission.message);
   }
 
   const result = await runAction(actionBuilder, {
@@ -103,7 +114,7 @@ export async function handleAction(
     result.reason === "forbidden" &&
     record !== undefined
   ) {
-    return notFoundResponse(`Record "${body.recordId}" not found.`);
+    throw new NotFoundError(`Record "${body.recordId}" not found.`);
   }
 
   return mapActionResult(result);
