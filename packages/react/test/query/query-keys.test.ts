@@ -14,4 +14,18 @@ test("resourceQueryKeys builds the documented all/list/find shape", () => {
     { page: 2 },
   ]);
   assert.deepEqual(keys.find("1"), ["verikit", "posts", "find", "1"]);
+  assert.deepEqual(keys.relationship("author"), [
+    "verikit",
+    "posts",
+    "relationship",
+    "author",
+    {},
+  ]);
+  assert.deepEqual(keys.relationship("author", { page: 2 }), [
+    "verikit",
+    "posts",
+    "relationship",
+    "author",
+    { page: 2 },
+  ]);
 });

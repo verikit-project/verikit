@@ -7,6 +7,7 @@ test("react package exposes its public entrypoint", async () => {
   const node: ReactNode = "Verikit";
 
   assert.deepEqual(Object.keys(module).sort(), [
+    "BelongsToRelationshipField",
     "BooleanField",
     "DateField",
     "DateTimeField",
@@ -49,6 +50,8 @@ test("react package exposes its public entrypoint", async () => {
     "useListResource",
     "useResourceFind",
     "useResourceForm",
+    "useResourceRelationship",
+    "useResourceSchemaTreeForm",
     "useResourceTable",
     "useUpdateResource",
     "useVerikitClient",

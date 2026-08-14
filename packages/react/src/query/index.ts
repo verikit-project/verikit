@@ -1,7 +1,12 @@
-export { useListResource, useResourceFind } from "./use-resource-queries.js";
+export {
+  useListResource,
+  useResourceFind,
+  useResourceRelationship,
+} from "./use-resource-queries.js";
 export type {
   UseListResourceOptions,
   UseFindResourceOptions,
+  UseResourceRelationshipOptions,
 } from "./use-resource-queries.js";
 export {
   useCreateResource,
@@ -25,6 +30,11 @@ export type {
   UseResourceFormResult,
   UseResourceFormSource,
 } from "./use-resource-form.js";
+export { useResourceSchemaTreeForm } from "./use-resource-schema-tree-form.js";
+export type {
+  UseResourceSchemaTreeFormOptions,
+  UseResourceSchemaTreeFormResult,
+} from "./use-resource-schema-tree-form.js";
 export { useResourceTable } from "./use-resource-table.js";
 export type {
   UseResourceTableOptions,

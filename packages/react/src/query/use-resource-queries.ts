@@ -45,3 +45,30 @@ export function useResourceFind<TRecord = Record<string, unknown>>(
     ...options,
   });
 }
+
+export type UseResourceRelationshipOptions<TTarget> = Omit<
+  UseQueryOptions<ListResponse<TTarget>, Error>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Lists selectable records for a `belongsTo` relationship, cached by
+ * resource, relationship, and params. Server-side permissions and scopes apply.
+ */
+export function useResourceRelationship<TTarget = Record<string, unknown>>(
+  name: string,
+  relationshipName: string,
+  params: ListParams = {},
+  options?: UseResourceRelationshipOptions<TTarget>,
+): UseQueryResult<ListResponse<TTarget>, Error> {
+  const client = useVerikitClient();
+
+  return useQuery({
+    queryKey: resourceQueryKeys(name).relationship(relationshipName, params),
+    queryFn: ({ signal }) =>
+      client
+        .resource(name)
+        .relationship<TTarget>(relationshipName, params, { signal }),
+    ...options,
+  });
+}

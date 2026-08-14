@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { installJsdom } from "../dom-setup.js";
-import { useResourceFind, useListResource } from "../../src/query/index.js";
+import {
+  useResourceFind,
+  useListResource,
+  useResourceRelationship,
+} from "../../src/query/index.js";
 import {
   createFakeClient,
   setupHarness,
@@ -103,6 +107,52 @@ test("useResourceFind surfaces an error status when the record is missing", asyn
   await waitFor(() => captured?.status === "error");
 
   assert.match(captured!.error!.message, /Not found/);
+
+  harness.cleanup();
+});
+
+test("useResourceRelationship reaches success with the picker's records", async () => {
+  const { client, calls } = createFakeClient([
+    { id: "1", title: "Ada" },
+    { id: "2", title: "Grace" },
+  ]);
+  const harness = setupHarness(client);
+
+  let captured:
+    ReturnType<typeof useResourceRelationship<FakeRecord>> | undefined;
+
+  function Probe() {
+    captured = useResourceRelationship<FakeRecord>("posts", "author");
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => captured?.status === "success");
+
+  // The fake client's `relationship()` delegates to `list()`.
+  assert.equal(calls.list, 1);
+  assert.equal(captured?.data?.records.length, 2);
+
+  harness.cleanup();
+});
+
+test("useResourceRelationship caches separately per relationship name", async () => {
+  const { client, calls } = createFakeClient([{ id: "1", title: "Ada" }]);
+  const harness = setupHarness(client);
+
+  let a: ReturnType<typeof useResourceRelationship<FakeRecord>> | undefined;
+  let b: ReturnType<typeof useResourceRelationship<FakeRecord>> | undefined;
+
+  function Probe() {
+    a = useResourceRelationship<FakeRecord>("posts", "author");
+    b = useResourceRelationship<FakeRecord>("posts", "editor");
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => a?.status === "success" && b?.status === "success");
+
+  assert.equal(calls.list, 2);
 
   harness.cleanup();
 });

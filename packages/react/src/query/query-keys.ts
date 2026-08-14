@@ -4,6 +4,10 @@ export interface ResourceQueryKeys {
   all: readonly [string, string];
   list: (params?: ListParams) => readonly [string, string, "list", ListParams];
   find: (id: string) => readonly [string, string, "find", string];
+  relationship: (
+    relationshipName: string,
+    params?: ListParams,
+  ) => readonly [string, string, "relationship", string, ListParams];
 }
 
 /**
@@ -15,5 +19,7 @@ export function resourceQueryKeys(name: string): ResourceQueryKeys {
     list: (params: ListParams = {}) =>
       ["verikit", name, "list", params] as const,
     find: (id: string) => ["verikit", name, "find", id] as const,
+    relationship: (relationshipName: string, params: ListParams = {}) =>
+      ["verikit", name, "relationship", relationshipName, params] as const,
   };
 }

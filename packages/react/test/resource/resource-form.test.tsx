@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
-import { defineResource, text } from "@verikit/core";
+import { belongsTo, defineResource, text } from "@verikit/core";
 import { installJsdom, typeIntoInput } from "../dom-setup.js";
 import { ResourceForm } from "../../src/resource/index.js";
 import {
@@ -200,6 +200,95 @@ test("a failed mutation surfaces as a submit-error alert", async () => {
   assert.match(
     harness.container.querySelector('[role="alert"]')?.textContent ?? "",
     /Simulated update failure/,
+  );
+
+  harness.cleanup();
+});
+
+test("a belongsTo relationship (no .form()) renders its built-in picker, and its foreign key submits with the record", async () => {
+  const author = defineResource("authors", { fields: { name: text() } });
+  const postWithAuthor = defineResource("posts", {
+    fields: { title: text().required(), authorId: text().formHidden() },
+    relationships: (field) => ({
+      author: belongsTo(() => author)
+        .via(field("authorId"))
+        .label("Author")
+        .displayField("name"),
+    }),
+  });
+  const { client, records } = createFakeClient([]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceForm<FakeRecord>
+      resource={postWithAuthor}
+      defaultValues={{ authorId: "2" }}
+    />,
+  );
+
+  assert.equal(harness.container.querySelector("label")?.textContent, "Author");
+  assert.ok(harness.container.querySelector('[data-slot="select-trigger"]'));
+
+  typeIntoInput(
+    harness.container.querySelector('input[name="title"]') as HTMLInputElement,
+    "New post",
+  );
+  const form = harness.container.querySelector("form") as HTMLFormElement;
+  form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+  await waitFor(() => records.length === 1);
+  assert.equal(records[0]?.title, "New post");
+  assert.equal((records[0] as unknown as { authorId?: string }).authorId, "2");
+
+  harness.cleanup();
+});
+
+test("a conditionally-visible field is hidden until its condition is met, and shown once it is", async () => {
+  const conditionalResource = defineResource("posts", {
+    fields: {
+      title: text().required(),
+      kind: text().default("standard"),
+      note: text().required().visibleWhen("kind", "custom"),
+    },
+  });
+  const { client, calls, records } = createFakeClient([]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceForm<FakeRecord> resource={conditionalResource} />,
+  );
+
+  assert.equal(harness.container.querySelector('input[name="note"]'), null);
+
+  typeIntoInput(
+    harness.container.querySelector('input[name="title"]') as HTMLInputElement,
+    "New post",
+  );
+  const form = harness.container.querySelector("form") as HTMLFormElement;
+  form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+  await waitFor(() => calls.create === 1);
+  assert.equal(records[0]?.title, "New post");
+  assert.equal((records[0] as unknown as { note?: string }).note, undefined);
+
+  typeIntoInput(
+    harness.container.querySelector('input[name="kind"]') as HTMLInputElement,
+    "custom",
+  );
+  await waitFor(() =>
+    Boolean(harness.container.querySelector('input[name="note"]')),
+  );
+
+  typeIntoInput(
+    harness.container.querySelector('input[name="note"]') as HTMLInputElement,
+    "Extra detail",
+  );
+  form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+  await waitFor(() => calls.create === 2);
+  assert.equal(
+    (records[1] as unknown as { note?: string }).note,
+    "Extra detail",
   );
 
   harness.cleanup();
