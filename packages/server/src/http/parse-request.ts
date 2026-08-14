@@ -1,4 +1,5 @@
 import type { FieldSchema } from "@verikit/core";
+import { ValidationError, VerikitError } from "@verikit/core";
 import type { ResourceFilter, ResourceListParams } from "../adapter.js";
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -53,9 +54,8 @@ export function parseListParams(
 }
 
 /**
- * Parses `filter[field]=value` and range variants such as
- * `filter[createdAt][gte]=2026-01-01`. Values are decoded according to their
- * declared field type and unknown/non-filterable fields are ignored by callers.
+ * Parses resource filters and range operators by field type.
+ * Unknown or non-filterable fields are ignored.
  */
 export function parseFilters(
   url: URL,
@@ -85,9 +85,7 @@ function parseFilterValue(
   field: FieldSchema,
   operator: keyof ResourceFilter,
 ): string | number | boolean | null | undefined {
-  // SQL range comparisons with NULL are neither valid Prisma filters nor
-  // meaningful SQL predicates. The sentinel is intentionally supported only
-  // by exact equality, where adapters translate it to `IS NULL`/`equals: null`.
+// Allow null only for equality; range comparisons require non-null values.
   if (raw === "null") return operator === "eq" ? null : undefined;
   if (field.fieldType === "boolean") {
     return raw === "true" ? true : raw === "false" ? false : undefined;
@@ -105,8 +103,8 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Reads a request body with a hard byte limit. A declared Content-Length can
- * reject early, but every streamed chunk is counted as the authoritative limit.
+ * Reads a request body up to the configured byte limit.
+ * Streamed bytes are authoritative regardless of `Content-Length`.
  */
 export async function readRequestBytes(
   request: Request,
@@ -196,4 +194,22 @@ export async function parseJsonObjectBody(
   } catch {
     return { ok: false, reason: "invalid-json" };
   }
+}
+
+/**
+ * Parses a JSON object body and throws the appropriate `VerikitError` on failure.
+ */
+export async function requireJsonObjectBody(
+  request: Request,
+  options: { maxBodyBytes?: number | false } = {},
+): Promise<Record<string, unknown>> {
+  const body = await parseJsonObjectBody(request, options);
+
+  if (body.ok) {
+    return body.value;
+  }
+
+  throw body.reason === "too-large"
+    ? new VerikitError("Payload too large.", "PAYLOAD_TOO_LARGE", 413)
+    : new ValidationError("Invalid JSON body.");
 }

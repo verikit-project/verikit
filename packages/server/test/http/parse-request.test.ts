@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { boolean, number } from "@verikit/core";
+import { boolean, number, ValidationError, VerikitError } from "@verikit/core";
 import {
   parseFilters,
   readRequestBytes,
   parseJsonObjectBody,
   parseListParams,
+  requireJsonObjectBody,
 } from "../../src/http/parse-request.js";
 
 test("parseListParams defaults page/pageSize when absent", () => {
@@ -155,6 +156,46 @@ test("parseJsonObjectBody allows oversized bodies when maxBodyBytes is false", a
     {
       ok: true,
       value: { title: "This is deliberately larger than 8 bytes" },
+    },
+  );
+});
+
+test("requireJsonObjectBody returns the parsed value for a valid body", async () => {
+  const request = new Request("https://x/posts", {
+    method: "POST",
+    body: JSON.stringify({ title: "Hi" }),
+  });
+  assert.deepEqual(await requireJsonObjectBody(request), { title: "Hi" });
+});
+
+test("requireJsonObjectBody throws a ValidationError for invalid JSON", async () => {
+  const request = new Request("https://x/posts", {
+    method: "POST",
+    body: "{not json",
+  });
+
+  await assert.rejects(requireJsonObjectBody(request), (error: unknown) => {
+    assert.ok(error instanceof ValidationError);
+    assert.equal(error.message, "Invalid JSON body.");
+    assert.equal(error.status, 400);
+    return true;
+  });
+});
+
+test("requireJsonObjectBody throws a 413 PAYLOAD_TOO_LARGE VerikitError for an oversized body", async () => {
+  const request = new Request("https://x/posts", {
+    method: "POST",
+    body: JSON.stringify({ title: "This is too large" }),
+  });
+
+  await assert.rejects(
+    requireJsonObjectBody(request, { maxBodyBytes: 8 }),
+    (error: unknown) => {
+      assert.ok(error instanceof VerikitError);
+      assert.ok(!(error instanceof ValidationError));
+      assert.equal(error.code, "PAYLOAD_TOO_LARGE");
+      assert.equal(error.status, 413);
+      return true;
     },
   );
 });
