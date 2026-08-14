@@ -4,6 +4,7 @@ import { QueryClient } from "@tanstack/react-query";
 import {
   patchCachedListRecord,
   removeCachedListRecord,
+  restoreDeletedRecord,
   restoreResourceQueries,
   snapshotResourceQueries,
 } from "../../src/query/optimistic.js";
@@ -50,6 +51,50 @@ test("snapshotResourceQueries/restoreResourceQueries round-trip every cached que
     page: 1,
     pageSize: 25,
   });
+});
+
+test("restoreDeletedRecord rolls back only the failed row without resurrecting a concurrently deleted sibling", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+  const original = {
+    records: [
+      { id: "1", title: "One" },
+      { id: "2", title: "Two" },
+    ],
+    total: 2,
+    page: 1,
+    pageSize: 25,
+  };
+  queryClient.setQueryData(keys.list(), original);
+  queryClient.setQueryData(keys.find("1"), original.records[0]);
+  const snapshot = snapshotResourceQueries(queryClient, keys);
+
+  // Mirror two concurrent optimistic deletes. The first one fails; the
+  // second succeeds and must remain absent from the rollback result.
+  removeCachedListRecord<Row>(queryClient, keys, "1");
+  removeCachedListRecord<Row>(queryClient, keys, "2");
+  queryClient.removeQueries({ queryKey: keys.find("1"), exact: true });
+
+  restoreDeletedRecord<Row>(queryClient, snapshot, "1");
+
+  assert.deepEqual(queryClient.getQueryData(keys.list()), {
+    records: [{ id: "1", title: "One" }],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  });
+  assert.deepEqual(queryClient.getQueryData(keys.find("1")), {
+    id: "1",
+    title: "One",
+  });
+
+  // Reapplying the same failed rollback is idempotent: it cannot duplicate
+  // the row while a query is settling/refetching.
+  restoreDeletedRecord<Row>(queryClient, snapshot, "1");
+  assert.equal(
+    queryClient.getQueryData<{ records: Row[] }>(keys.list())?.records.length,
+    1,
+  );
 });
 
 test("patchCachedListRecord patches only the matching record, leaving others untouched", () => {

@@ -423,7 +423,7 @@ test("useDeleteResource rolls back its optimistic removal when the mutation fail
   harness.cleanup();
 });
 
-test("useDeleteResource's failed rollback is followed by a forced refetch, so a stale snapshot can't be the final word", async () => {
+test("useDeleteResource's failed rollback is followed by a forced refetch to reconcile server state", async () => {
   const { client, calls, failNext } = createFakeClient([
     { id: "1", title: "Hello" },
   ]);
@@ -454,10 +454,9 @@ test("useDeleteResource's failed rollback is followed by a forced refetch, so a 
     await assert.rejects(() => del!.mutateAsync("1"));
   });
 
-  // Same reasoning as update's rollback: onError only replays the
-  // pre-mutation snapshot into the cache, with no way to know whether
-  // something fresher landed while the delete was in flight. The forced
-  // refetch on settle is what a rollback alone can't provide.
+  // The targeted rollback makes the failed record visible immediately; the
+  // forced refetch still reconciles any unrelated server-side changes that
+  // landed while the mutation was in flight.
   await waitFor(() => calls.find === 2 && calls.list === 2);
   assert.deepEqual(harness.queryClient.getQueryData<FakeRecord>(findKey("1")), {
     id: "1",

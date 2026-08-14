@@ -8,6 +8,7 @@ import { useVerikitClient } from "../client/use-verikit-client.js";
 import {
   patchCachedListRecord,
   removeCachedListRecord,
+  restoreDeletedRecord,
   restoreResourceQueries,
   snapshotResourceQueries,
   type ResourceQuerySnapshot,
@@ -131,7 +132,7 @@ interface DeleteResourceContext {
 }
 
 /**
- * Deletes a resource record by id. Optimistically removes it from any cached list and evicts its `find(id)` cache entry outright, rolling back to the pre-mutation snapshot on error; on success, invalidates list/search queries and (redundantly but harmlessly) re-evicts `find(id)`, since refetching a known-deleted record would just 404.
+ * Deletes a resource record by id. Optimistically removes it from any cached list and evicts its `find(id)` cache entry outright. On error it restores only that record from its snapshot, preserving concurrent sibling deletes; on success, it invalidates list/search queries and (redundantly but harmlessly) re-evicts `find(id)`, since refetching a known-deleted record would just 404.
  */
 export function useDeleteResource(
   name: string,
@@ -156,7 +157,7 @@ export function useDeleteResource(
     },
     onError: (error, id, onMutateResult, mutationContext) => {
       if (onMutateResult) {
-        restoreResourceQueries(queryClient, onMutateResult.snapshot);
+        restoreDeletedRecord(queryClient, onMutateResult.snapshot, id);
       }
       return options?.onError?.(
         error,
@@ -169,10 +170,7 @@ export function useDeleteResource(
       queryClient.removeQueries({ queryKey: keys.find(id) });
       return options?.onSuccess?.(data, id, ...rest);
     },
-    // Runs regardless of outcome so a failed delete also forces a refetch:
-    // onError's rollback restores a pre-mutation snapshot, which can be
-    // stale if a background refetch wrote fresher data while this mutation
-    // was in flight, and this is what corrects that afterward.
+// Always refetch after deletion to reconcile optimistic state with the server.
     onSettled: (data, error, id, onMutateResult, mutationContext) => {
       void queryClient.invalidateQueries({ queryKey: keys.all });
       return options?.onSettled?.(

@@ -26,11 +26,20 @@ export function restoreResourceQueries(
   }
 }
 
-// Adapters return whatever id type their storage uses (e.g. Prisma/drizzle's
-// numeric autoincrement primary keys), while the mutation-side `id` this is
-// matched against is always the string path segment from `ResourceAdapter`'s
-// contract, so stringify a numeric id here rather than letting a numeric-id
-// resource silently never match anything in cache.
+function isListResponse<TRecord>(
+  value: unknown,
+): value is ListResponse<TRecord> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "records" in value &&
+    "total" in value &&
+    Array.isArray((value as { records: unknown }).records) &&
+    typeof (value as { total: unknown }).total === "number"
+  );
+}
+
+// Normalize adapter IDs to strings so numeric IDs match the resource contract.
 export function recordId(record: unknown): string | undefined {
   const value = (record as { id?: unknown } | null)?.id;
 
@@ -47,6 +56,46 @@ export function recordId(record: unknown): string | undefined {
 
 const isListQuery = (query: { queryKey: QueryKey }): boolean =>
   query.queryKey[2] === "list";
+
+/**
+ * Restores only the failed optimistic delete to avoid reviving records
+ * removed by concurrent mutations.
+ */
+export function restoreDeletedRecord<TRecord>(
+  queryClient: QueryClient,
+  snapshot: ResourceQuerySnapshot,
+  id: string,
+): void {
+  for (const [queryKey, previous] of snapshot) {
+    if (isListQuery({ queryKey }) && isListResponse<TRecord>(previous)) {
+      const deletedRecord = previous.records.find(
+        (record) => recordId(record) === id,
+      );
+
+      if (!deletedRecord) continue;
+
+      queryClient.setQueryData<ListResponse<TRecord>>(queryKey, (current) => {
+        if (
+          !current ||
+          current.records.some((record) => recordId(record) === id)
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+          records: [...current.records, deletedRecord],
+          total: current.total + 1,
+        };
+      });
+      continue;
+    }
+
+    if (queryKey[2] === "find" && queryKey[3] === id) {
+      queryClient.setQueryData(queryKey, previous);
+    }
+  }
+}
 
 /**
  * Optimistically patches a record by id across every cached list page. A record whose `id` doesn't match (or that has no string/numeric `id` at all) is left untouched the eventual `invalidateQueries` on success still resolves any list this can't safely predict.
