@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#components/select";
+import { Button } from "#components/button";
 import { Input } from "#components/input";
 import { Label } from "#components/label";
 import type { ResourceTableFilters } from "../query/use-resource-table.js";
@@ -21,6 +22,34 @@ export function filterableFields(
 }
 
 const ALL_VALUE = "__all__";
+
+/** Converts a browser `datetime-local` value into the UTC ISO format adapters expect. */
+export function dateTimeFilterValue(value: string): string | undefined {
+  if (value === "") return undefined;
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
+/** Formats a stored datetime filter for a browser `datetime-local` input. */
+export function dateTimeLocalInputValue(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function isOrderedRange(
+  min: string | number | undefined,
+  max: string | number | undefined,
+): boolean {
+  if (min === undefined || max === undefined) return true;
+
+  return typeof min === "number" && typeof max === "number"
+    ? min <= max
+    : String(min) <= String(max);
+}
 
 /** A boolean field's tri-state filter: unset, true, or false. */
 function BooleanFilterControl({
@@ -122,13 +151,44 @@ function RangeFilterControl({
 
   function apply(min: string, max: string): void {
     const next: FieldFilter = {};
-    if (min !== "") next.gte = inputType === "number" ? Number(min) : min;
-    if (max !== "") next.lte = inputType === "number" ? Number(max) : max;
+    if (min !== "") {
+      const value =
+        inputType === "number"
+          ? Number(min)
+          : inputType === "datetime-local"
+            ? dateTimeFilterValue(min)
+            : min;
+      if (value !== undefined) next.gte = value;
+    }
+    if (max !== "") {
+      const value =
+        inputType === "number"
+          ? Number(max)
+          : inputType === "datetime-local"
+            ? dateTimeFilterValue(max)
+            : max;
+      if (value !== undefined) next.lte = value;
+    }
+    // Native `min`/`max` attributes guide browser input, but callers can
+    // still type or script an inverted range. Never let that reach an adapter
+    // as an impossible (or misleading) query.
+    if (!isOrderedRange(next.gte, next.lte)) return;
+
     onChange(Object.keys(next).length > 0 ? next : undefined);
   }
 
-  const minValue = value?.gte === undefined ? "" : String(value.gte);
-  const maxValue = value?.lte === undefined ? "" : String(value.lte);
+  const minValue =
+    value?.gte === undefined
+      ? ""
+      : inputType === "datetime-local"
+        ? dateTimeLocalInputValue(String(value.gte))
+        : String(value.gte);
+  const maxValue =
+    value?.lte === undefined
+      ? ""
+      : inputType === "datetime-local"
+        ? dateTimeLocalInputValue(String(value.lte))
+        : String(value.lte);
 
   return (
     <div className="flex items-center gap-1">
@@ -137,6 +197,7 @@ function RangeFilterControl({
         aria-label={`${field.label ?? field.name} minimum`}
         placeholder="Min"
         value={minValue}
+        max={maxValue || undefined}
         onChange={(event) => apply(event.currentTarget.value, maxValue)}
       />
       <span className="text-muted-foreground">–</span>
@@ -145,6 +206,7 @@ function RangeFilterControl({
         aria-label={`${field.label ?? field.name} maximum`}
         placeholder="Max"
         value={maxValue}
+        min={minValue || undefined}
         onChange={(event) => apply(minValue, event.currentTarget.value)}
       />
     </div>
@@ -231,6 +293,7 @@ export function ResourceTableFilterPanel({
   onFiltersChange,
 }: ResourceTableFilterPanelProps): ReactElement | null {
   const filterFields = filterableFields(fields);
+  const hasActiveFilters = Object.keys(filters).length > 0;
 
   if (filterFields.length === 0) {
     return null;
@@ -250,6 +313,18 @@ export function ResourceTableFilterPanel({
 
   return (
     <div className="grid grid-cols-1 gap-3 rounded-lg border border-border p-3 sm:grid-cols-2 md:grid-cols-3">
+      {hasActiveFilters ? (
+        <div className="flex justify-end sm:col-span-2 md:col-span-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            onClick={() => onFiltersChange({})}
+          >
+            Clear filters
+          </Button>
+        </div>
+      ) : null}
       {filterFields.map((field) => (
         <div key={field.name} className="grid gap-1">
           <Label>{field.label ?? field.name}</Label>

@@ -3,6 +3,8 @@ import test from "node:test";
 import type { FieldSchema } from "@verikit/core";
 import { isValidElement, type ReactElement } from "react";
 import {
+  dateTimeFilterValue,
+  dateTimeLocalInputValue,
   filterableFields,
   ResourceTableFilterPanel,
 } from "../../src/resource/resource-table-filters.js";
@@ -39,7 +41,9 @@ function unwrapControl(element: AnyElement): AnyElement {
 
 function childrenOf(element: AnyElement): AnyElement[] {
   const children = element.props.children;
-  return (Array.isArray(children) ? children : [children]) as AnyElement[];
+  return (Array.isArray(children) ? children.flat() : [children]).filter(
+    isValidElement,
+  ) as AnyElement[];
 }
 
 /** Renders the panel and returns each filterable field's `[Label, FilterControl]` pair, keyed by field name. */
@@ -107,6 +111,42 @@ test("ResourceTableFilterPanel labels each control with the field's label, falli
 
   assert.equal(titleLabel!.props.children, "Title");
   assert.equal(viewsLabel!.props.children, "views");
+});
+
+test("ResourceTableFilterPanel shows a compact clear button only for active filters", () => {
+  const fields: Record<string, FieldSchema> = {
+    title: field({ name: "title", filterable: true }),
+  };
+  const cleared: ResourceTableFilters[] = [];
+  const inactive = asElement(
+    ResourceTableFilterPanel({
+      fields,
+      filters: {},
+      onFiltersChange: (next) => cleared.push(next),
+    }),
+  );
+  assert.equal(
+    childrenOf(inactive).some(
+      (child) => child?.props.children === "Clear filters",
+    ),
+    false,
+  );
+
+  const active = asElement(
+    ResourceTableFilterPanel({
+      fields,
+      filters: { title: { eq: "Ada" } },
+      onFiltersChange: (next) => cleared.push(next),
+    }),
+  );
+  const clearWrapper = childrenOf(active)[0]!;
+  const button = asElement(clearWrapper.props.children);
+
+  assert.equal(button.props.children, "Clear filters");
+  assert.equal(button.props.size, "xs");
+  assert.equal(button.props.variant, "ghost");
+  (button.props.onClick as () => void)();
+  assert.deepEqual(cleared, [{}]);
 });
 
 test("boolean filter control reflects the active filter and reports Yes/No/All", () => {
@@ -233,7 +273,7 @@ test("a number field's range control coerces its min/max to numbers and clears w
   assert.deepEqual(calls.at(-1), {});
 });
 
-test("date and datetime fields render their range control with the matching input type and pass values through as raw strings", () => {
+test("date fields retain date strings while datetime bounds are normalized to UTC ISO", () => {
   const fields: Record<string, FieldSchema> = {
     startsOn: field({ name: "startsOn", fieldType: "date", filterable: true }),
     startsAt: field({
@@ -254,13 +294,103 @@ test("date and datetime fields render their range control with the matching inpu
   assert.deepEqual(calls.at(-1), { startsOn: { gte: "2026-01-01" } });
 
   const datetimeRange = unwrapControl(controls.get("startsAt")!);
-  const [datetimeMin, , datetimeMax] = childrenOf(datetimeRange);
+  const [datetimeMin] = childrenOf(datetimeRange);
   assert.equal(datetimeMin!.props.type, "datetime-local");
 
-  (datetimeMax!.props.onChange as (event: unknown) => void)({
-    currentTarget: { value: "2026-01-02T10:00" },
+  (datetimeMin!.props.onChange as (event: unknown) => void)({
+    currentTarget: { value: "2026-08-05T10:45" },
   });
-  assert.deepEqual(calls.at(-1), { startsAt: { lte: "2026-01-02T10:00" } });
+  assert.deepEqual(calls.at(-1), {
+    startsAt: { gte: new Date("2026-08-05T10:45").toISOString() },
+  });
+
+  const nextDatetimeRange = unwrapControl(
+    panelControls(fields, calls.at(-1)!, (next) => calls.push(next)).get(
+      "startsAt",
+    )!,
+  );
+  const [nextDatetimeMin, , nextDatetimeMax] = childrenOf(nextDatetimeRange);
+  (nextDatetimeMax!.props.onChange as (event: unknown) => void)({
+    currentTarget: { value: "2026-08-12T10:45" },
+  });
+  assert.deepEqual(calls.at(-1), {
+    startsAt: {
+      gte: new Date("2026-08-05T10:45").toISOString(),
+      lte: new Date("2026-08-12T10:45").toISOString(),
+    },
+  });
+  assert.equal(nextDatetimeMin!.props.type, "datetime-local");
+});
+
+test("dateTimeFilterValue drops empty and invalid browser values", () => {
+  assert.equal(dateTimeFilterValue(""), undefined);
+  assert.equal(dateTimeFilterValue("not-a-datetime"), undefined);
+  assert.equal(
+    dateTimeFilterValue("2026-08-05T10:45"),
+    new Date("2026-08-05T10:45").toISOString(),
+  );
+});
+
+test("dateTimeLocalInputValue formats stored UTC filters for datetime-local controls", () => {
+  const input = "2026-08-05T10:45";
+  assert.equal(dateTimeLocalInputValue(dateTimeFilterValue(input)!), input);
+  assert.equal(dateTimeLocalInputValue("not-a-datetime"), "not-a-datetime");
+});
+
+test("datetime range controls omit malformed bounds instead of forwarding them to an adapter", () => {
+  const fields: Record<string, FieldSchema> = {
+    startsAt: field({
+      name: "startsAt",
+      fieldType: "datetime",
+      filterable: true,
+    }),
+  };
+  const calls: ResourceTableFilters[] = [];
+  const range = unwrapControl(
+    panelControls(fields, {}, (next) => calls.push(next)).get("startsAt")!,
+  );
+  const [minInput, , maxInput] = childrenOf(range);
+
+  (minInput!.props.onChange as (event: unknown) => void)({
+    currentTarget: { value: "not-a-datetime" },
+  });
+  (maxInput!.props.onChange as (event: unknown) => void)({
+    currentTarget: { value: "not-a-datetime" },
+  });
+
+  assert.deepEqual(calls, [{}, {}]);
+});
+
+test("range controls constrain and reject an inverted from/to range", () => {
+  const fields: Record<string, FieldSchema> = {
+    startsAt: field({
+      name: "startsAt",
+      fieldType: "datetime",
+      filterable: true,
+    }),
+  };
+  const calls: ResourceTableFilters[] = [];
+  const range = unwrapControl(
+    panelControls(
+      fields,
+      {
+        startsAt: {
+          gte: dateTimeFilterValue("2026-08-05T10:45"),
+          lte: dateTimeFilterValue("2026-08-12T10:45"),
+        },
+      },
+      (next) => calls.push(next),
+    ).get("startsAt")!,
+  );
+  const [minInput, , maxInput] = childrenOf(range);
+
+  assert.equal(maxInput!.props.min, "2026-08-05T10:45");
+  assert.equal(minInput!.props.max, "2026-08-12T10:45");
+
+  (maxInput!.props.onChange as (event: unknown) => void)({
+    currentTarget: { value: "2026-08-04T10:45" },
+  });
+  assert.deepEqual(calls, []);
 });
 
 test("text filter control sets an exact-match filter and clears it when emptied", () => {
