@@ -41,11 +41,11 @@ function relationship(
  * exercise it.
  */
 test("mounts and resolves with the relationship picker's records for a labeled field", async () => {
-  const { client, calls } = createFakeClient([
+  const fixture = createFakeClient([
     { id: "1", title: "Ada" },
     { id: "2", title: "Grace" },
   ]);
-  const harness = setupHarness(client);
+  const harness = setupHarness(fixture.client);
 
   await harness.render(
     <BelongsToRelationshipField
@@ -54,7 +54,8 @@ test("mounts and resolves with the relationship picker's records for a labeled f
   );
 
   assert.equal(harness.container.querySelector("label")?.textContent, "Author");
-  await waitFor(() => calls.list === 1);
+  await waitFor(() => fixture.calls.list === 1);
+  assert.equal(fixture.lastListParams?.pageSize, 100);
   await waitFor(
     () =>
       harness.container.querySelector('[data-slot="select-value"]')
@@ -166,6 +167,26 @@ test("supports an explicit id, null value, disabled and read-only picker", async
   assert.equal(trigger.id, "author-picker");
   assert.equal(trigger.disabled, true);
   assert.ok(harness.container.querySelector(".custom-picker"));
+
+  harness.cleanup();
+});
+
+test("shows a relationship fetch failure instead of silently leaving the picker empty", async () => {
+  const { client, failNext } = createFakeClient([]);
+  failNext.list = new Error("Could not load authors.");
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <BelongsToRelationshipField relationship={relationship()} />,
+  );
+
+  await waitFor(() =>
+    Boolean(harness.container.querySelector('[role="alert"]')),
+  );
+  assert.match(
+    harness.container.querySelector('[role="alert"]')?.textContent ?? "",
+    /Could not load authors/,
+  );
 
   harness.cleanup();
 });

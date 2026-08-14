@@ -11,6 +11,10 @@ import {
 import { cn } from "#lib/utils";
 import { useResourceRelationship } from "../query/use-resource-queries.js";
 
+// Matches the server's maximum list page size, so a picker is not silently
+// limited to its ordinary table-page default (currently 25 records).
+const RELATIONSHIP_PICKER_PAGE_SIZE = 100;
+
 /** Props for {@link BelongsToRelationshipField}. */
 export interface BelongsToRelationshipFieldProps {
   /** Finalized `belongsTo` relationship node being rendered. */
@@ -65,10 +69,14 @@ export function BelongsToRelationshipField({
   const inputId =
     id ?? `verikit-relationship-${relationship.resource}-${relationshipName}`;
   const errorId = error ? `${inputId}-error` : undefined;
-  const { data, isLoading } = useResourceRelationship<Record<string, unknown>>(
+  const {
+    data,
+    isLoading,
+    error: fetchError,
+  } = useResourceRelationship<Record<string, unknown>>(
     relationship.resource,
     relationshipName,
-    {},
+    { pageSize: RELATIONSHIP_PICKER_PAGE_SIZE },
     { enabled: relationshipName.length > 0 },
   );
   const records = data?.records ?? [];
@@ -107,6 +115,11 @@ export function BelongsToRelationshipField({
       {error ? (
         <p id={errorId} className="text-sm text-destructive">
           {error}
+        </p>
+      ) : null}
+      {fetchError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {fetchError.message}
         </p>
       ) : null}
     </div>
