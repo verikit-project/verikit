@@ -80,7 +80,11 @@ test("ResourceTableFilterPanel renders nothing when no field is filterable", () 
   };
 
   assert.equal(
-    ResourceTableFilterPanel({ fields, filters: {}, onFiltersChange: () => {} }),
+    ResourceTableFilterPanel({
+      fields,
+      filters: {},
+      onFiltersChange: () => {},
+    }),
     null,
   );
 });
@@ -91,7 +95,11 @@ test("ResourceTableFilterPanel labels each control with the field's label, falli
     views: field({ name: "views", fieldType: "number", filterable: true }),
   };
   const panel = asElement(
-    ResourceTableFilterPanel({ fields, filters: {}, onFiltersChange: () => {} }),
+    ResourceTableFilterPanel({
+      fields,
+      filters: {},
+      onFiltersChange: () => {},
+    }),
   );
   const [titleWrapper, viewsWrapper] = childrenOf(panel);
   const [titleLabel] = childrenOf(titleWrapper!);
@@ -150,10 +158,8 @@ test("select filter control maps option values back, falling back to the raw key
     }),
   };
   const calls: ResourceTableFilters[] = [];
-  const controls = panelControls(
-    fields,
-    { status: { eq: 1 } },
-    (next) => calls.push(next),
+  const controls = panelControls(fields, { status: { eq: 1 } }, (next) =>
+    calls.push(next),
   );
   const select = unwrapControl(controls.get("status")!);
 
@@ -262,10 +268,8 @@ test("text filter control sets an exact-match filter and clears it when emptied"
     title: field({ name: "title", filterable: true }),
   };
   const calls: ResourceTableFilters[] = [];
-  const controls = panelControls(
-    fields,
-    { title: { eq: "Hello" } },
-    (next) => calls.push(next),
+  const controls = panelControls(fields, { title: { eq: "Hello" } }, (next) =>
+    calls.push(next),
   );
   const input = unwrapControl(controls.get("title")!);
 
@@ -288,10 +292,8 @@ test("changing one field's filter leaves the others in the merged filter set unt
     views: field({ name: "views", fieldType: "number", filterable: true }),
   };
   const calls: ResourceTableFilters[] = [];
-  const controls = panelControls(
-    fields,
-    { views: { gte: 5 } },
-    (next) => calls.push(next),
+  const controls = panelControls(fields, { views: { gte: 5 } }, (next) =>
+    calls.push(next),
   );
   const titleInput = unwrapControl(controls.get("title")!);
 

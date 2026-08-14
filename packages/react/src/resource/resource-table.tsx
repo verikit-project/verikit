@@ -86,7 +86,10 @@ export interface ResourceTableProps<
    * or `actions` adds a selection checkbox column. Called with the selected
    * records and a function that clears the selection.
    */
-  renderBulkActions?: (records: TRecord[], clearSelection: () => void) => ReactNode;
+  renderBulkActions?: (
+    records: TRecord[],
+    clearSelection: () => void,
+  ) => ReactNode;
   /** Content shown in place of rows when the list is empty. Defaults to a plain message. */
   emptyState?: ReactNode;
   /** Class name applied to the outer container. */
@@ -205,7 +208,9 @@ export function ResourceTable<
     setBulkDeleting(false);
 
     if (failedCount > 0) {
-      setBulkDeleteError(`${failedCount} of ${ids.length} couldn't be deleted.`);
+      setBulkDeleteError(
+        `${failedCount} of ${ids.length} couldn't be deleted.`,
+      );
       return;
     }
 
@@ -304,7 +309,9 @@ export function ResourceTable<
             // `useResourceTable` seeds this state via `useState("")`, so
             // it's always a string, never nullish.
             value={table.store.state.globalFilter}
-            onChange={(event) => table.setGlobalFilter(event.currentTarget.value)}
+            onChange={(event) =>
+              table.setGlobalFilter(event.currentTarget.value)
+            }
             className="max-w-xs"
           />
           {hasFilterableFields ? (
@@ -369,7 +376,12 @@ export function ResourceTable<
                 Delete selected
               </Button>
             ) : null}
-            <Button type="button" variant="outline" size="sm" onClick={clearSelection}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={clearSelection}
+            >
               Clear
             </Button>
           </div>

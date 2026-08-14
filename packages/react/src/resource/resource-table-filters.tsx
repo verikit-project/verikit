@@ -185,11 +185,15 @@ function FilterControl({
   onChange: (next: FieldFilter | undefined) => void;
 }): ReactElement {
   if (field.fieldType === "boolean") {
-    return <BooleanFilterControl field={field} value={value} onChange={onChange} />;
+    return (
+      <BooleanFilterControl field={field} value={value} onChange={onChange} />
+    );
   }
 
   if (field.fieldType === "select") {
-    return <SelectFilterControl field={field} value={value} onChange={onChange} />;
+    return (
+      <SelectFilterControl field={field} value={value} onChange={onChange} />
+    );
   }
 
   if (
@@ -197,7 +201,9 @@ function FilterControl({
     field.fieldType === "date" ||
     field.fieldType === "datetime"
   ) {
-    return <RangeFilterControl field={field} value={value} onChange={onChange} />;
+    return (
+      <RangeFilterControl field={field} value={value} onChange={onChange} />
+    );
   }
 
   return <TextFilterControl field={field} value={value} onChange={onChange} />;

@@ -1008,9 +1008,7 @@ test("Cancel on the bulk-delete dialog closes it without deleting", async () => 
 
   const table = harness.container.querySelector("table") as HTMLElement;
   act(() => {
-    (
-      table.querySelector('[aria-label="Select row"]') as HTMLElement
-    ).click();
+    (table.querySelector('[aria-label="Select row"]') as HTMLElement).click();
   });
   act(() => {
     findButtonByText("Delete selected").click();
@@ -1022,9 +1020,7 @@ test("Cancel on the bulk-delete dialog closes it without deleting", async () => 
   act(() => {
     findButtonByText("Cancel").click();
   });
-  await waitFor(
-    () => !document.body.textContent?.includes("Delete 1 posts?"),
-  );
+  await waitFor(() => !document.body.textContent?.includes("Delete 1 posts?"));
   assert.equal(fixture.calls.delete, 0);
   // Cancelling the dialog doesn't itself clear the selection.
   assert.match(harness.container.textContent ?? "", /1 selected/);
@@ -1064,9 +1060,7 @@ test("Delete selected opens a bulk confirmation dialog; confirming deletes every
   });
 
   await waitFor(() => fixture.calls.delete === 2);
-  await waitFor(
-    () => !document.body.textContent?.includes("Delete 2 postss?"),
-  );
+  await waitFor(() => !document.body.textContent?.includes("Delete 2 postss?"));
   assert.doesNotMatch(harness.container.textContent ?? "", /selected/);
 
   harness.cleanup();
@@ -1148,9 +1142,7 @@ test("renderBulkActions renders custom bulk content and works without `actions`"
 
   const table = harness.container.querySelector("table") as HTMLElement;
   act(() => {
-    (
-      table.querySelector('[aria-label="Select row"]') as HTMLElement
-    ).click();
+    (table.querySelector('[aria-label="Select row"]') as HTMLElement).click();
   });
   assert.match(harness.container.textContent ?? "", /1 selected/);
   // No `actions`, so no built-in bulk delete  only the custom bulk action.
