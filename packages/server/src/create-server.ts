@@ -60,9 +60,9 @@ export interface CreateServerOptions<TActor = unknown> {
    */
   basePath?: string;
   /**
- * Called for unexpected errors before they become a generic 500 response.
- * `VerikitError`s bypass this hook; errors thrown by the hook are ignored.
- */
+   * Called for unexpected errors before they become a generic 500 response.
+   * `VerikitError`s bypass this hook; errors thrown by the hook are ignored.
+   */
   onError?: (error: unknown, request: Request, route: ServerErrorRoute) => void;
   /**
    * Maximum JSON body size for create, update, and action routes.
