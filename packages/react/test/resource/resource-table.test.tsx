@@ -405,7 +405,11 @@ test("the New button opens a create dialog; submitting creates a record and clos
 
 test("create denied by permission hides the New button after a failed attempt", async () => {
   const fixture = createFakeClient([]);
-  fixture.failNext.create = new VerikitClientError(403, "Forbidden.");
+  fixture.failNext.create = new VerikitClientError(
+    403,
+    "Forbidden.",
+    "FORBIDDEN",
+  );
   const harness = setupHarness(fixture.client);
 
   await harness.render(
@@ -524,7 +528,11 @@ test("closing the Edit dialog via its close button discards the pending edit", a
 
 test("update denied by permission hides that row's Edit button, leaving Delete visible", async () => {
   const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
-  fixture.failNext.update = new VerikitClientError(403, "Forbidden.");
+  fixture.failNext.update = new VerikitClientError(
+    403,
+    "Forbidden.",
+    "FORBIDDEN",
+  );
   const harness = setupHarness(fixture.client);
 
   await harness.render(
@@ -703,7 +711,11 @@ test("the Delete confirm button disables and relabels while the mutation is in f
 
 test("delete denied by permission hides that row's Delete button and suppresses the inline error", async () => {
   const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
-  fixture.failNext.delete = new VerikitClientError(403, "Forbidden.");
+  fixture.failNext.delete = new VerikitClientError(
+    403,
+    "Forbidden.",
+    "FORBIDDEN",
+  );
   const harness = setupHarness(fixture.client);
 
   await harness.render(

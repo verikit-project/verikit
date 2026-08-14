@@ -58,9 +58,9 @@ export interface UseResourceTableResult<
   isFetching: boolean;
   /** Error from the underlying list request, if any. */
   error: Error | null;
- /**
- * Resolved field schemas for table columns, including metadata used by filters.
- */
+  /**
+   * Resolved field schemas for table columns, including metadata used by filters.
+   */
   fields: Record<string, FieldSchema>;
   /** Active per-field filters sent with the list request. */
   filters: ResourceTableFilters;
@@ -137,7 +137,7 @@ export function useResourceTable<
     manualSorting: true,
     manualPagination: true,
     rowCount: list.data?.total ?? 0,
-// Use record IDs so row selection remains stable across paginated pages.
+    // Use record IDs so row selection remains stable across paginated pages.
     getRowId: (row, index) => recordId(row) ?? String(index),
     state: { sorting, pagination, globalFilter, rowSelection },
     onSortingChange: setSorting,

@@ -211,9 +211,12 @@ test("a server unique-constraint issue appears on its field with the custom mess
     fields: { email: text().required().unique("That email is already taken.") },
   });
   const { client, failNext } = createFakeClient([]);
-  failNext.create = new VerikitClientError(400, "Validation failed", {
-    issues: [{ path: ["email"], message: "That email is already taken." }],
-  });
+  failNext.create = new VerikitClientError(
+    400,
+    "Validation failed",
+    "VALIDATION_ERROR",
+    { issues: [{ path: ["email"], message: "That email is already taken." }] },
+  );
   const harness = setupHarness(client);
 
   await harness.render(<ResourceForm<FakeRecord> resource={resource} />);

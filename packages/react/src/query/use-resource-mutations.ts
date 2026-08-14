@@ -170,7 +170,7 @@ export function useDeleteResource(
       queryClient.removeQueries({ queryKey: keys.find(id) });
       return options?.onSuccess?.(data, id, ...rest);
     },
-// Always refetch after deletion to reconcile optimistic state with the server.
+    // Always refetch after deletion to reconcile optimistic state with the server.
     onSettled: (data, error, id, onMutateResult, mutationContext) => {
       void queryClient.invalidateQueries({ queryKey: keys.all });
       return options?.onSettled?.(
