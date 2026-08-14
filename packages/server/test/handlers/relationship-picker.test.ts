@@ -10,6 +10,7 @@ import {
 import { handleRelationshipPicker } from "../../src/handlers/relationship-picker.js";
 import { buildRouteTable } from "../../src/routing/route-table.js";
 import { createInMemoryAdapter } from "../../src/testing/in-memory-adapter.js";
+import { verikitError } from "../fixtures.js";
 
 interface Actor {
   organizationId: string;
@@ -113,13 +114,13 @@ test("relationship picker delegates to the target's scoped, permission-aware lis
 test("relationship picker hides unknown and non-belongs-to relationships", async () => {
   const { table, ctx } = setup();
 
-  assert.equal(
-    (await handleRelationshipPicker(ctx, table, "missing")).status,
-    404,
+  await assert.rejects(
+    handleRelationshipPicker(ctx, table, "missing"),
+    verikitError(404, "NOT_FOUND"),
   );
-  assert.equal(
-    (await handleRelationshipPicker(ctx, table, "organizations")).status,
-    404,
+  await assert.rejects(
+    handleRelationshipPicker(ctx, table, "organizations"),
+    verikitError(404, "NOT_FOUND"),
   );
 });
 
@@ -129,9 +130,8 @@ test("relationship picker hides a target resource that is not registered", async
     (entry) => entry.config.resource.name !== "organization",
   );
 
-  assert.equal(
-    (await handleRelationshipPicker(ctx, withoutOrganization, "organization"))
-      .status,
-    404,
+  await assert.rejects(
+    handleRelationshipPicker(ctx, withoutOrganization, "organization"),
+    verikitError(404, "NOT_FOUND"),
   );
 });

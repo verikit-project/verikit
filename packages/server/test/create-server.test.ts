@@ -4,6 +4,7 @@ import {
   definePermissions,
   defineResource,
   belongsTo,
+  ConflictError,
   file,
   image,
   number,
@@ -1578,6 +1579,39 @@ test("createServer maps a throwing context hook to the same 500 envelope and onE
     url: "https://x/post/1",
     route: { resource: "post", action: { kind: "find", id: "1" } },
   });
+});
+
+test("an action handler throwing a VerikitError reaches the client as that error's own status/code, not a flat 500, and never calls onError", async () => {
+  const reserve = action("reserve").execute((): string => {
+    throw new ConflictError("Item already reserved.", { reservedBy: "user_1" });
+  });
+  const observed: unknown[] = [];
+  const handler = createServer({
+    resources: [
+      {
+        resource: createPostResource(),
+        adapter: createInMemoryAdapter([{ ...post }]),
+        actions: [reserve],
+        permissions: "open",
+      },
+    ],
+    onError: (error) => {
+      observed.push(error);
+    },
+  });
+
+  const response = await handler(
+    new Request("https://x/post/actions/reserve", { method: "POST" }),
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 409);
+  assert.deepEqual(body.error, {
+    code: "CONFLICT",
+    message: "Item already reserved.",
+    reservedBy: "user_1",
+  });
+  assert.equal(observed.length, 0, "a known VerikitError must not reach onError");
 });
 
 test("createServer rejects oversized create, update, and action bodies with 413", async () => {

@@ -1,8 +1,10 @@
+import assert from "node:assert/strict";
 import {
   boolean,
   defineResource,
   text,
   textarea,
+  VerikitError,
   type Resource,
 } from "@verikit/core";
 import type { ResourceAdapter } from "../src/adapter.js";
@@ -36,4 +38,25 @@ export function createInMemoryAdapter(
     searchableFields: ["title", "body"],
     createDefaults: () => ({ title: "", body: "", published: false }),
   });
+}
+
+/**
+ * Matches a rejected `VerikitError` by status and code. `extra` asserts additional properties
+ * (e.g. a `ValidationError`'s `.issues`)  typed as `T` since the base `instanceof` check can't
+ * itself narrow to a specific subclass, so callers pass the subclass they expect.
+ */
+export function verikitError<T extends VerikitError = VerikitError>(
+  status: number,
+  code?: string,
+  extra?: (error: T) => void,
+): (error: unknown) => boolean {
+  return (error) => {
+    assert.ok(error instanceof VerikitError, "expected a VerikitError");
+    assert.equal(error.status, status);
+    if (code !== undefined) {
+      assert.equal(error.code, code);
+    }
+    extra?.(error as T);
+    return true;
+  };
 }

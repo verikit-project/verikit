@@ -6,6 +6,7 @@ import { buildRouteTable } from "../../src/routing/route-table.js";
 import {
   createInMemoryAdapter,
   createPostResource,
+  verikitError,
   type Post,
 } from "../fixtures.js";
 
@@ -46,23 +47,23 @@ test("handleDelete removes the record and returns 204", async () => {
   assert.equal(adapter.records.length, 0);
 });
 
-test("handleDelete returns 404 for a missing record", async () => {
-  const response = await handleDelete(
-    ctxFor(createInMemoryAdapter()),
-    "missing",
+test("handleDelete throws a 404 NotFoundError for a missing record", async () => {
+  await assert.rejects(
+    handleDelete(ctxFor(createInMemoryAdapter()), "missing"),
+    verikitError(404, "NOT_FOUND"),
   );
-  assert.equal(response.status, 404);
 });
 
-test("handleDelete returns 404 (not 403) when the actor lacks delete access, without deleting, so existence isn't leaked", async () => {
+test("handleDelete throws a 404 NotFoundError (not 403) when the actor lacks delete access, without deleting, so existence isn't leaked", async () => {
   const permissions = definePermissions<Actor>().can(
     "delete",
     ({ actor }) => actor.role === "admin",
   );
   const adapter = createInMemoryAdapter([{ ...post }]);
 
-  const response = await handleDelete(ctxFor(adapter, permissions), "1");
-
-  assert.equal(response.status, 404);
+  await assert.rejects(
+    handleDelete(ctxFor(adapter, permissions), "1"),
+    verikitError(404, "NOT_FOUND"),
+  );
   assert.equal(adapter.records.length, 1);
 });

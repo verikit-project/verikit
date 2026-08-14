@@ -12,6 +12,7 @@ import { buildRouteTable } from "../../src/routing/route-table.js";
 import {
   createInMemoryAdapter,
   createPostResource,
+  verikitError,
   type Post,
 } from "../fixtures.js";
 
@@ -86,7 +87,7 @@ test("handleList is unguarded when the resource is marked open", async () => {
   assert.equal(response.status, 200);
 });
 
-test("handleList returns 403 when the actor lacks resource-level list access", async () => {
+test("handleList throws a 403 ForbiddenError when the actor lacks resource-level list access", async () => {
   const permissions = definePermissions<Actor>().can(
     "list",
     ({ actor }) => actor.role === "admin",
@@ -97,8 +98,7 @@ test("handleList returns 403 when the actor lacks resource-level list access", a
     permissions,
   );
 
-  const response = await handleList(ctx);
-  assert.equal(response.status, 403);
+  await assert.rejects(handleList(ctx), verikitError(403, "FORBIDDEN"));
 });
 
 test('handleList\'s resource-level gate is "list", not "read": a permissions builder that only attaches .can("read", ...) still denies list under fail-closed semantics', async () => {
@@ -109,8 +109,7 @@ test('handleList\'s resource-level gate is "list", not "read": a permissions bui
     permissions,
   );
 
-  const response = await handleList(ctx);
-  assert.equal(response.status, 403);
+  await assert.rejects(handleList(ctx), verikitError(403, "FORBIDDEN"));
 });
 
 test("handleList redacts fields the actor cannot read from every record", async () => {

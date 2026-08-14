@@ -6,6 +6,7 @@ import { buildRouteTable } from "../../src/routing/route-table.js";
 import {
   createInMemoryAdapter,
   createPostResource,
+  verikitError,
   type Post,
 } from "../fixtures.js";
 
@@ -46,21 +47,19 @@ test("handleFind returns the record when it exists", async () => {
   assert.deepEqual(await response.json(), { data: post });
 });
 
-test("handleFind returns 404 for a missing record", async () => {
+test("handleFind throws a 404 NotFoundError for a missing record", async () => {
   const ctx = ctxFor(createInMemoryAdapter([post]));
-  const response = await handleFind(ctx, "missing");
-  assert.equal(response.status, 404);
+  await assert.rejects(handleFind(ctx, "missing"), verikitError(404, "NOT_FOUND"));
 });
 
-test("handleFind returns 404 (not 403) when the actor lacks read access, so existence isn't leaked", async () => {
+test("handleFind throws a 404 NotFoundError (not 403) when the actor lacks read access, so existence isn't leaked", async () => {
   const permissions = definePermissions<Actor>().can(
     "read",
     ({ actor }) => actor.role === "admin",
   );
   const ctx = ctxFor(createInMemoryAdapter([post]), permissions);
 
-  const response = await handleFind(ctx, "1");
-  assert.equal(response.status, 404);
+  await assert.rejects(handleFind(ctx, "1"), verikitError(404, "NOT_FOUND"));
 });
 
 test("handleFind redacts fields the actor cannot read", async () => {
