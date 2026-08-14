@@ -184,6 +184,109 @@ test("useResourceTable's global filter drives the list request's search param", 
   harness.cleanup();
 });
 
+test("useResourceTable's filters state drives the list request's filters param", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(postResource);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => fixture.calls.list === 1);
+  // No active filters yet, so the params object carries no `filters` key at
+  // all (matching every other still-passing test's expected shape).
+  assert.equal(fixture.lastListParams?.filters, undefined);
+
+  await act(async () => {
+    result!.setFilters({ title: { eq: "Hello" } });
+  });
+
+  await waitFor(() => fixture.calls.list === 2);
+  assert.deepEqual(fixture.lastListParams?.filters, { title: { eq: "Hello" } });
+  assert.deepEqual(result!.filters, { title: { eq: "Hello" } });
+
+  harness.cleanup();
+});
+
+test("useResourceTable resolves and exposes the source's field schemas", async () => {
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(postResource);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => result!.isLoading === false);
+
+  assert.deepEqual(Object.keys(result!.fields), ["title", "body", "status"]);
+  assert.equal(result!.fields.title?.fieldType, "text");
+
+  harness.cleanup();
+});
+
+test("useResourceTable's row selection state selects and deselects rows by their record id, not position", async () => {
+  const { client } = createFakeClient([
+    { id: "1", title: "One" },
+    { id: "2", title: "Two" },
+  ]);
+  const harness = setupHarness(client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(postResource);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => result!.isLoading === false);
+
+  await act(async () => {
+    result!.table.getRowModel().rows[0]!.toggleSelected(true);
+  });
+
+  assert.deepEqual(
+    result!.table.getSelectedRowModel().rows.map((row) => row.original.id),
+    ["1"],
+  );
+
+  await act(async () => {
+    result!.table.getRowModel().rows[0]!.toggleSelected(false);
+  });
+  assert.equal(result!.table.getSelectedRowModel().rows.length, 0);
+
+  harness.cleanup();
+});
+
+test("useResourceTable falls back to a row's index as its id when the record carries no usable id", async () => {
+  const { client } = createFakeClient([
+    { title: "No id" } as unknown as FakeRecord,
+  ]);
+  const harness = setupHarness(client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(postResource);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => result!.isLoading === false);
+
+  assert.equal(result!.table.getRowModel().rows[0]?.id, "0");
+
+  harness.cleanup();
+});
+
 test("useResourceTable surfaces loading/fetching/error state from the underlying query", async () => {
   const { client, block } = createFakeClient([]);
   const harness = setupHarness(client);

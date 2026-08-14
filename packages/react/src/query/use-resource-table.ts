@@ -3,16 +3,20 @@ import {
   columnFilteringFeature,
   globalFilteringFeature,
   rowPaginationFeature,
+  rowSelectionFeature,
   rowSortingFeature,
   tableFeatures,
   useTable,
   type ColumnDef,
   type PaginationState,
   type RowData,
+  type RowSelectionState,
   type SortingState,
   type Table,
 } from "@tanstack/react-table";
-import type { Resource, ResourceSchema } from "@verikit/core";
+import type { ListParams } from "@verikit/client";
+import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
+import { recordId } from "./optimistic.js";
 import { resolveVerikitFields } from "../form/use-verikit-form.js";
 import { useListResource } from "./use-resource-queries.js";
 
@@ -20,10 +24,14 @@ import { useListResource } from "./use-resource-queries.js";
 // model stays purely server-driven since no sorted/paginated/filtered row
 // model factory is registered here, only the state/handler slices.
 // `columnFilteringFeature` is required by `globalFilteringFeature` itself
-// (a type-level dependency, not something this hook uses directly).
+// (a type-level dependency, not something this hook uses directly). Per-field
+// filters are sent straight to the server (see `filters` state below) rather
+// than routed through `columnFilteringFeature`'s own state, since its
+// single-value-per-column shape can't express range operators like `gte`/`lte`.
 const resourceTableFeatures = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
+  rowSelectionFeature,
   columnFilteringFeature,
   globalFilteringFeature,
 });
@@ -32,6 +40,9 @@ type ResourceTableFeatures = typeof resourceTableFeatures;
 
 /** A resource builder or its finalized schema  either carries its own name. */
 export type UseResourceTableSource = Resource | ResourceSchema;
+
+/** Active per-field filters, keyed by field name  the same shape `ListParams.filters` sends to the server. */
+export type ResourceTableFilters = NonNullable<ListParams["filters"]>;
 
 /** Options for creating a resource-backed table. */
 export interface UseResourceTableOptions {
@@ -51,6 +62,16 @@ export interface UseResourceTableResult<
   isFetching: boolean;
   /** Error from the underlying list request, if any. */
   error: Error | null;
+  /**
+   * Resolved field schemas backing this table's columns, keyed by field
+   * name  the same `filterable`/`fieldType`/`options` metadata a filter UI
+   * needs, already resolved once here rather than re-resolved by the caller.
+   */
+  fields: Record<string, FieldSchema>;
+  /** Active per-field filters sent with the list request. */
+  filters: ResourceTableFilters;
+  /** Replaces the active per-field filters wholesale. */
+  setFilters: (filters: ResourceTableFilters) => void;
 }
 
 /**
@@ -89,8 +110,11 @@ export function useResourceTable<
     pageSize,
   });
   const [globalFilter, setGlobalFilter] = useState("");
+  const [filters, setFilters] = useState<ResourceTableFilters>({});
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const activeSort = sorting[0];
+  const hasFilters = Object.keys(filters).length > 0;
 
   const list = useListResource<TRecord>(resource.name, {
     page: pagination.pageIndex + 1,
@@ -99,6 +123,7 @@ export function useResourceTable<
     sort: activeSort
       ? { field: activeSort.id, direction: activeSort.desc ? "desc" : "asc" }
       : undefined,
+    ...(hasFilters ? { filters } : {}),
   });
 
   const table = useTable({
@@ -108,10 +133,15 @@ export function useResourceTable<
     manualSorting: true,
     manualPagination: true,
     rowCount: list.data?.total ?? 0,
-    state: { sorting, pagination, globalFilter },
+    // Row ids default to positional index, which collides across pages (row
+    // 0 on page 1 is a different record than row 0 on page 2)  keying by the
+    // record's own id keeps `rowSelection` correct as the page changes.
+    getRowId: (row, index) => recordId(row) ?? String(index),
+    state: { sorting, pagination, globalFilter, rowSelection },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
     onGlobalFilterChange: setGlobalFilter,
+    onRowSelectionChange: setRowSelection,
   });
 
   return {
@@ -119,5 +149,8 @@ export function useResourceTable<
     isLoading: list.isLoading,
     isFetching: list.isFetching,
     error: list.error,
+    fields,
+    filters,
+    setFilters,
   };
 }

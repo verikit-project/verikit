@@ -38,6 +38,14 @@ const postResource = defineResource("posts", {
   },
 });
 
+const filterableResource = defineResource("articles", {
+  fields: {
+    title: text().required().filterable(),
+    views: number().filterable(),
+    category: text(),
+  },
+});
+
 let uninstallJsdom: () => void;
 
 before(async () => {
@@ -752,6 +760,416 @@ test("actions and renderActions render together in the same row", async () => {
   assert.ok(harness.container.querySelector('[aria-label="Edit"]'));
   assert.ok(harness.container.querySelector('[aria-label="Delete"]'));
   assert.ok(harness.container.querySelector('[data-testid="custom-action"]'));
+
+  harness.cleanup();
+});
+
+test("no Filters toggle renders when no field is filterable", async () => {
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  await harness.render(<ResourceTable<FakeRecord> resource={postResource} />);
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  assert.doesNotMatch(harness.container.textContent ?? "", /Filters/);
+
+  harness.cleanup();
+});
+
+test("the Filters toggle shows a per-field filter panel with a control per filterable field", async () => {
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={filterableResource} />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  assert.equal(harness.container.querySelector('[aria-label="title"]'), null);
+
+  act(() => {
+    findButtonByText("Filters").click();
+  });
+
+  assert.ok(harness.container.querySelector('[aria-label="title"]'));
+  assert.ok(harness.container.querySelector('[aria-label="views minimum"]'));
+  assert.ok(harness.container.querySelector('[aria-label="views maximum"]'));
+  // `category` isn't `filterable()`, so it gets no control.
+  assert.equal(
+    harness.container.querySelector('[aria-label="category"]'),
+    null,
+  );
+
+  harness.cleanup();
+});
+
+test("typing an exact-match filter drives the list request's filters param", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={filterableResource} />,
+  );
+  await waitFor(() => fixture.calls.list === 1);
+
+  act(() => {
+    findButtonByText("Filters").click();
+  });
+  const titleFilter = harness.container.querySelector(
+    '[aria-label="title"]',
+  ) as HTMLInputElement;
+
+  typeIntoInput(titleFilter, "Hello");
+  await waitFor(() => fixture.calls.list === 2);
+  assert.deepEqual(fixture.lastListParams?.filters, {
+    title: { eq: "Hello" },
+  });
+
+  harness.cleanup();
+});
+
+test("a number field's min/max filter inputs drive gte/lte, clearing back to unfiltered when emptied", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={filterableResource} />,
+  );
+  await waitFor(() => fixture.calls.list === 1);
+
+  act(() => {
+    findButtonByText("Filters").click();
+  });
+  const min = harness.container.querySelector(
+    '[aria-label="views minimum"]',
+  ) as HTMLInputElement;
+  const max = harness.container.querySelector(
+    '[aria-label="views maximum"]',
+  ) as HTMLInputElement;
+
+  typeIntoInput(min, "10");
+  await waitFor(() => fixture.calls.list === 2);
+  assert.deepEqual(fixture.lastListParams?.filters, { views: { gte: 10 } });
+
+  typeIntoInput(max, "20");
+  await waitFor(() => fixture.calls.list === 3);
+  assert.deepEqual(fixture.lastListParams?.filters, {
+    views: { gte: 10, lte: 20 },
+  });
+
+  typeIntoInput(min, "");
+  typeIntoInput(max, "");
+  await waitFor(() => fixture.calls.list === 5);
+  assert.equal(fixture.lastListParams?.filters, undefined);
+
+  harness.cleanup();
+});
+
+test("Clear filters removes every active filter and disappears once none remain", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={filterableResource} />,
+  );
+  await waitFor(() => fixture.calls.list === 1);
+
+  act(() => {
+    findButtonByText("Filters").click();
+  });
+  typeIntoInput(
+    harness.container.querySelector('[aria-label="title"]') as HTMLInputElement,
+    "Hello",
+  );
+  await waitFor(() => fixture.calls.list === 2);
+  assert.ok(
+    Array.from(harness.container.querySelectorAll("button")).some(
+      (button) => button.textContent === "Clear filters",
+    ),
+  );
+
+  act(() => {
+    findButtonByText("Clear filters").click();
+  });
+  await waitFor(() => fixture.calls.list === 3);
+  assert.equal(fixture.lastListParams?.filters, undefined);
+  assert.ok(
+    !Array.from(harness.container.querySelectorAll("button")).some(
+      (button) => button.textContent === "Clear filters",
+    ),
+  );
+
+  harness.cleanup();
+});
+
+test("selecting a row shows the bulk selection bar with a count; Clear empties it", async () => {
+  const { client } = createFakeClient([
+    { id: "1", title: "One" },
+    { id: "2", title: "Two" },
+  ]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() => Boolean(harness.container.textContent?.includes("One")));
+
+  const rowCheckbox = harness.container
+    .querySelector("table tbody tr")
+    ?.querySelector('[aria-label="Select row"]') as HTMLElement;
+  assert.ok(rowCheckbox);
+
+  act(() => {
+    rowCheckbox.click();
+  });
+  assert.match(harness.container.textContent ?? "", /1 selected/);
+
+  act(() => {
+    findButtonByText("Clear").click();
+  });
+  assert.doesNotMatch(harness.container.textContent ?? "", /selected/);
+
+  harness.cleanup();
+});
+
+test("the select-all header checkbox selects every row and goes indeterminate on a partial selection", async () => {
+  const { client } = createFakeClient([
+    { id: "1", title: "One" },
+    { id: "2", title: "Two" },
+  ]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() => Boolean(harness.container.textContent?.includes("One")));
+
+  const table = harness.container.querySelector("table") as HTMLElement;
+  const selectAll = table.querySelector(
+    '[aria-label="Select all rows"]',
+  ) as HTMLElement;
+  const rowCheckboxes = table.querySelectorAll('[aria-label="Select row"]');
+
+  act(() => {
+    selectAll.click();
+  });
+  assert.match(harness.container.textContent ?? "", /2 selected/);
+
+  act(() => {
+    (rowCheckboxes[0] as HTMLElement).click();
+  });
+  assert.match(harness.container.textContent ?? "", /1 selected/);
+  assert.equal(selectAll.getAttribute("aria-checked"), "mixed");
+
+  harness.cleanup();
+});
+
+test("the mobile card layout's own row checkbox selects the same row as its desktop counterpart", async () => {
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  // With one row, `[aria-label="Select row"]` matches twice  once in the
+  // (CSS-hidden, but still mounted) desktop table, once in the mobile card
+  // layout. The second is the mobile card's own checkbox.
+  const checkboxes = harness.container.querySelectorAll(
+    '[aria-label="Select row"]',
+  );
+  assert.equal(checkboxes.length, 2);
+
+  act(() => {
+    (checkboxes[1] as HTMLElement).click();
+  });
+  assert.match(harness.container.textContent ?? "", /1 selected/);
+
+  harness.cleanup();
+});
+
+test("Cancel on the bulk-delete dialog closes it without deleting", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  const table = harness.container.querySelector("table") as HTMLElement;
+  act(() => {
+    (
+      table.querySelector('[aria-label="Select row"]') as HTMLElement
+    ).click();
+  });
+  act(() => {
+    findButtonByText("Delete selected").click();
+  });
+  await waitFor(() =>
+    Boolean(document.body.textContent?.includes("Delete 1 posts?")),
+  );
+
+  act(() => {
+    findButtonByText("Cancel").click();
+  });
+  await waitFor(
+    () => !document.body.textContent?.includes("Delete 1 posts?"),
+  );
+  assert.equal(fixture.calls.delete, 0);
+  // Cancelling the dialog doesn't itself clear the selection.
+  assert.match(harness.container.textContent ?? "", /1 selected/);
+
+  harness.cleanup();
+});
+
+test("Delete selected opens a bulk confirmation dialog; confirming deletes every selected record and clears selection", async () => {
+  const fixture = createFakeClient([
+    { id: "1", title: "One" },
+    { id: "2", title: "Two" },
+  ]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() => Boolean(harness.container.textContent?.includes("One")));
+
+  const table = harness.container.querySelector("table") as HTMLElement;
+  const selectAll = table.querySelector(
+    '[aria-label="Select all rows"]',
+  ) as HTMLElement;
+
+  act(() => {
+    selectAll.click();
+  });
+  act(() => {
+    findButtonByText("Delete selected").click();
+  });
+  await waitFor(() =>
+    Boolean(document.body.textContent?.includes("Delete 2 postss?")),
+  );
+
+  act(() => {
+    findButtonByText("Delete").click();
+  });
+
+  await waitFor(() => fixture.calls.delete === 2);
+  await waitFor(
+    () => !document.body.textContent?.includes("Delete 2 postss?"),
+  );
+  assert.doesNotMatch(harness.container.textContent ?? "", /selected/);
+
+  harness.cleanup();
+});
+
+test("a partial bulk-delete failure shows an inline failure count and keeps the dialog open", async () => {
+  const fixture = createFakeClient([
+    { id: "1", title: "One" },
+    { id: "2", title: "Two" },
+  ]);
+  fixture.failNext.delete = true;
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <ResourceTable<FakeRecord> resource={postResource} actions />,
+  );
+  await waitFor(() => Boolean(harness.container.textContent?.includes("One")));
+
+  const table = harness.container.querySelector("table") as HTMLElement;
+  act(() => {
+    (
+      table.querySelector('[aria-label="Select all rows"]') as HTMLElement
+    ).click();
+  });
+  act(() => {
+    findButtonByText("Delete selected").click();
+  });
+  await waitFor(() =>
+    Boolean(document.body.textContent?.includes("Delete 2 postss?")),
+  );
+
+  act(() => {
+    findButtonByText("Delete").click();
+  });
+
+  await waitFor(() => fixture.calls.delete === 2);
+  await waitFor(() => Boolean(document.querySelector('[role="alert"]')));
+  assert.match(
+    document.querySelector('[role="alert"]')?.textContent ?? "",
+    /1 of 2 couldn't be deleted/,
+  );
+  // The dialog itself is still mounted and open (its title's live count just
+  // shifted, since the one record that *did* delete drops out of both the
+  // list and the selection it belonged to).
+  assert.ok(
+    Array.from(document.querySelectorAll("button")).some(
+      (button) => button.textContent === "Cancel",
+    ),
+  );
+
+  harness.cleanup();
+});
+
+test("renderBulkActions renders custom bulk content and works without `actions`", async () => {
+  const { client } = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(client);
+  const seen: unknown[] = [];
+
+  await harness.render(
+    <ResourceTable<FakeRecord>
+      resource={postResource}
+      renderBulkActions={(records, clearSelection) => (
+        <button
+          type="button"
+          data-testid="bulk-export"
+          onClick={() => {
+            seen.push(records.map((record) => record.id));
+            clearSelection();
+          }}
+        >
+          Export
+        </button>
+      )}
+    />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  const table = harness.container.querySelector("table") as HTMLElement;
+  act(() => {
+    (
+      table.querySelector('[aria-label="Select row"]') as HTMLElement
+    ).click();
+  });
+  assert.match(harness.container.textContent ?? "", /1 selected/);
+  // No `actions`, so no built-in bulk delete  only the custom bulk action.
+  assert.equal(
+    Array.from(harness.container.querySelectorAll("button")).some(
+      (button) => button.textContent === "Delete selected",
+    ),
+    false,
+  );
+
+  act(() => {
+    (
+      harness.container.querySelector(
+        '[data-testid="bulk-export"]',
+      ) as HTMLButtonElement
+    ).click();
+  });
+  assert.deepEqual(seen, [["1"]]);
+  assert.doesNotMatch(harness.container.textContent ?? "", /selected/);
 
   harness.cleanup();
 });
