@@ -184,6 +184,37 @@ test("useResourceTable's global filter drives the list request's search param", 
   harness.cleanup();
 });
 
+test("useResourceTable resets to the first page when the global filter changes, so a page number chosen under the old results can't leave the new ones showing a spuriously empty page", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(postResource);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => fixture.calls.list === 1);
+
+  await act(async () => {
+    result!.table.setPageIndex(1);
+  });
+  await waitFor(() => fixture.calls.list === 2);
+  assert.equal(fixture.lastListParams?.page, 2);
+
+  await act(async () => {
+    result!.table.setGlobalFilter("hello");
+  });
+
+  await waitFor(() => fixture.calls.list === 3);
+  assert.equal(fixture.lastListParams?.page, 1);
+  assert.equal(fixture.lastListParams?.search, "hello");
+
+  harness.cleanup();
+});
+
 test("useResourceTable's filters state drives the list request's filters param", async () => {
   const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(fixture.client);
@@ -208,6 +239,37 @@ test("useResourceTable's filters state drives the list request's filters param",
   await waitFor(() => fixture.calls.list === 2);
   assert.deepEqual(fixture.lastListParams?.filters, { title: { eq: "Hello" } });
   assert.deepEqual(result!.filters, { title: { eq: "Hello" } });
+
+  harness.cleanup();
+});
+
+test("useResourceTable resets to the first page when filters change, so a page number chosen under the old results can't leave the new ones showing a spuriously empty page", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(postResource);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => fixture.calls.list === 1);
+
+  await act(async () => {
+    result!.table.setPageIndex(1);
+  });
+  await waitFor(() => fixture.calls.list === 2);
+  assert.equal(fixture.lastListParams?.page, 2);
+
+  await act(async () => {
+    result!.setFilters({ title: { eq: "Hello" } });
+  });
+
+  await waitFor(() => fixture.calls.list === 3);
+  assert.equal(fixture.lastListParams?.page, 1);
+  assert.deepEqual(fixture.lastListParams?.filters, { title: { eq: "Hello" } });
 
   harness.cleanup();
 });

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   columnFilteringFeature,
+  functionalUpdate,
   globalFilteringFeature,
   rowPaginationFeature,
   rowSelectionFeature,
@@ -8,6 +9,7 @@ import {
   tableFeatures,
   useTable,
   type ColumnDef,
+  type OnChangeFn,
   type PaginationState,
   type RowData,
   type RowSelectionState,
@@ -20,14 +22,8 @@ import { recordId } from "./optimistic.js";
 import { resolveVerikitFields } from "../form/use-verikit-form.js";
 import { useListResource } from "./use-resource-queries.js";
 
-// Registered once, outside the hook, per TanStack's own guidance  the row
-// model stays purely server-driven since no sorted/paginated/filtered row
-// model factory is registered here, only the state/handler slices.
-// `columnFilteringFeature` is required by `globalFilteringFeature` itself
-// (a type-level dependency, not something this hook uses directly). Per-field
-// filters are sent straight to the server (see `filters` state below) rather
-// than routed through `columnFilteringFeature`'s own state, since its
-// single-value-per-column shape can't express range operators like `gte`/`lte`.
+// `columnFilteringFeature` is required by TanStack's global filtering feature.
+// VeriKit manages field filters separately to support range operators.
 const resourceTableFeatures = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
@@ -62,11 +58,9 @@ export interface UseResourceTableResult<
   isFetching: boolean;
   /** Error from the underlying list request, if any. */
   error: Error | null;
-  /**
-   * Resolved field schemas backing this table's columns, keyed by field
-   * name  the same `filterable`/`fieldType`/`options` metadata a filter UI
-   * needs, already resolved once here rather than re-resolved by the caller.
-   */
+ /**
+ * Resolved field schemas for table columns, including metadata used by filters.
+ */
   fields: Record<string, FieldSchema>;
   /** Active per-field filters sent with the list request. */
   filters: ResourceTableFilters;
@@ -75,14 +69,8 @@ export interface UseResourceTableResult<
 }
 
 /**
- * The single resource-backed table hook: takes a `Resource` (or its
- * `ResourceSchema`) and wires a headless TanStack Table instance straight to
- * `useListResource`  its own name and fields are the one source of truth
- * for both the columns and which resource to page/sort/search against, so
- * there's no separate column list or name to keep in sync with it. Sorting,
- * pagination, and the search box all drive the server request directly
- * (`manualSorting`/`manualPagination`); there is no client-side row
- * processing to configure.
+ * Creates a TanStack Table from a resource's schema, with automatic columns
+ * and server-side pagination, sorting, and search.
  */
 export function useResourceTable<
   TRecord extends RowData = Record<string, unknown>,
@@ -113,6 +101,22 @@ export function useResourceTable<
   const [filters, setFilters] = useState<ResourceTableFilters>({});
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
+  // Reset to page 1 when filters or search change to avoid empty stale pages.
+  const resetToFirstPage = () =>
+    setPagination((old) =>
+      old.pageIndex === 0 ? old : { ...old, pageIndex: 0 },
+    );
+
+  const handleGlobalFilterChange: OnChangeFn<string> = (updater) => {
+    setGlobalFilter((old) => functionalUpdate(updater, old));
+    resetToFirstPage();
+  };
+
+  const handleFiltersChange = (next: ResourceTableFilters): void => {
+    setFilters(next);
+    resetToFirstPage();
+  };
+
   const activeSort = sorting[0];
   const hasFilters = Object.keys(filters).length > 0;
 
@@ -133,14 +137,12 @@ export function useResourceTable<
     manualSorting: true,
     manualPagination: true,
     rowCount: list.data?.total ?? 0,
-    // Row ids default to positional index, which collides across pages (row
-    // 0 on page 1 is a different record than row 0 on page 2)  keying by the
-    // record's own id keeps `rowSelection` correct as the page changes.
+// Use record IDs so row selection remains stable across paginated pages.
     getRowId: (row, index) => recordId(row) ?? String(index),
     state: { sorting, pagination, globalFilter, rowSelection },
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
-    onGlobalFilterChange: setGlobalFilter,
+    onGlobalFilterChange: handleGlobalFilterChange,
     onRowSelectionChange: setRowSelection,
   });
 
@@ -151,6 +153,6 @@ export function useResourceTable<
     error: list.error,
     fields,
     filters,
-    setFilters,
+    setFilters: handleFiltersChange,
   };
 }
