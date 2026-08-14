@@ -1,6 +1,6 @@
 {
   "name": "@verikit/prisma",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "Prisma ORM storage adapter for @verikit/server resources.",
   "type": "module",
   "main": "./dist/index.js",
