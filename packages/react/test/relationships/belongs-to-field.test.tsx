@@ -143,3 +143,29 @@ test("reflects an existing value, renders an error, and skips the query without 
 
   harness.cleanup();
 });
+
+test("supports an explicit id, null value, disabled and read-only picker", async () => {
+  const { client, calls } = createFakeClient([{ id: "1", title: "Ada" }]);
+  const harness = setupHarness(client);
+
+  await harness.render(
+    <BelongsToRelationshipField
+      relationship={relationship({ label: "Author" })}
+      id="author-picker"
+      value={null}
+      disabled
+      readOnly
+      className="custom-picker"
+    />,
+  );
+
+  await waitFor(() => calls.list === 1);
+  const trigger = harness.container.querySelector(
+    '[data-slot="select-trigger"]',
+  ) as HTMLButtonElement;
+  assert.equal(trigger.id, "author-picker");
+  assert.equal(trigger.disabled, true);
+  assert.ok(harness.container.querySelector(".custom-picker"));
+
+  harness.cleanup();
+});
