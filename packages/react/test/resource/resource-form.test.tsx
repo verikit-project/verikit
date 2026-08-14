@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { belongsTo, defineResource, text } from "@verikit/core";
+import { VerikitClientError } from "@verikit/client";
 import { installJsdom, typeIntoInput } from "../dom-setup.js";
 import { ResourceForm } from "../../src/resource/index.js";
 import {
@@ -200,6 +201,36 @@ test("a failed mutation surfaces as a submit-error alert", async () => {
   assert.match(
     harness.container.querySelector('[role="alert"]')?.textContent ?? "",
     /Simulated update failure/,
+  );
+
+  harness.cleanup();
+});
+
+test("a server unique-constraint issue appears on its field with the custom message", async () => {
+  const resource = defineResource("posts", {
+    fields: { email: text().required().unique("That email is already taken.") },
+  });
+  const { client, failNext } = createFakeClient([]);
+  failNext.create = new VerikitClientError(400, "Validation failed", {
+    issues: [{ path: ["email"], message: "That email is already taken." }],
+  });
+  const harness = setupHarness(client);
+
+  await harness.render(<ResourceForm<FakeRecord> resource={resource} />);
+
+  typeIntoInput(
+    harness.container.querySelector('input[name="email"]') as HTMLInputElement,
+    "ada@example.com",
+  );
+  const form = harness.container.querySelector("form") as HTMLFormElement;
+  form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.match(/already taken/)),
+  );
+  assert.match(
+    harness.container.textContent ?? "",
+    /That email is already taken/,
   );
 
   harness.cleanup();

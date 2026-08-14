@@ -1,10 +1,15 @@
 import type { SchemaActionRegistry } from "../layout/types.js";
+import { VerikitClientError } from "@verikit/client";
+import { useEffect, useRef } from "react";
 import {
   useVerikitSchemaTreeForm,
   type UseVerikitSchemaTreeFormResult,
   type VerikitSchemaTreeSource,
 } from "../form/use-verikit-schema-tree-form.js";
-import type { VerikitFormValues } from "../form/submission.js";
+import {
+  validationIssuesToFieldErrors,
+  type VerikitFormValues,
+} from "../form/submission.js";
 import {
   useCreateResource,
   useUpdateResource,
@@ -56,7 +61,6 @@ export function useResourceSchemaTreeForm<TRecord = Record<string, unknown>>(
 ): UseResourceSchemaTreeFormResult<TRecord> {
   const create = useCreateResource<TRecord>(resource.name, { onError });
   const update = useUpdateResource<TRecord>(resource.name, { onError });
-
   const form = useVerikitSchemaTreeForm<TRecord>({
     resource,
     actions,
@@ -70,6 +74,17 @@ export function useResourceSchemaTreeForm<TRecord = Record<string, unknown>>(
       return record;
     },
   });
+  const handledMutationError = useRef<Error | null>(null);
+  const mutationError = id ? update.error : create.error;
+
+  useEffect(() => {
+    if (mutationError === handledMutationError.current) return;
+    handledMutationError.current = mutationError;
+
+    if (mutationError instanceof VerikitClientError && mutationError.issues) {
+      form.setFieldErrors(validationIssuesToFieldErrors(mutationError.issues));
+    }
+  }, [mutationError, form.setFieldErrors]);
 
   return {
     ...form,
