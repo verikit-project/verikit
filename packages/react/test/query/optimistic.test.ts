@@ -97,6 +97,51 @@ test("restoreDeletedRecord rolls back only the failed row without resurrecting a
   );
 });
 
+test("restoreDeletedRecord ignores non-list snapshots, missing rows, and missing live list data", () => {
+  const queryClient = createClient();
+  const keys = resourceQueryKeys("posts");
+  const list = {
+    records: [{ id: "2", title: "Two" }],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  };
+
+  queryClient.setQueryData(keys.list(), list);
+  assert.doesNotThrow(() => {
+    for (const invalidListValue of [
+      null,
+      "not a list",
+      {},
+      { records: [] },
+      { records: "not an array", total: 1 },
+      { records: [], total: "not a number" },
+    ]) {
+      restoreDeletedRecord<Row>(
+        queryClient,
+        [[keys.list(), invalidListValue]],
+        "1",
+      );
+    }
+    restoreDeletedRecord<Row>(queryClient, [[keys.list(), list]], "1");
+    restoreDeletedRecord<Row>(
+      queryClient,
+      [[keys.all, { unrelated: true }]],
+      "1",
+    );
+  });
+  assert.equal(queryClient.getQueryData(keys.list()), list);
+
+  queryClient.setQueryData(keys.list(), {
+    ...list,
+    records: [{ id: "1", title: "One" }],
+  });
+  const snapshot = snapshotResourceQueries(queryClient, keys);
+  queryClient.removeQueries({ queryKey: keys.list(), exact: true });
+  restoreDeletedRecord<Row>(queryClient, snapshot, "1");
+  assert.equal(queryClient.getQueryData(keys.list()), undefined);
+});
+
 test("patchCachedListRecord patches only the matching record, leaving others untouched", () => {
   const queryClient = createClient();
   const keys = resourceQueryKeys("posts");
