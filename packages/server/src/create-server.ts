@@ -1,4 +1,5 @@
 import type { PermissionsBuilder, Resource } from "@verikit/core";
+import { VerikitError } from "@verikit/core";
 import type { ActionBuilder } from "@verikit/runtime";
 import type { ResourceAdapter } from "./adapter.js";
 import { handleAction } from "./handlers/action.js";
@@ -14,6 +15,7 @@ import {
   errorResponse,
   methodNotAllowedResponse,
   notFoundResponse,
+  toErrorResponse,
 } from "./http/responses.js";
 import { DEFAULT_MAX_BODY_BYTES } from "./http/parse-request.js";
 import { buildRouteTable, resolveRoute } from "./routing/route-table.js";
@@ -57,10 +59,10 @@ export interface CreateServerOptions<TActor = unknown> {
    * Prefix every resource is mounted under, e.g. `"/api"`. Defaults to `""`.
    */
   basePath?: string;
-  /**
-   * Called when a handler or adapter throws before returning a generic 500 response.
-   * Errors thrown by this hook are ignored.
-   */
+ /**
+ * Called for unexpected errors before they become a generic 500 response.
+ * `VerikitError`s bypass this hook; errors thrown by the hook are ignored.
+ */
   onError?: (error: unknown, request: Request, route: ServerErrorRoute) => void;
   /**
    * Maximum JSON body size for create, update, and action routes.
@@ -367,7 +369,11 @@ export function createServer<TActor = unknown>(
           );
       }
     } catch (error) {
-      // Map handler and adapter errors to a generic response without exposing internals.
+ // Map known `VerikitError`s directly and reserve `onError` for unexpected failures.
+    if (error instanceof VerikitError) {
+        return withCors(toErrorResponse(error), responseCorsHeaders);
+      }
+
       try {
         options.onError?.(error, request, {
           resource: resolved.entry.config.resource.name,
@@ -377,7 +383,7 @@ export function createServer<TActor = unknown>(
         // Ignore errors from onError so a broken logger doesn't mask the original failure.
       }
       return withCors(
-        errorResponse(500, "Internal server error."),
+        errorResponse(500, "INTERNAL_ERROR", "Internal server error."),
         responseCorsHeaders,
       );
     }
