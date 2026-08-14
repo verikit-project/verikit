@@ -661,8 +661,7 @@ export function ResourceTable<
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                Delete {selectedCount}{" "}
-                {selectedCount === 1 ? resource.name : `${resource.name}s`}?
+                Delete {selectedCount} {resource.name}?
               </DialogTitle>
               <DialogDescription>This can&apos;t be undone.</DialogDescription>
             </DialogHeader>

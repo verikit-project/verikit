@@ -1052,7 +1052,7 @@ test("Delete selected opens a bulk confirmation dialog; confirming deletes every
     findButtonByText("Delete selected").click();
   });
   await waitFor(() =>
-    Boolean(document.body.textContent?.includes("Delete 2 postss?")),
+    Boolean(document.body.textContent?.includes("Delete 2 posts?")),
   );
 
   act(() => {
@@ -1060,7 +1060,7 @@ test("Delete selected opens a bulk confirmation dialog; confirming deletes every
   });
 
   await waitFor(() => fixture.calls.delete === 2);
-  await waitFor(() => !document.body.textContent?.includes("Delete 2 postss?"));
+  await waitFor(() => !document.body.textContent?.includes("Delete 2 posts?"));
   assert.doesNotMatch(harness.container.textContent ?? "", /selected/);
 
   harness.cleanup();
@@ -1089,7 +1089,7 @@ test("a partial bulk-delete failure shows an inline failure count and keeps the 
     findButtonByText("Delete selected").click();
   });
   await waitFor(() =>
-    Boolean(document.body.textContent?.includes("Delete 2 postss?")),
+    Boolean(document.body.textContent?.includes("Delete 2 posts?")),
   );
 
   act(() => {
