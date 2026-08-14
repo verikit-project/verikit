@@ -346,7 +346,10 @@ export function createServer<TActor = unknown>(
             responseCorsHeaders,
           );
         case "create":
-          return withCors(await handleCreate(ctx), responseCorsHeaders);
+          return withCors(
+            await handleCreate(ctx, routeTable),
+            responseCorsHeaders,
+          );
         case "find":
           return withCors(
             await handleFind(ctx, action.id),
@@ -354,7 +357,7 @@ export function createServer<TActor = unknown>(
           );
         case "update":
           return withCors(
-            await handleUpdate(ctx, action.id),
+            await handleUpdate(ctx, routeTable, action.id),
             responseCorsHeaders,
           );
         case "delete":

@@ -15,7 +15,7 @@ function ctxFor(
   body: unknown,
   permissions?: ReturnType<typeof definePermissions<Actor>>,
 ) {
-  const [entry] = buildRouteTable(
+  const table = buildRouteTable(
     [
       {
         resource: createPostResource(),
@@ -30,19 +30,22 @@ function ctxFor(
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
   return {
-    entry: entry!,
-    actor: { role: "viewer" } as Actor,
-    request,
-    url: new URL("https://x/post"),
-    maxBodyBytes: 1_048_576,
+    table,
+    ctx: {
+      entry: table[0]!,
+      actor: { role: "viewer" } as Actor,
+      request,
+      url: new URL("https://x/post"),
+      maxBodyBytes: 1_048_576,
+    },
   };
 }
 
 test("handleCreate validates, creates, and returns 201 with the new record", async () => {
   const adapter = createInMemoryAdapter();
-  const ctx = ctxFor(adapter, { title: "Hi", body: "text" });
+  const { ctx, table } = ctxFor(adapter, { title: "Hi", body: "text" });
 
-  const response = await handleCreate(ctx);
+  const response = await handleCreate(ctx, table);
   const body = await response.json();
 
   assert.equal(response.status, 201);
@@ -51,14 +54,14 @@ test("handleCreate validates, creates, and returns 201 with the new record", asy
 });
 
 test("handleCreate returns 400 for an invalid JSON body", async () => {
-  const ctx = ctxFor(createInMemoryAdapter(), "{not json");
-  const response = await handleCreate(ctx);
+  const { ctx, table } = ctxFor(createInMemoryAdapter(), "{not json");
+  const response = await handleCreate(ctx, table);
   assert.equal(response.status, 400);
 });
 
 test("handleCreate returns 400 with issues when required fields are missing", async () => {
-  const ctx = ctxFor(createInMemoryAdapter(), {});
-  const response = await handleCreate(ctx);
+  const { ctx, table } = ctxFor(createInMemoryAdapter(), {});
+  const response = await handleCreate(ctx, table);
   const body = await response.json();
 
   assert.equal(response.status, 400);
@@ -71,9 +74,13 @@ test("handleCreate returns 403 when the actor lacks resource-level create access
     "create",
     ({ actor }) => actor.role === "admin",
   );
-  const ctx = ctxFor(createInMemoryAdapter(), { title: "Hi" }, permissions);
+  const { ctx, table } = ctxFor(
+    createInMemoryAdapter(),
+    { title: "Hi" },
+    permissions,
+  );
 
-  const response = await handleCreate(ctx);
+  const response = await handleCreate(ctx, table);
   assert.equal(response.status, 403);
 });
 
@@ -81,9 +88,13 @@ test("handleCreate enforces per-field write access when permissions are configur
   const permissions = definePermissions<Actor>()
     .can("create", true)
     .field("title", { write: ({ actor }) => actor.role === "admin" });
-  const ctx = ctxFor(createInMemoryAdapter(), { title: "Hi" }, permissions);
+  const { ctx, table } = ctxFor(
+    createInMemoryAdapter(),
+    { title: "Hi" },
+    permissions,
+  );
 
-  const response = await handleCreate(ctx);
+  const response = await handleCreate(ctx, table);
   assert.equal(response.status, 400);
 });
 
@@ -92,9 +103,9 @@ test("handleCreate returns 400 with a field validation issue when the adapter re
   adapter.create = async () => {
     throw new UniqueConstraintError(["title"]);
   };
-  const ctx = ctxFor(adapter, { title: "Hi" });
+  const { ctx, table } = ctxFor(adapter, { title: "Hi" });
 
-  const response = await handleCreate(ctx);
+  const response = await handleCreate(ctx, table);
   const body = await response.json();
 
   assert.equal(response.status, 400);
@@ -108,10 +119,10 @@ test("handleCreate rethrows an adapter error that isn't a UniqueConstraintError"
   adapter.create = async () => {
     throw new Error("connection reset");
   };
-  const ctx = ctxFor(adapter, { title: "Hi" });
+  const { ctx, table } = ctxFor(adapter, { title: "Hi" });
 
   await assert.rejects(
-    () => handleCreate(ctx),
+    () => handleCreate(ctx, table),
     (error: unknown) =>
       error instanceof Error && error.message === "connection reset",
   );
@@ -128,8 +139,8 @@ test("handleCreate returns only fields readable by the actor", async () => {
     .can("create", true)
     .field("title", { read: true, write: true })
     .field("published", { write: true });
-  const ctx = ctxFor(adapter, { title: "Hi" }, permissions);
+  const { ctx, table } = ctxFor(adapter, { title: "Hi" }, permissions);
 
-  const body = await (await handleCreate(ctx)).json();
+  const body = await (await handleCreate(ctx, table)).json();
   assert.deepEqual(body.data, { id: adapter.records[0]!.id, title: "Hi" });
 });

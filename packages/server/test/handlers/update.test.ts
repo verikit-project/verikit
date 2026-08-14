@@ -19,7 +19,7 @@ function ctxFor(
   body: unknown,
   permissions?: ReturnType<typeof definePermissions<Actor>>,
 ) {
-  const [entry] = buildRouteTable(
+  const table = buildRouteTable(
     [
       {
         resource: createPostResource(),
@@ -34,11 +34,14 @@ function ctxFor(
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
   return {
-    entry: entry!,
-    actor: { role: "viewer" } as Actor,
-    request,
-    url: new URL("https://x/post/1"),
-    maxBodyBytes: 1_048_576,
+    table,
+    ctx: {
+      entry: table[0]!,
+      actor: { role: "viewer" } as Actor,
+      request,
+      url: new URL("https://x/post/1"),
+      maxBodyBytes: 1_048_576,
+    },
   };
 }
 
@@ -46,9 +49,9 @@ const post: Post = { id: "1", title: "Hello", body: "world", published: false };
 
 test("handleUpdate validates a partial body and returns the updated record", async () => {
   const adapter = createInMemoryAdapter([{ ...post }]);
-  const ctx = ctxFor(adapter, { published: true });
+  const { ctx, table } = ctxFor(adapter, { published: true });
 
-  const response = await handleUpdate(ctx, "1");
+  const response = await handleUpdate(ctx, table, "1");
   const body = await response.json();
 
   assert.equal(response.status, 200);
@@ -57,20 +60,25 @@ test("handleUpdate validates a partial body and returns the updated record", asy
 });
 
 test("handleUpdate returns 404 for a missing record before checking permissions", async () => {
-  const ctx = ctxFor(createInMemoryAdapter(), { title: "x" });
-  const response = await handleUpdate(ctx, "missing");
+  const { ctx, table } = ctxFor(createInMemoryAdapter(), { title: "x" });
+  const response = await handleUpdate(ctx, table, "missing");
   assert.equal(response.status, 404);
 });
 
 test("handleUpdate returns 400 for an invalid JSON body", async () => {
-  const ctx = ctxFor(createInMemoryAdapter([{ ...post }]), "{not json");
-  const response = await handleUpdate(ctx, "1");
+  const { ctx, table } = ctxFor(
+    createInMemoryAdapter([{ ...post }]),
+    "{not json",
+  );
+  const response = await handleUpdate(ctx, table, "1");
   assert.equal(response.status, 400);
 });
 
 test("handleUpdate returns 400 with issues when a submitted field fails its own constraints", async () => {
-  const ctx = ctxFor(createInMemoryAdapter([{ ...post }]), { title: null });
-  const response = await handleUpdate(ctx, "1");
+  const { ctx, table } = ctxFor(createInMemoryAdapter([{ ...post }]), {
+    title: null,
+  });
+  const response = await handleUpdate(ctx, table, "1");
   const body = await response.json();
 
   assert.equal(response.status, 400);
@@ -89,9 +97,9 @@ test("handleUpdate returns 404 when the adapter's update() reports the record go
       return undefined;
     },
   };
-  const ctx = ctxFor(adapter, { title: "x" });
+  const { ctx, table } = ctxFor(adapter, { title: "x" });
 
-  const response = await handleUpdate(ctx, "1");
+  const response = await handleUpdate(ctx, table, "1");
   assert.equal(response.status, 404);
 });
 
@@ -100,13 +108,13 @@ test("handleUpdate returns 404 (not 403) when the actor lacks update access, so 
     "update",
     ({ actor }) => actor.role === "admin",
   );
-  const ctx = ctxFor(
+  const { ctx, table } = ctxFor(
     createInMemoryAdapter([{ ...post }]),
     { title: "x" },
     permissions,
   );
 
-  const response = await handleUpdate(ctx, "1");
+  const response = await handleUpdate(ctx, table, "1");
   assert.equal(response.status, 404);
 });
 
@@ -115,9 +123,9 @@ test("handleUpdate returns 400 with a field validation issue when the adapter re
   adapter.update = async () => {
     throw new UniqueConstraintError(["title"]);
   };
-  const ctx = ctxFor(adapter, { title: "Taken" });
+  const { ctx, table } = ctxFor(adapter, { title: "Taken" });
 
-  const response = await handleUpdate(ctx, "1");
+  const response = await handleUpdate(ctx, table, "1");
   const body = await response.json();
 
   assert.equal(response.status, 400);
@@ -131,10 +139,10 @@ test("handleUpdate rethrows an adapter error that isn't a UniqueConstraintError"
   adapter.update = async () => {
     throw new Error("connection reset");
   };
-  const ctx = ctxFor(adapter, { title: "x" });
+  const { ctx, table } = ctxFor(adapter, { title: "x" });
 
   await assert.rejects(
-    () => handleUpdate(ctx, "1"),
+    () => handleUpdate(ctx, table, "1"),
     (error: unknown) =>
       error instanceof Error && error.message === "connection reset",
   );
@@ -150,8 +158,8 @@ test("handleUpdate returns only fields readable by the actor", async () => {
   const permissions = definePermissions<Actor>()
     .can("update", true)
     .field("title", { read: true, write: true });
-  const ctx = ctxFor(adapter, { title: "Updated" }, permissions);
+  const { ctx, table } = ctxFor(adapter, { title: "Updated" }, permissions);
 
-  const body = await (await handleUpdate(ctx, "1")).json();
+  const body = await (await handleUpdate(ctx, table, "1")).json();
   assert.deepEqual(body.data, { id: "1", title: "Updated" });
 });

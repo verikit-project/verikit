@@ -11,11 +11,17 @@ import {
   validateResourceInput,
 } from "../permissions.js";
 import { UniqueConstraintError, uniqueConstraintIssues } from "../adapter.js";
+import { validateRelationshipReferences } from "../relationship-validation.js";
+import type { RouteTableEntry } from "../routing/route-table.js";
 import type { HandlerContext } from "./context.js";
 import { resolveCreateValues } from "../access.js";
 
 /** Handles `POST {base}`. */
-export async function handleCreate(ctx: HandlerContext): Promise<Response> {
+export async function handleCreate(
+  ctx: HandlerContext,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors HandlerContext's own actor-type erasure, see its doc comment
+  routeTable: readonly RouteTableEntry<any>[],
+): Promise<Response> {
   const { entry, actor, request } = ctx;
 
   const permission = await maybeCheckResourceOperation(
@@ -54,6 +60,23 @@ export async function handleCreate(ctx: HandlerContext): Promise<Response> {
   if (!validated.success) {
     return errorResponse(400, "Validation failed.", {
       issues: validated.issues,
+    });
+  }
+
+  const clientFieldNames = new Set(
+    Object.keys(body.value).filter((name) => !Object.hasOwn(owned, name)),
+  );
+  const relationshipIssues = await validateRelationshipReferences(
+    entry,
+    routeTable,
+    validated.value,
+    clientFieldNames,
+    actor,
+  );
+
+  if (relationshipIssues.length > 0) {
+    return errorResponse(400, "Validation failed.", {
+      issues: relationshipIssues,
     });
   }
 

@@ -11,12 +11,16 @@ import {
   validateResourceInput,
 } from "../permissions.js";
 import { UniqueConstraintError, uniqueConstraintIssues } from "../adapter.js";
+import { validateRelationshipReferences } from "../relationship-validation.js";
+import type { RouteTableEntry } from "../routing/route-table.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
 
 /** Handles `PATCH {base}/:id`. */
 export async function handleUpdate(
   ctx: HandlerContext,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors HandlerContext's own actor-type erasure, see its doc comment
+  routeTable: readonly RouteTableEntry<any>[],
   id: string,
 ): Promise<Response> {
   const { entry, actor, request } = ctx;
@@ -75,6 +79,25 @@ export async function handleUpdate(
   if (!validated.success) {
     return errorResponse(400, "Validation failed.", {
       issues: validated.issues,
+    });
+  }
+
+  const clientFieldNames = new Set(
+    Object.keys(body.value).filter(
+      (name) => !Object.hasOwn(scope ?? {}, name),
+    ),
+  );
+  const relationshipIssues = await validateRelationshipReferences(
+    entry,
+    routeTable,
+    validated.value,
+    clientFieldNames,
+    actor,
+  );
+
+  if (relationshipIssues.length > 0) {
+    return errorResponse(400, "Validation failed.", {
+      issues: relationshipIssues,
     });
   }
 

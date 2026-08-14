@@ -161,6 +161,89 @@ test("createServer exposes scoped belongs-to relationship pickers", async () => 
   ]);
 });
 
+test("create/update reject a belongsTo foreign key an actor could never pick, closing the direct-API bypass", async () => {
+  const organization = defineResource("organization", {
+    fields: {
+      name: text().required(),
+      organizationId: text().required(),
+    },
+    access: {
+      scope: ({ actor }) => ({ organizationId: actor.organizationId }),
+    },
+  });
+  const project = defineResource("project", {
+    fields: {
+      title: text().required(),
+      organizationId: text().required().label("Organization"),
+    },
+    relationships: (field) => ({
+      organization: belongsTo(() => organization).via(field("organizationId")),
+    }),
+  });
+  const projectAdapter = createGenericInMemoryAdapter([
+    { id: "existing", title: "Existing", organizationId: "one" },
+  ]);
+  const handler = createServer<{ organizationId: string }>({
+    context: () => ({ organizationId: "one" }),
+    resources: [
+      { resource: project, adapter: projectAdapter, permissions: "open" },
+      {
+        resource: organization,
+        adapter: createGenericInMemoryAdapter([
+          { id: "one", name: "Acme", organizationId: "one" },
+          { id: "two", name: "Other", organizationId: "two" },
+        ]),
+        permissions: "open",
+      },
+    ],
+  });
+
+  // A picker-bypassing client hand-submits another tenant's real organization id.
+  const created = await handler(
+    new Request("https://x/project", {
+      method: "POST",
+      body: JSON.stringify({ title: "New", organizationId: "two" }),
+    }),
+  );
+  const createdBody = await created.json();
+
+  assert.equal(created.status, 400);
+  assert.deepEqual(createdBody.error.issues, [
+    {
+      path: ["organizationId"],
+      message: "Organization does not exist or is not accessible.",
+    },
+  ]);
+  assert.equal(projectAdapter.records.length, 1, "the write must not land");
+
+  // Same bypass attempted through update.
+  const updated = await handler(
+    new Request("https://x/project/existing", {
+      method: "PATCH",
+      body: JSON.stringify({ organizationId: "two" }),
+    }),
+  );
+  const updatedBody = await updated.json();
+
+  assert.equal(updated.status, 400);
+  assert.deepEqual(updatedBody.error.issues, [
+    {
+      path: ["organizationId"],
+      message: "Organization does not exist or is not accessible.",
+    },
+  ]);
+  assert.equal(projectAdapter.records[0]?.organizationId, "one");
+
+  // A legitimately picked, in-scope organization still succeeds.
+  const validCreate = await handler(
+    new Request("https://x/project", {
+      method: "POST",
+      body: JSON.stringify({ title: "New", organizationId: "one" }),
+    }),
+  );
+  assert.equal(validCreate.status, 201);
+});
+
 test("actor-aware scopes isolate every storage operation and own create values", async () => {
   const resource = defineResource("project", {
     fields: {
