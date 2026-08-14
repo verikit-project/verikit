@@ -80,6 +80,20 @@ test("unique() accepts an optional custom message", () => {
   );
 });
 
+test("visibleWhen sets a condition on the field schema", () => {
+  assert.deepEqual(text().visibleWhen("kind").toSchema("note").condition, {
+    field: "kind",
+  });
+  assert.deepEqual(
+    text().visibleWhen("kind", "custom").toSchema("note").condition,
+    { field: "kind", equals: "custom" },
+  );
+  assert.deepEqual(
+    text().visibleWhen("kind", ["custom", "other"]).toSchema("note").condition,
+    { field: "kind", in: ["custom", "other"] },
+  );
+});
+
 test("field names must be non-empty when finalized", () => {
   assert.throws(() => text().toSchema(""), /non-empty/);
   assert.throws(() => text().toSchema("   "), /non-empty/);

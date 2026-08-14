@@ -279,6 +279,24 @@ test("relationships are composed into the schema with names assigned from their 
   });
 });
 
+test("default tree (no .form()) lists fields then relationships, both in declaration order", () => {
+  const author = defineResource("author", { fields: { name: text() } });
+  const book = defineResource("book", {
+    fields: { title: text(), authorId: text() },
+    relationships: (field) => ({
+      author: belongsTo(() => author).via(field("authorId")),
+    }),
+  });
+
+  const schema = book.toSchema();
+
+  assert.deepEqual(schema.tree, [
+    schema.fields.title,
+    schema.fields.authorId,
+    schema.relationships.author,
+  ]);
+});
+
 test("resource preserves multiple relationship kinds", () => {
   const book = defineResource("book", { fields: { title: text() } });
   const tag = defineResource("tag", { fields: { label: text() } });

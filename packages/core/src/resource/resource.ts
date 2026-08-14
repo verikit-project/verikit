@@ -345,7 +345,7 @@ export class Resource<
   }
 
   /**
-   * Finalizes fields and relationships into schemas and builds the layout tree (via the form factory if `.form()` was called, otherwise a flat list of fields in declaration order).
+   * Finalizes fields and relationships into schemas and builds the layout tree (via the form factory if `.form()` was called, otherwise a flat list of fields followed by relationships, both in declaration order).
    */
   toSchema(): ResourceSchema<TName, TFields, TRelationships> {
     const fields = Object.fromEntries(
@@ -369,7 +369,7 @@ export class Resource<
       relationships,
       tree: this.formFactory
         ? this.formFactory(new ResourceLayoutBuilder(fields, relationships))
-        : Object.values(fields),
+        : [...Object.values(fields), ...Object.values(relationships)],
       meta: this.meta ? cloneValue(this.meta) : undefined,
     };
   }

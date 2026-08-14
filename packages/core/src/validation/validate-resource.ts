@@ -1,4 +1,4 @@
-import { FieldSchema } from "../fields/base.js";
+import { FieldCondition, FieldSchema } from "../fields/base.js";
 import { validateField, validateFieldAsync } from "./validate-field.js";
 import { ValidationIssue, ValidationResult } from "../types/validation.js";
 
@@ -29,11 +29,45 @@ export function aggregateFieldResults(
     : { success: true, value: result };
 }
 
+/**
+ * Evaluates a field's `condition` against sibling values.
+ * Without a condition, the field is always visible. `equals` and `in`
+ * perform exact matches; otherwise, the referenced value must be truthy.
+ */
+export function isFieldConditionMet(
+  condition: FieldCondition | undefined,
+  values: Record<string, unknown>,
+): boolean {
+  if (!condition) {
+    return true;
+  }
+
+  const actual = values[condition.field];
+
+  if (condition.in) {
+    return condition.in.includes(actual as FieldCondition["equals"]);
+  }
+
+  if (Object.hasOwn(condition, "equals")) {
+    return actual === condition.equals;
+  }
+
+  return Boolean(actual);
+}
+
+/**
+ * Excludes fields with unmet conditions from inference, validation,
+ * and required-field checks.
+ */
 export function shouldValidateField(
   name: string,
   schema: FieldSchema,
   values: Record<string, unknown>,
 ): boolean {
+  if (!isFieldConditionMet(schema.condition, values)) {
+    return false;
+  }
+
   return (
     Object.hasOwn(values, name) ||
     schema.required === true ||

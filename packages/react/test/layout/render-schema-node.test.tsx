@@ -21,6 +21,7 @@ import {
   RenderSchemaTree,
   setValueAtPath,
 } from "../../src/layout/index.js";
+import { BelongsToRelationshipField } from "../../src/relationships/index.js";
 // hasValueAtPath/unsetValueAtPath are internal helpers used by the
 // schema-tree form bridge (the former to tell "cleared to undefined" apart
 // from "never touched", the latter to drop a readOnly field's value) and
@@ -183,6 +184,120 @@ test("relationship nodes render nothing without a renderer, and delegate when on
 
   assert.match(html, /users/);
   assert.deepEqual(seen, [["users", ["post"]]]);
+});
+
+test("a belongsTo relationship with a resolvable foreign key renders the built-in picker by default", () => {
+  const node: RelationshipNode = {
+    type: "relationship",
+    relationshipType: "belongsTo",
+    name: "author",
+    resource: "authors",
+    foreignKey: "authorId",
+    displayField: "name",
+  };
+  const changes: unknown[] = [];
+  const blurs: unknown[] = [];
+  const element = asElement(
+    RenderSchemaNode({
+      node,
+      path: ["post"],
+      values: { post: { authorId: "42" } },
+      errors: { "post.authorId": "Required" },
+      onFieldChange: (path, value) => changes.push([path, value]),
+      onFieldBlur: (path) => blurs.push(path),
+    }),
+  );
+
+  assert.equal(element.type, BelongsToRelationshipField);
+  assert.equal(element.props.relationship, node);
+  assert.equal(element.props.value, "42");
+  assert.equal(element.props.error, "Required");
+  (element.props.onValueChange as (value: unknown) => void)("7");
+  (element.props.onBlur as () => void)();
+  assert.deepEqual(changes, [[["post", "authorId"], "7"]]);
+  assert.deepEqual(blurs, [["post", "authorId"]]);
+});
+
+test("a belongsTo relationship without a resolvable string foreign key renders nothing by default", () => {
+  const node: RelationshipNode = {
+    type: "relationship",
+    relationshipType: "belongsTo",
+    resource: "authors",
+    foreignKey: { column: "author_id" },
+  };
+
+  assert.equal(RenderSchemaNode({ node, values: {} }), null);
+});
+
+test("hasMany and belongsToMany relationships render nothing by default, even with a foreign key", () => {
+  const hasManyNode: RelationshipNode = {
+    type: "relationship",
+    relationshipType: "hasMany",
+    resource: "posts",
+    foreignKey: "authorId",
+  };
+  const belongsToManyNode: RelationshipNode = {
+    type: "relationship",
+    relationshipType: "belongsToMany",
+    resource: "tags",
+    foreignKey: "tagId",
+  };
+
+  assert.equal(RenderSchemaNode({ node: hasManyNode, values: {} }), null);
+  assert.equal(RenderSchemaNode({ node: belongsToManyNode, values: {} }), null);
+});
+
+test("a consumer-supplied renderRelationship overrides the built-in belongsTo picker", () => {
+  const node: RelationshipNode = {
+    type: "relationship",
+    relationshipType: "belongsTo",
+    resource: "authors",
+    foreignKey: "authorId",
+  };
+  const rendered = RenderSchemaNode({
+    node,
+    values: {},
+    renderRelationship: () => <span>custom</span>,
+  });
+  const html = renderToStaticMarkup(rendered as ReactElement);
+
+  assert.match(html, /custom/);
+});
+
+test("a field node hidden by an unmet condition renders nothing, and renders once its condition is met", () => {
+  const node: FieldNode = {
+    type: "field",
+    name: "note",
+    fieldType: "text",
+    condition: { field: "kind", equals: "custom" },
+  };
+
+  assert.equal(RenderSchemaNode({ node, values: { kind: "standard" } }), null);
+
+  const element = asElement(
+    RenderSchemaNode({ node, values: { kind: "custom" } }),
+  );
+  assert.equal(element.props.field, node);
+});
+
+test("a field node's condition falls back to unmet when its own container isn't a plain object", () => {
+  const node: FieldNode = {
+    type: "field",
+    name: "note",
+    fieldType: "text",
+    condition: { field: "kind", equals: "custom" },
+  };
+
+  // The "items" row at index 0 is a bare string, not an object  the
+  // condition has no sibling values to read, so it's treated as unmet.
+  assert.equal(
+    RenderSchemaNode({
+      node,
+      path: ["items", 0],
+      values: { items: ["not-an-object"] },
+    }),
+    null,
+  );
 });
 
 test("section nodes render a title and recurse into children with an inherited path", () => {

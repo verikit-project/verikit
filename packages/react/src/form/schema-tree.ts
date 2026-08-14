@@ -14,7 +14,6 @@ import {
 } from "@verikit/runtime";
 import {
   getValueAtPath,
-  hasValueAtPath,
   pathKey,
   setValueAtPath,
   unsetValueAtPath,
@@ -105,6 +104,20 @@ function collectTreeFields(
     }
   });
 }
+/**
+ * Returns the parent object containing `path` and its sibling values,
+ * or `{}` when the parent is missing or not a plain object.
+ */
+function siblingValues(
+  path: SchemaPath,
+  values: VerikitFormValues,
+): Record<string, unknown> {
+  const parent = getValueAtPath(values, path.slice(0, -1));
+
+  return typeof parent === "object" && parent !== null && !Array.isArray(parent)
+    ? (parent as Record<string, unknown>)
+    : {};
+}
 
 function shouldValidateTreeField(
   field: FieldSchema,
@@ -113,27 +126,12 @@ function shouldValidateTreeField(
 ): boolean {
   const key = String(path[path.length - 1]);
 
-  // An object literal with a computed key always creates that key, even when the value
-  // is `undefined` so `{ [key]: getValueAtPath(...) }` would report every field as
-  // "present" regardless of whether `values` actually has an entry there. Only include the key when it's genuinely present, so `shouldValidateField`'s `Object.hasOwn` check reflects reality.
-  const wrapper = hasValueAtPath(values, path)
-    ? { [key]: getValueAtPath(values, path) }
-    : {};
-
-  return shouldValidateField(key, field, wrapper);
+  return shouldValidateField(key, field, siblingValues(path, values));
 }
 
 /**
- * Splits every field reachable in the tree into the ones inference/validation
- * should process, and the paths of `.readOnly()` fields (see
- * `FieldSchema.readOnly`)  excluded from that same set so a required
- * readOnly field never blocks submission over a value it'll never actually
- * send. Unlike `submitVerikitResourceForm`'s flat-field path, this pipeline
- * builds its output by overlaying processed entries onto the original
- * `values` (see `applySuccessfulResults`), so simply omitting a readOnly
- * field from the processed set isn't enough  its raw value would otherwise
- * still be sitting in the base object, untouched. Callers overlay
- * `readOnlyPaths` with `undefined` afterward to actually clear it.
+ * Collects fields eligible for inference and validation and tracks
+ * read-only paths so their values can be removed before submission.
  */
 function partitionTreeFields(
   tree: readonly SchemaNode[],

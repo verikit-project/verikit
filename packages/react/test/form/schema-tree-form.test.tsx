@@ -191,6 +191,87 @@ test("submitVerikitSchemaTreeForm merges errors for a field reachable from two t
   });
 });
 
+test("submitVerikitSchemaTreeForm skips a required field hidden by an unmet sibling condition, and enforces it once met", async () => {
+  const tree: SchemaNode[] = [
+    text().toSchema("kind"),
+    text().required().visibleWhen("kind", "custom").toSchema("note"),
+  ];
+
+  const hidden = await submitVerikitSchemaTreeForm({
+    tree,
+    values: { kind: "standard" },
+  });
+  assert.equal(hidden.success, true);
+  assert.deepEqual(hidden.success && hidden.value, { kind: "standard" });
+
+  const shown = await submitVerikitSchemaTreeForm({
+    tree,
+    values: { kind: "custom" },
+  });
+  assert.equal(shown.success, false);
+  assert.deepEqual(Object.keys(shown.fieldErrors), ["note"]);
+
+  const shownAndFilled = await submitVerikitSchemaTreeForm({
+    tree,
+    values: { kind: "custom", note: "Details" },
+  });
+  assert.equal(shownAndFilled.success, true);
+});
+
+test("a conditional field inside a repeater row is evaluated against that row's own sibling values", async () => {
+  const tree: SchemaNode[] = [
+    {
+      type: "repeater",
+      name: "items",
+      children: [
+        text().toSchema("kind"),
+        text().required().visibleWhen("kind", "custom").toSchema("note"),
+      ],
+    },
+  ];
+
+  const result = await submitVerikitSchemaTreeForm({
+    tree,
+    values: {
+      items: [{ kind: "standard" }, { kind: "custom", note: "Details" }],
+    },
+  });
+
+  assert.equal(result.success, true);
+  assert.deepEqual(result.success && result.value, {
+    items: [{ kind: "standard" }, { kind: "custom", note: "Details" }],
+  });
+
+  const missingSecondRow = await submitVerikitSchemaTreeForm({
+    tree,
+    values: { items: [{ kind: "standard" }, { kind: "custom" }] },
+  });
+  assert.equal(missingSecondRow.success, false);
+  assert.deepEqual(Object.keys(missingSecondRow.fieldErrors), ["items.1.note"]);
+});
+
+test("a conditional field whose own row isn't a plain object falls back to no sibling values, treating its condition as unmet", async () => {
+  const tree: SchemaNode[] = [
+    {
+      type: "repeater",
+      name: "items",
+      children: [
+        text().required().visibleWhen("kind", "custom").toSchema("note"),
+      ],
+    },
+  ];
+
+  // A malformed row (a bare string instead of an object): `note`'s
+  // condition has no sibling values to read there, so it's unmet and the
+  // otherwise-required field doesn't block submission.
+  const result = await submitVerikitSchemaTreeForm({
+    tree,
+    values: { items: ["not-an-object"] },
+  });
+
+  assert.equal(result.success, true);
+});
+
 test("inferAndValidateSchemaTree mirrors submitVerikitSchemaTreeForm's infer+validate pipeline", async () => {
   const success = await inferAndValidateSchemaTree(richTree, validRichValues);
   assert.equal(success.success, true);

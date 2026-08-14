@@ -1,18 +1,21 @@
-import type {
-  ActionNode,
-  FieldNode,
-  GridNode,
-  RepeaterNode,
-  SchemaNode,
-  SectionNode,
-  TabsNode,
-  WizardNode,
+import {
+  isFieldConditionMet,
+  type ActionNode,
+  type FieldNode,
+  type GridNode,
+  type RelationshipNode,
+  type RepeaterNode,
+  type SchemaNode,
+  type SectionNode,
+  type TabsNode,
+  type WizardNode,
 } from "@verikit/core";
 import type { ActionSchema } from "@verikit/runtime";
 import type { ReactElement, ReactNode } from "react";
 import { Button } from "#components/button";
 import { cn } from "#lib/utils";
 import { RenderField } from "../fields/index.js";
+import { BelongsToRelationshipField } from "../relationships/belongs-to-field.js";
 import { getValueAtPath, pathKey, type SchemaPath } from "./path.js";
 import type { RenderSchemaNodeProps, RenderSchemaTreeProps } from "./types.js";
 
@@ -70,11 +73,29 @@ function schemaRenderProps(
   return rest;
 }
 
+/** Sibling values at a node's own nesting level, for evaluating `condition`. */
+function siblingValues(
+  values: Record<string, unknown>,
+  path: SchemaPath,
+): Record<string, unknown> {
+  const container = getValueAtPath(values, path);
+
+  return typeof container === "object" &&
+    container !== null &&
+    !Array.isArray(container)
+    ? (container as Record<string, unknown>)
+    : {};
+}
+
 function renderFieldNode(
   node: FieldNode,
   props: RenderSchemaNodeProps,
   path: SchemaPath,
-): ReactElement {
+): ReactElement | null {
+  if (!isFieldConditionMet(node.condition, siblingValues(props.values, path))) {
+    return null;
+  }
+
   const fieldPath = [...path, node.name];
 
   return (
@@ -88,6 +109,54 @@ function renderFieldNode(
       readOnly={props.readOnly}
       onValueChange={(value) => props.onFieldChange?.(fieldPath, value)}
       onBlur={() => props.onFieldBlur?.(fieldPath)}
+    />
+  );
+}
+
+/**
+ * Resolves relationships using a field reference from `.via()`.
+ * Adapter-specific references require a custom `renderRelationship`.
+ */
+function resolveForeignKeyFieldName(foreignKey: unknown): string | undefined {
+  return typeof foreignKey === "string" ? foreignKey : undefined;
+}
+
+/**
+ * Renders relationships using `renderRelationship` when provided.
+ * Otherwise, `belongsTo` uses the built-in picker when its foreign key
+ * is resolvable; collection relationships render nothing by default.
+ */
+function renderRelationshipNode(
+  node: RelationshipNode,
+  props: RenderSchemaNodeProps,
+  path: SchemaPath,
+): ReactNode {
+  if (props.renderRelationship) {
+    return props.renderRelationship(node, path);
+  }
+
+  if (node.relationshipType !== "belongsTo") {
+    return null;
+  }
+
+  const foreignKeyName = resolveForeignKeyFieldName(node.foreignKey);
+
+  if (!foreignKeyName) {
+    return null;
+  }
+
+  const foreignKeyPath = [...path, foreignKeyName];
+
+  return (
+    <BelongsToRelationshipField
+      relationship={node}
+      className={props.className}
+      value={getValueAtPath(props.values, foreignKeyPath)}
+      error={props.errors?.[pathKey(foreignKeyPath)]}
+      disabled={props.disabled}
+      readOnly={props.readOnly}
+      onValueChange={(value) => props.onFieldChange?.(foreignKeyPath, value)}
+      onBlur={() => props.onFieldBlur?.(foreignKeyPath)}
     />
   );
 }
@@ -311,7 +380,7 @@ export function RenderSchemaNode(props: RenderSchemaNodeProps): ReactNode {
     case "field":
       return renderFieldNode(node, props, path);
     case "relationship":
-      return props.renderRelationship?.(node, path) ?? null;
+      return renderRelationshipNode(node, props, path);
     case "section":
       return renderSectionNode(node, props, path);
     case "grid":

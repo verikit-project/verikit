@@ -65,6 +65,21 @@ export interface FieldSource<TColumn = unknown> {
 }
 
 /**
+ * Declarative visibility condition, evaluated against sibling field values:
+ * a field with `equals`/`in` is shown only when the referenced sibling's
+ * value matches; a field with neither set is shown when the sibling's value
+ * is truthy.
+ */
+export interface FieldCondition {
+  /** Name of the sibling field this condition depends on. */
+  field: string;
+  /** Shown only when the sibling's value strictly equals this. */
+  equals?: Primitive;
+  /** Shown only when the sibling's value is one of these. */
+  in?: readonly Primitive[];
+}
+
+/**
  * Serializable field schema shared between builders and adapters. Type-specific extensions belong in `meta`.
  */
 export interface FieldSchema {
@@ -115,12 +130,11 @@ export interface FieldSchema {
    */
   readOnly?: boolean;
   /**
-   * Field is backed by a unique constraint in storage. Adapters that detect a
-   * unique-constraint violation for this field report it as a validation
-   * issue on this field using `uniqueMessage` (or a generic default) instead
-   * of letting the raw storage error surface. Purely descriptive: setting
-   * this does not itself create or enforce a database constraint, the
-   * underlying table/model must declare that separately.
+   * Marks this field as backed by a unique storage constraint.
+   * Adapters surface violations as field validation issues using
+   * `uniqueMessage` or a default message.
+   *
+   * Does not create the database constraint; it must be defined separately.
    */
   unique?: boolean;
   /**
@@ -139,6 +153,12 @@ export interface FieldSchema {
   validation?: StandardSchemaLike;
   /** Consume-mode reference to a column */
   source?: FieldSource;
+  /**
+   * Shows this field only when a sibling field's value matches. A field
+   * hidden by an unmet condition is treated like `.formHidden()` for
+   * validation/inference/submission purposes  see `shouldValidateField`.
+   */
+  condition?: FieldCondition;
   /**
    * Vendor-specific or adapter-specific metadata (e.g., custom component params)
    */
@@ -371,6 +391,24 @@ export class FieldBuilder<
   /** Hides the field from table columns only; it still appears in forms. */
   tableHidden(): FieldBuilderWithValue<this, TValue, TSchema> {
     return this.withState({ tableHidden: true } as Partial<TSchema>);
+  }
+
+  /**
+   * Conditionally shows this field based on a sibling field's value.
+   * See `FieldSchema.condition`.
+   */
+  visibleWhen(
+    field: string,
+    value?: Primitive | readonly Primitive[],
+  ): FieldBuilderWithValue<this, TValue, TSchema> {
+    const condition: FieldCondition =
+      value === undefined
+        ? { field }
+        : Array.isArray(value)
+          ? { field, in: value }
+          : { field, equals: value as Primitive };
+
+    return this.withState({ condition } as Partial<TSchema>);
   }
 
   /**

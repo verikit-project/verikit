@@ -14,6 +14,8 @@ import {
 } from "../../src/fields/index.js";
 import { defineResource } from "../../src/resource/index.js";
 import {
+  isFieldConditionMet,
+  shouldValidateField,
   validateField,
   validateFieldAsync,
   validateResource,
@@ -866,4 +868,73 @@ test("validateResourceAsync prefixes async standard schema issue paths", async (
     success: false,
     issues: [{ path: ["profile", "slug"], message: "invalid slug" }],
   });
+});
+
+test("isFieldConditionMet is always true without a condition", () => {
+  assert.equal(isFieldConditionMet(undefined, {}), true);
+});
+
+test("isFieldConditionMet matches equals against the sibling value", () => {
+  const condition = { field: "kind", equals: "custom" };
+
+  assert.equal(isFieldConditionMet(condition, { kind: "custom" }), true);
+  assert.equal(isFieldConditionMet(condition, { kind: "other" }), false);
+});
+
+test("isFieldConditionMet matches in against the sibling value", () => {
+  const condition = { field: "kind", in: ["a", "b"] };
+
+  assert.equal(isFieldConditionMet(condition, { kind: "b" }), true);
+  assert.equal(isFieldConditionMet(condition, { kind: "c" }), false);
+});
+
+test("isFieldConditionMet with neither equals nor in requires a truthy sibling value", () => {
+  const condition = { field: "hasDetails" };
+
+  assert.equal(isFieldConditionMet(condition, { hasDetails: true }), true);
+  assert.equal(isFieldConditionMet(condition, { hasDetails: false }), false);
+  assert.equal(isFieldConditionMet(condition, {}), false);
+});
+
+test("shouldValidateField skips a field whose condition is unmet, regardless of required or default", () => {
+  const schema: FieldSchema = {
+    type: "field",
+    name: "note",
+    fieldType: "text",
+    required: true,
+    defaultValue: "fallback",
+    condition: { field: "kind", equals: "custom" },
+  };
+
+  assert.equal(shouldValidateField("note", schema, { kind: "other" }), false);
+  assert.equal(shouldValidateField("note", schema, { kind: "custom" }), true);
+});
+
+test("validateResource skips a required field hidden by an unmet condition, and enforces it once met", () => {
+  const resource = defineResource("post", {
+    fields: {
+      kind: text(),
+      note: text().required().visibleWhen("kind", "custom"),
+    },
+  });
+  const { fields } = resource.toSchema();
+
+  assert.deepEqual(validateResource(fields, { kind: "standard" }), {
+    success: true,
+    value: { kind: "standard" },
+  });
+  assert.deepEqual(
+    validateResource(fields, { kind: "custom", note: undefined }),
+    {
+      success: false,
+      issues: [{ path: ["note"], message: "This field is required." }],
+    },
+  );
+  assert.deepEqual(
+    validateResource(fields, { kind: "custom", note: "Details" }),
+    {
+      success: true,
+      value: { kind: "custom", note: "Details" },
+    },
+  );
 });
