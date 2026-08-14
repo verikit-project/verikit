@@ -24,7 +24,7 @@ export async function handleDelete(
     { actor, record: existing },
   );
 
-// Return 404 for denied deletes to avoid leaking record existence.
+  // Return 404 for denied deletes to avoid leaking record existence.
   if (!permission.allowed) {
     throw new NotFoundError();
   }

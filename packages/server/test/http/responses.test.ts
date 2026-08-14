@@ -72,7 +72,9 @@ test("toErrorResponse maps a VerikitError's own status/code/message", async () =
 
 test("toErrorResponse spreads a plain-object details onto the error body", async () => {
   const issues = [{ path: ["email"], message: "Already registered." }];
-  const response = toErrorResponse(new ValidationError("Validation failed.", issues));
+  const response = toErrorResponse(
+    new ValidationError("Validation failed.", issues),
+  );
 
   assert.equal(response.status, 400);
   assert.deepEqual(await response.json(), {

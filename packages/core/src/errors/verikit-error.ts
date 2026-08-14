@@ -23,7 +23,12 @@ export class VerikitError extends Error {
   readonly status: number;
   readonly details?: unknown;
 
-  constructor(message: string, code: string, status: number, details?: unknown) {
+  constructor(
+    message: string,
+    code: string,
+    status: number,
+    details?: unknown,
+  ) {
     super(message);
     this.name = "VerikitError";
     this.code = code;
@@ -62,9 +67,7 @@ export class UnauthorizedError extends VerikitError {
 
 /** The actor is known but not permitted to perform this operation. */
 export class ForbiddenError extends VerikitError {
-  constructor(
-    message = "You do not have permission to perform this action.",
-  ) {
+  constructor(message = "You do not have permission to perform this action.") {
     super(message, "FORBIDDEN" satisfies VerikitErrorCode, 403);
     this.name = "ForbiddenError";
   }

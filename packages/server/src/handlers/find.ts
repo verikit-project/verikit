@@ -28,7 +28,7 @@ export async function handleFind(
     { actor, record },
   );
 
-// Return 404 for denied reads to avoid leaking record existence.
+  // Return 404 for denied reads to avoid leaking record existence.
   if (!permission.allowed) {
     throw new NotFoundError();
   }

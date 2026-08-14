@@ -54,6 +54,7 @@ test("a validation failure surfaces as a VerikitClientError with issues", async 
     (error: unknown) => {
       assert.ok(error instanceof VerikitClientError);
       assert.equal(error.status, 400);
+      assert.equal(error.code, "VALIDATION_ERROR");
       assert.ok(error.issues && error.issues.length > 0);
       return true;
     },
@@ -71,6 +72,7 @@ test("delete denied by permissions surfaces as 404, not 403 (existence oracle)",
     (error: unknown) => {
       assert.ok(error instanceof VerikitClientError);
       assert.equal(error.status, 404);
+      assert.equal(error.code, "NOT_FOUND");
       return true;
     },
   );
@@ -85,12 +87,13 @@ test("an unscoped action denied by permissions surfaces as 403", async () => {
     (error: unknown) => {
       assert.ok(error instanceof VerikitClientError);
       assert.equal(error.status, 403);
+      assert.equal(error.code, "FORBIDDEN");
       return true;
     },
   );
 });
 
-test("an action requiring confirmation reports it via status/extra, then succeeds once confirmed", async () => {
+test("an action requiring confirmation reports it via status/code/extra, then succeeds once confirmed", async () => {
   const { fetch: fetchImpl } = createTestServerFetch([
     { id: "1", title: "Hello", body: "world", published: false },
   ]);
@@ -101,6 +104,7 @@ test("an action requiring confirmation reports it via status/extra, then succeed
     (error: unknown) => {
       assert.ok(error instanceof VerikitClientError);
       assert.equal(error.status, 409);
+      assert.equal(error.code, "CONFIRMATION_REQUIRED");
       assert.equal(error.extra?.confirmationRequired, true);
       return true;
     },

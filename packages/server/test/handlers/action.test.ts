@@ -1,12 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { definePermissions, text } from "@verikit/core";
+import {
+  ConflictError,
+  definePermissions,
+  text,
+  type ValidationError,
+} from "@verikit/core";
 import { action, type ActionBuilder } from "@verikit/runtime";
 import { handleAction } from "../../src/handlers/action.js";
 import { buildRouteTable } from "../../src/routing/route-table.js";
 import {
   createInMemoryAdapter,
   createPostResource,
+  verikitError,
   type Post,
 } from "../fixtures.js";
 
@@ -64,15 +70,14 @@ test("handleAction runs the named action and returns 200 with its result", async
   assert.equal(body.data, "published");
 });
 
-test("handleAction returns 404 for an unregistered action name", async () => {
-  const response = await handleAction(
-    ctxFor(createInMemoryAdapter(), [], {}),
-    "missing",
+test("handleAction throws a 404 NotFoundError for an unregistered action name", async () => {
+  await assert.rejects(
+    handleAction(ctxFor(createInMemoryAdapter(), [], {}), "missing"),
+    verikitError(404, "NOT_FOUND"),
   );
-  assert.equal(response.status, 404);
 });
 
-test("handleAction returns 400 for an invalid JSON body", async () => {
+test("handleAction throws a 400 ValidationError for an invalid JSON body", async () => {
   const publish = action("publish").execute(() => "published");
   const [entry] = buildRouteTable(
     [
@@ -89,17 +94,19 @@ test("handleAction returns 400 for an invalid JSON body", async () => {
     method: "POST",
     body: "{not json",
   });
-  const response = await handleAction(
-    {
-      entry: entry!,
-      actor: { role: "viewer" } as Actor,
-      request,
-      url: new URL(request.url),
-      maxBodyBytes: 1_048_576,
-    },
-    "publish",
+  await assert.rejects(
+    handleAction(
+      {
+        entry: entry!,
+        actor: { role: "viewer" } as Actor,
+        request,
+        url: new URL(request.url),
+        maxBodyBytes: 1_048_576,
+      },
+      "publish",
+    ),
+    verikitError(400, "VALIDATION_ERROR"),
   );
-  assert.equal(response.status, 400);
 });
 
 test("handleAction looks up recordId via the adapter and passes it through", async () => {
@@ -116,85 +123,92 @@ test("handleAction looks up recordId via the adapter and passes it through", asy
   assert.deepEqual(body.data, post);
 });
 
-test("handleAction returns 404 when recordId doesn't resolve to a record", async () => {
+test("handleAction throws a 404 NotFoundError when recordId doesn't resolve to a record", async () => {
   const publish = action("publish").execute(() => "ok");
-  const response = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], { recordId: "missing" }),
-    "publish",
-  );
-  assert.equal(response.status, 404);
-});
-
-test("handleAction maps a forbidden ActionRunResult to 403", async () => {
-  const permissions = definePermissions<Actor>().action(
-    "publish",
-    ({ actor }) => actor.role === "admin",
-  );
-  const publish = action("publish")
-    .permissions(permissions)
-    .execute(() => "ok");
-
-  const response = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], {}),
-    "publish",
-  );
-  assert.equal(response.status, 403);
-});
-
-test("handleAction returns 404 (not 403) when the action's own permissions deny access to a resolved record, so existence isn't leaked", async () => {
-  const permissions = definePermissions<Actor>().action(
-    "publish",
-    ({ actor }) => actor.role === "admin",
-  );
-  const publish = action("publish")
-    .permissions(permissions)
-    .execute(() => "ok");
-
-  const response = await handleAction(
-    ctxFor(createInMemoryAdapter([post]), [publish], { recordId: "1" }),
-    "publish",
-  );
-  assert.equal(response.status, 404);
-});
-
-test("handleAction returns 404 (not 403) when a resource-level rule denies access to a resolved record, so existence isn't leaked", async () => {
-  const permissions = definePermissions<Actor>().action(
-    "publish",
-    ({ actor }) => actor.role === "admin",
-  );
-  const publish = action("publish").execute(() => "ok");
-
-  const response = await handleAction(
-    ctxFor(
-      createInMemoryAdapter([post]),
-      [publish],
-      { recordId: "1" },
-      { role: "viewer" },
-      permissions,
+  await assert.rejects(
+    handleAction(
+      ctxFor(createInMemoryAdapter(), [publish], { recordId: "missing" }),
+      "publish",
     ),
-    "publish",
+    verikitError(404, "NOT_FOUND"),
   );
-  assert.equal(response.status, 404);
 });
 
-test("handleAction denies an action with no resource-level rule once the resource has permissions configured", async () => {
+test("handleAction throws a 403 ForbiddenError for a forbidden ActionRunResult", async () => {
+  const permissions = definePermissions<Actor>().action(
+    "publish",
+    ({ actor }) => actor.role === "admin",
+  );
+  const publish = action("publish")
+    .permissions(permissions)
+    .execute(() => "ok");
+
+  await assert.rejects(
+    handleAction(ctxFor(createInMemoryAdapter(), [publish], {}), "publish"),
+    verikitError(403, "FORBIDDEN"),
+  );
+});
+
+test("handleAction throws a 404 NotFoundError (not 403) when the action's own permissions deny access to a resolved record, so existence isn't leaked", async () => {
+  const permissions = definePermissions<Actor>().action(
+    "publish",
+    ({ actor }) => actor.role === "admin",
+  );
+  const publish = action("publish")
+    .permissions(permissions)
+    .execute(() => "ok");
+
+  await assert.rejects(
+    handleAction(
+      ctxFor(createInMemoryAdapter([post]), [publish], { recordId: "1" }),
+      "publish",
+    ),
+    verikitError(404, "NOT_FOUND"),
+  );
+});
+
+test("handleAction throws a 404 NotFoundError (not 403) when a resource-level rule denies access to a resolved record, so existence isn't leaked", async () => {
+  const permissions = definePermissions<Actor>().action(
+    "publish",
+    ({ actor }) => actor.role === "admin",
+  );
+  const publish = action("publish").execute(() => "ok");
+
+  await assert.rejects(
+    handleAction(
+      ctxFor(
+        createInMemoryAdapter([post]),
+        [publish],
+        { recordId: "1" },
+        { role: "viewer" },
+        permissions,
+      ),
+      "publish",
+    ),
+    verikitError(404, "NOT_FOUND"),
+  );
+});
+
+test("handleAction throws a 403 ForbiddenError for an action with no resource-level rule once the resource has permissions configured", async () => {
   // Fails closed like `checkResourceOperation`: attaching a permissions builder to the
   // resource gates every action, even ones the builder never mentions via `.action()`
   // and even though the action itself declares no `.permissions()` of its own.
   const permissions = definePermissions<Actor>().can("read", () => true);
   const publish = action("publish").execute(() => "published");
 
-  const response = await handleAction(
-    ctxFor(
-      createInMemoryAdapter(),
-      [publish],
-      {},
-      { role: "admin" },
-      permissions,
+  await assert.rejects(
+    handleAction(
+      ctxFor(
+        createInMemoryAdapter(),
+        [publish],
+        {},
+        { role: "admin" },
+        permissions,
+      ),
+      "publish",
     ),
-    "publish",
+    verikitError(403, "FORBIDDEN"),
   );
-  assert.equal(response.status, 403);
 });
 
 test("handleAction enforces a resource-level .action() rule independent of the action's own .permissions()", async () => {
@@ -204,17 +218,19 @@ test("handleAction enforces a resource-level .action() rule independent of the a
   );
   const publish = action("publish").execute(() => "published");
 
-  const denied = await handleAction(
-    ctxFor(
-      createInMemoryAdapter(),
-      [publish],
-      {},
-      { role: "viewer" },
-      permissions,
+  await assert.rejects(
+    handleAction(
+      ctxFor(
+        createInMemoryAdapter(),
+        [publish],
+        {},
+        { role: "viewer" },
+        permissions,
+      ),
+      "publish",
     ),
-    "publish",
+    verikitError(403, "FORBIDDEN"),
   );
-  assert.equal(denied.status, 403);
 
   const allowed = await handleAction(
     ctxFor(
@@ -229,18 +245,17 @@ test("handleAction enforces a resource-level .action() rule independent of the a
   assert.equal(allowed.status, 200);
 });
 
-test("handleAction maps a confirmation-required ActionRunResult to 409", async () => {
+test("handleAction throws a 409 VerikitError for a confirmation-required ActionRunResult", async () => {
   const publish = action("publish")
     .confirmation("Are you sure?")
     .execute(() => "ok");
-  const response = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], {}),
-    "publish",
-  );
-  const body = await response.json();
 
-  assert.equal(response.status, 409);
-  assert.equal(body.error.confirmationRequired, true);
+  await assert.rejects(
+    handleAction(ctxFor(createInMemoryAdapter(), [publish], {}), "publish"),
+    verikitError(409, "CONFIRMATION_REQUIRED", (error) => {
+      assert.deepEqual(error.details, { confirmationRequired: true });
+    }),
+  );
 });
 
 test("handleAction confirmed:true bypasses the confirmation gate", async () => {
@@ -254,38 +269,52 @@ test("handleAction confirmed:true bypasses the confirmation gate", async () => {
   assert.equal(response.status, 200);
 });
 
-test("handleAction maps an unavailable ActionRunResult to 422", async () => {
+test("handleAction throws a 422 VerikitError for an unavailable ActionRunResult", async () => {
   const publish = action("publish")
     .availableWhen(() => ({ available: false, reason: "Already published." }))
     .execute(() => "ok");
-  const response = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], {}),
-    "publish",
+
+  await assert.rejects(
+    handleAction(ctxFor(createInMemoryAdapter(), [publish], {}), "publish"),
+    verikitError(422, "ACTION_UNAVAILABLE"),
   );
-  assert.equal(response.status, 422);
 });
 
-test("handleAction maps a form-validation ActionRunResult to 422 with issues", async () => {
+test("handleAction throws a 422 ValidationError with issues for a form-validation ActionRunResult", async () => {
   const publish = action("publish")
     .form({ note: text().required() })
     .execute(() => "ok");
-  const response = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], {}),
-    "publish",
-  );
-  const body = await response.json();
 
-  assert.equal(response.status, 422);
-  assert.ok(Array.isArray(body.error.issues));
+  await assert.rejects(
+    handleAction(ctxFor(createInMemoryAdapter(), [publish], {}), "publish"),
+    verikitError<ValidationError>(422, "VALIDATION_ERROR", (error) => {
+      assert.ok(Array.isArray(error.issues));
+      assert.ok(error.issues.length > 0);
+    }),
+  );
 });
 
-test("handleAction maps an execution error to 500", async () => {
+test("handleAction throws a 500 INTERNAL_ERROR VerikitError for an execution error, with the original error attached as .cause", async () => {
+  const boom = new Error("boom");
   const publish = action("publish").execute((): string => {
-    throw new Error("boom");
+    throw boom;
   });
-  const response = await handleAction(
-    ctxFor(createInMemoryAdapter(), [publish], {}),
-    "publish",
+
+  await assert.rejects(
+    handleAction(ctxFor(createInMemoryAdapter(), [publish], {}), "publish"),
+    verikitError(500, "INTERNAL_ERROR", (error) => {
+      assert.equal(error.cause, boom);
+    }),
   );
-  assert.equal(response.status, 500);
+});
+
+test("handleAction rethrows a VerikitError an action handler throws itself verbatim, not flattened to a generic 500", async () => {
+  const publish = action("publish").execute((): string => {
+    throw new ConflictError("Already reserved.");
+  });
+
+  await assert.rejects(
+    handleAction(ctxFor(createInMemoryAdapter(), [publish], {}), "publish"),
+    verikitError(409, "CONFLICT"),
+  );
 });

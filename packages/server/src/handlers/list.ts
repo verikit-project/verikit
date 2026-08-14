@@ -35,7 +35,7 @@ export async function handleList(
     entry.config.permissions,
     { actor },
   );
-// Reject filters on unreadable fields to prevent inference through pagination totals.
+  // Reject filters on unreadable fields to prevent inference through pagination totals.
   const filters = Object.fromEntries(
     Object.entries(parseFilters(url, entry.fields)).filter(
       ([name]) => !hidden.has(name),
@@ -45,8 +45,8 @@ export async function handleList(
     .filter(([name, field]) => field.searchable && !hidden.has(name))
     .map(([name]) => name);
 
-// Restrict caller-controlled sort fields to the schema's sortable allow-list
-// before passing them to the adapter.
+  // Restrict caller-controlled sort fields to the schema's sortable allow-list
+  // before passing them to the adapter.
   const params = {
     ...rest,
     ...(scope && { scope }),

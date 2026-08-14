@@ -35,7 +35,7 @@ export async function handleUpdate(
     { actor, record: existing },
   );
 
-// Return 404 for denied updates to avoid leaking record existence.
+  // Return 404 for denied updates to avoid leaking record existence.
   if (!permission.allowed) {
     throw new NotFoundError();
   }
@@ -44,8 +44,8 @@ export async function handleUpdate(
     maxBodyBytes: ctx.maxBodyBytes,
   });
 
-// PATCH validates only submitted fields. Reapply server-owned scope fields
-// to prevent updates from moving records outside their scope.
+  // PATCH validates only submitted fields. Reapply server-owned scope fields
+  // to prevent updates from moving records outside their scope.
   const values = { ...body, ...(scope ?? {}) };
   const submittedFields = Object.fromEntries(
     Object.entries(entry.fields).filter(
@@ -93,7 +93,7 @@ export async function handleUpdate(
     throw error;
   }
 
-// Handle records deleted between the permission check and update as not found.
+  // Handle records deleted between the permission check and update as not found.
   if (!record) {
     throw new NotFoundError();
   }

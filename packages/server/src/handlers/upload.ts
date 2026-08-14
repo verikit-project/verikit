@@ -38,8 +38,8 @@ export async function handleUpload(
   }
   if (ctx.entry.config.permissions !== "open") {
     const permissions = ctx.entry.config.permissions;
-// Uploads lack record context, so only create permission is checked here;
-// record-dependent update permissions are enforced by the update handler.
+    // Uploads lack record context, so only create permission is checked here;
+    // record-dependent update permissions are enforced by the update handler.
     const creatable = await maybeCheckResourceOperation(permissions, "create", {
       actor: ctx.actor,
     });

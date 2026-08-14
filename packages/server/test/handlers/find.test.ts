@@ -49,7 +49,10 @@ test("handleFind returns the record when it exists", async () => {
 
 test("handleFind throws a 404 NotFoundError for a missing record", async () => {
   const ctx = ctxFor(createInMemoryAdapter([post]));
-  await assert.rejects(handleFind(ctx, "missing"), verikitError(404, "NOT_FOUND"));
+  await assert.rejects(
+    handleFind(ctx, "missing"),
+    verikitError(404, "NOT_FOUND"),
+  );
 });
 
 test("handleFind throws a 404 NotFoundError (not 403) when the actor lacks read access, so existence isn't leaked", async () => {

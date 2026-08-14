@@ -1,4 +1,9 @@
-import { ForbiddenError, NotFoundError, ValidationError, VerikitError } from "@verikit/core";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+  VerikitError,
+} from "@verikit/core";
 import type { ActionRunResult } from "@verikit/runtime";
 import { runAction } from "@verikit/runtime";
 import { requireJsonObjectBody } from "../http/parse-request.js";
@@ -94,8 +99,8 @@ export async function handleAction(
     record,
   });
 
-// Return 404 for denied record actions to avoid leaking record existence;
-// use 403 when no record is involved.
+  // Return 404 for denied record actions to avoid leaking record existence;
+  // use 403 when no record is involved.
   if (!permission.allowed) {
     throw record !== undefined
       ? new NotFoundError(`Record "${body.recordId}" not found.`)

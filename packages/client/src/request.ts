@@ -106,15 +106,21 @@ function toClientError(
     return new VerikitClientError(
       response.status,
       response.statusText || "Request failed",
+      "UNKNOWN",
     );
   }
 
-  const { message, issues, ...extra } = errorBody;
+  const { message, code, issues, ...extra } = errorBody;
 
-  return new VerikitClientError(response.status, message, {
-    issues: issues as ValidationIssueLike[] | undefined,
-    extra: Object.keys(extra).length > 0 ? extra : undefined,
-  });
+  return new VerikitClientError(
+    response.status,
+    message,
+    typeof code === "string" ? code : "UNKNOWN",
+    {
+      issues: issues as ValidationIssueLike[] | undefined,
+      extra: Object.keys(extra).length > 0 ? extra : undefined,
+    },
+  );
 }
 
 export interface SendRequestParams {

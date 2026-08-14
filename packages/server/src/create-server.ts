@@ -59,7 +59,7 @@ export interface CreateServerOptions<TActor = unknown> {
    * Prefix every resource is mounted under, e.g. `"/api"`. Defaults to `""`.
    */
   basePath?: string;
- /**
+  /**
  * Called for unexpected errors before they become a generic 500 response.
  * `VerikitError`s bypass this hook; errors thrown by the hook are ignored.
  */
@@ -369,8 +369,8 @@ export function createServer<TActor = unknown>(
           );
       }
     } catch (error) {
- // Map known `VerikitError`s directly and reserve `onError` for unexpected failures.
-    if (error instanceof VerikitError) {
+      // Map known `VerikitError`s directly and reserve `onError` for unexpected failures.
+      if (error instanceof VerikitError) {
         return withCors(toErrorResponse(error), responseCorsHeaders);
       }
 

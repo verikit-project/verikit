@@ -85,7 +85,7 @@ function parseFilterValue(
   field: FieldSchema,
   operator: keyof ResourceFilter,
 ): string | number | boolean | null | undefined {
-// Allow null only for equality; range comparisons require non-null values.
+  // Allow null only for equality; range comparisons require non-null values.
   if (raw === "null") return operator === "eq" ? null : undefined;
   if (field.fieldType === "boolean") {
     return raw === "true" ? true : raw === "false" ? false : undefined;

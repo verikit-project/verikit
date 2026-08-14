@@ -1611,7 +1611,11 @@ test("an action handler throwing a VerikitError reaches the client as that error
     message: "Item already reserved.",
     reservedBy: "user_1",
   });
-  assert.equal(observed.length, 0, "a known VerikitError must not reach onError");
+  assert.equal(
+    observed.length,
+    0,
+    "a known VerikitError must not reach onError",
+  );
 });
 
 test("createServer rejects oversized create, update, and action bodies with 413", async () => {

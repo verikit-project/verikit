@@ -87,7 +87,10 @@ test("handleCreate throws a 403 ForbiddenError when the actor lacks resource-lev
     permissions,
   );
 
-  await assert.rejects(handleCreate(ctx, table), verikitError(403, "FORBIDDEN"));
+  await assert.rejects(
+    handleCreate(ctx, table),
+    verikitError(403, "FORBIDDEN"),
+  );
 });
 
 test("handleCreate enforces per-field write access when permissions are configured", async () => {

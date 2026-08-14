@@ -284,6 +284,7 @@ test("an error envelope with issues/extra becomes a typed VerikitClientError", a
     jsonResponse(
       {
         error: {
+          code: "CONFIRMATION_REQUIRED",
           message: "Confirmation required.",
           confirmationRequired: true,
         },
@@ -299,9 +300,27 @@ test("an error envelope with issues/extra becomes a typed VerikitClientError", a
     (error: unknown) => {
       assert.ok(error instanceof VerikitClientError);
       assert.equal(error.status, 409);
+      assert.equal(error.code, "CONFIRMATION_REQUIRED");
       assert.equal(error.message, "Confirmation required.");
       assert.deepEqual(error.extra, { confirmationRequired: true });
       assert.equal(error.issues, undefined);
+      return true;
+    },
+  );
+});
+
+test('an error envelope with no code falls back to VerikitClientError.code "UNKNOWN"', async () => {
+  const { fetchImpl } = fakeFetch(() =>
+    jsonResponse({ error: { message: "Something went wrong." } }, 500),
+  );
+
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+
+  await assert.rejects(
+    () => client.resource("posts").find("1"),
+    (error: unknown) => {
+      assert.ok(error instanceof VerikitClientError);
+      assert.equal(error.code, "UNKNOWN");
       return true;
     },
   );
@@ -352,6 +371,7 @@ test("a non-JSON error body falls back to the response's statusText", async () =
       assert.ok(error instanceof VerikitClientError);
       assert.equal(error.status, 502);
       assert.equal(error.message, "Bad Gateway");
+      assert.equal(error.code, "UNKNOWN");
       return true;
     },
   );
