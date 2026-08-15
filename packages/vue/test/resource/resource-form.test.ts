@@ -14,7 +14,9 @@ test("renders one input per visible field and a submit button", () => {
   const { client } = createFakeClient([]);
   const harness = setupHarness(client);
 
-  const wrapper = harness.mountWithProvider(ResourceForm, { resource: postResource });
+  const wrapper = harness.mountWithProvider(ResourceForm, {
+    resource: postResource,
+  });
 
   assert.equal(wrapper.find('input[name="title"]').exists(), true);
   assert.notEqual(wrapper.find('button[type="submit"]').text(), "");
@@ -32,7 +34,9 @@ test("skips a formHidden field's input, unlike a plain hidden field it's only a 
   const { client } = createFakeClient([]);
   const harness = setupHarness(client);
 
-  const wrapper = harness.mountWithProvider(ResourceForm, { resource: resourceWithFormHidden });
+  const wrapper = harness.mountWithProvider(ResourceForm, {
+    resource: resourceWithFormHidden,
+  });
 
   assert.equal(wrapper.find('input[name="title"]').exists(), true);
   assert.equal(wrapper.find('input[name="internalNote"]').exists(), false);
@@ -64,7 +68,10 @@ test("submitting with an id updates instead of creating", async () => {
   const { client, calls } = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(client);
 
-  const wrapper = harness.mountWithProvider(ResourceForm, { resource: postResource, id: "1" });
+  const wrapper = harness.mountWithProvider(ResourceForm, {
+    resource: postResource,
+    id: "1",
+  });
 
   await wrapper.find('input[name="title"]').setValue("Changed");
   await wrapper.find("form").trigger("submit");
@@ -79,7 +86,9 @@ test("a validation failure blocks submission and shows the field error, not a su
   const { client, calls } = createFakeClient([]);
   const harness = setupHarness(client);
 
-  const wrapper = harness.mountWithProvider(ResourceForm, { resource: postResource });
+  const wrapper = harness.mountWithProvider(ResourceForm, {
+    resource: postResource,
+  });
 
   await wrapper.find("form").trigger("submit");
 
@@ -104,11 +113,19 @@ test("disables the submit button and swaps its label while a mutation is in flig
   const release = block("create");
   await wrapper.find("form").trigger("submit");
 
-  await waitFor(() => wrapper.find('button[type="submit"]').attributes("disabled") !== undefined);
+  await waitFor(
+    () =>
+      wrapper.find('button[type="submit"]').attributes("disabled") !==
+      undefined,
+  );
   assert.match(wrapper.find('button[type="submit"]').text(), /Saving/);
 
   release();
-  await waitFor(() => wrapper.find('button[type="submit"]').attributes("disabled") === undefined);
+  await waitFor(
+    () =>
+      wrapper.find('button[type="submit"]').attributes("disabled") ===
+      undefined,
+  );
   assert.match(wrapper.find('button[type="submit"]').text(), /Create/);
 
   harness.cleanup();
@@ -118,14 +135,20 @@ test("a failed mutation surfaces as a submit-error alert", async () => {
   const { client, failNext } = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(client);
 
-  const wrapper = harness.mountWithProvider(ResourceForm, { resource: postResource, id: "1" });
+  const wrapper = harness.mountWithProvider(ResourceForm, {
+    resource: postResource,
+    id: "1",
+  });
 
   await wrapper.find('input[name="title"]').setValue("Changed");
   failNext.update = true;
   await wrapper.find("form").trigger("submit");
 
   await waitFor(() => wrapper.find('[role="alert"]').exists());
-  assert.match(wrapper.find('[role="alert"]').text(), /Simulated update failure/);
+  assert.match(
+    wrapper.find('[role="alert"]').text(),
+    /Simulated update failure/,
+  );
 
   harness.cleanup();
 });
@@ -135,9 +158,14 @@ test("a server unique-constraint issue appears on its field with the custom mess
     fields: { email: text().required().unique("That email is already taken.") },
   });
   const { client, failNext } = createFakeClient([]);
-  failNext.create = new VerikitClientError(400, "Validation failed", "VALIDATION_ERROR", {
-    issues: [{ path: ["email"], message: "That email is already taken." }],
-  });
+  failNext.create = new VerikitClientError(
+    400,
+    "Validation failed",
+    "VALIDATION_ERROR",
+    {
+      issues: [{ path: ["email"], message: "That email is already taken." }],
+    },
+  );
   const harness = setupHarness(client);
 
   const wrapper = harness.mountWithProvider(ResourceForm, { resource });
@@ -194,7 +222,9 @@ test("a conditionally-visible field is hidden until its condition is met, and sh
   const { client, calls, records } = createFakeClient([]);
   const harness = setupHarness(client);
 
-  const wrapper = harness.mountWithProvider(ResourceForm, { resource: conditionalResource });
+  const wrapper = harness.mountWithProvider(ResourceForm, {
+    resource: conditionalResource,
+  });
 
   assert.equal(wrapper.find('input[name="note"]').exists(), false);
 
@@ -212,7 +242,10 @@ test("a conditionally-visible field is hidden until its condition is met, and sh
   await wrapper.find("form").trigger("submit");
 
   await waitFor(() => calls.create === 2);
-  assert.equal((records[1] as unknown as { note?: string }).note, "Extra detail");
+  assert.equal(
+    (records[1] as unknown as { note?: string }).note,
+    "Extra detail",
+  );
 
   harness.cleanup();
 });

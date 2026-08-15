@@ -72,7 +72,11 @@ const BooleanFilterControl = defineComponent({
   setup(props) {
     return () => {
       const current =
-        props.value?.eq === true ? "true" : props.value?.eq === false ? "false" : ALL_VALUE;
+        props.value?.eq === true
+          ? "true"
+          : props.value?.eq === false
+            ? "false"
+            : ALL_VALUE;
 
       return h(
         Select,
@@ -92,16 +96,23 @@ const BooleanFilterControl = defineComponent({
           default: () => [
             h(
               SelectTrigger,
-              { class: "w-full", "aria-label": props.field.label ?? props.field.name },
+              {
+                class: "w-full",
+                "aria-label": props.field.label ?? props.field.name,
+              },
               { default: () => h(SelectValue, { placeholder: "All" }) },
             ),
-            h(SelectContent, {}, {
-              default: () => [
-                h(SelectItem, { value: ALL_VALUE }, { default: () => "All" }),
-                h(SelectItem, { value: "true" }, { default: () => "Yes" }),
-                h(SelectItem, { value: "false" }, { default: () => "No" }),
-              ],
-            }),
+            h(
+              SelectContent,
+              {},
+              {
+                default: () => [
+                  h(SelectItem, { value: ALL_VALUE }, { default: () => "All" }),
+                  h(SelectItem, { value: "true" }, { default: () => "Yes" }),
+                  h(SelectItem, { value: "false" }, { default: () => "No" }),
+                ],
+              },
+            ),
           ],
         },
       );
@@ -119,7 +130,8 @@ const SelectFilterControl = defineComponent({
       const valuesByKey = new Map(
         options.map((option) => [String(option.value), option.value]),
       );
-      const current = props.value?.eq === undefined ? ALL_VALUE : String(props.value.eq);
+      const current =
+        props.value?.eq === undefined ? ALL_VALUE : String(props.value.eq);
 
       return h(
         Select,
@@ -138,21 +150,31 @@ const SelectFilterControl = defineComponent({
           default: () => [
             h(
               SelectTrigger,
-              { class: "w-full", "aria-label": props.field.label ?? props.field.name },
+              {
+                class: "w-full",
+                "aria-label": props.field.label ?? props.field.name,
+              },
               { default: () => h(SelectValue, { placeholder: "All" }) },
             ),
-            h(SelectContent, {}, {
-              default: () => [
-                h(SelectItem, { value: ALL_VALUE }, { default: () => "All" }),
-                ...options.map((option) =>
-                  h(
-                    SelectItem,
-                    { key: String(option.value), value: String(option.value) },
-                    { default: () => option.label },
+            h(
+              SelectContent,
+              {},
+              {
+                default: () => [
+                  h(SelectItem, { value: ALL_VALUE }, { default: () => "All" }),
+                  ...options.map((option) =>
+                    h(
+                      SelectItem,
+                      {
+                        key: String(option.value),
+                        value: String(option.value),
+                      },
+                      { default: () => option.label },
+                    ),
                   ),
-                ),
-              ],
-            }),
+                ],
+              },
+            ),
           ],
         },
       );
@@ -301,7 +323,10 @@ export interface ResourceTableFilterPanelProps {
 export const ResourceTableFilterPanel = defineComponent({
   name: "ResourceTableFilterPanel",
   props: {
-    fields: { type: Object as PropType<Record<string, FieldSchema>>, required: true },
+    fields: {
+      type: Object as PropType<Record<string, FieldSchema>>,
+      required: true,
+    },
     filters: { type: Object as PropType<ResourceTableFilters>, required: true },
     onFiltersChange: {
       type: Function as PropType<(filters: ResourceTableFilters) => void>,
@@ -337,18 +362,22 @@ export const ResourceTableFilterPanel = defineComponent({
         },
         [
           hasActiveFilters
-            ? h("div", { class: "flex justify-end sm:col-span-2 md:col-span-3" }, [
-                h(
-                  Button,
-                  {
-                    type: "button",
-                    variant: "ghost",
-                    size: "xs",
-                    onClick: () => props.onFiltersChange({}),
-                  },
-                  { default: () => "Clear filters" },
-                ),
-              ])
+            ? h(
+                "div",
+                { class: "flex justify-end sm:col-span-2 md:col-span-3" },
+                [
+                  h(
+                    Button,
+                    {
+                      type: "button",
+                      variant: "ghost",
+                      size: "xs",
+                      onClick: () => props.onFiltersChange({}),
+                    },
+                    { default: () => "Clear filters" },
+                  ),
+                ],
+              )
             : null,
           ...filterFields.map((field) =>
             h("div", { key: field.name, class: "grid gap-1" }, [

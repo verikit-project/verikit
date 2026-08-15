@@ -12,8 +12,9 @@ import {
 import type { VerikitSchemaTreeSource } from "../form/use-verikit-schema-tree-form.js";
 
 /** Props for {@link ResourceForm}. */
-export interface ResourceFormProps<TRecord = Record<string, unknown>>
-  extends UseResourceSchemaTreeFormOptions<TRecord> {
+export interface ResourceFormProps<
+  TRecord = Record<string, unknown>,
+> extends UseResourceSchemaTreeFormOptions<TRecord> {
   /** The resource (or its schema) whose tree drives the form and submission. */
   resource: VerikitSchemaTreeSource;
   /** Optional renderer overrides keyed by field type. */
@@ -36,9 +37,15 @@ export interface ResourceFormProps<TRecord = Record<string, unknown>>
 export const ResourceForm = defineComponent({
   name: "ResourceForm",
   props: {
-    resource: { type: Object as PropType<VerikitSchemaTreeSource>, required: true },
+    resource: {
+      type: Object as PropType<VerikitSchemaTreeSource>,
+      required: true,
+    },
     id: { type: String as PropType<string | undefined>, default: undefined },
-    actions: { type: Object as PropType<ResourceFormProps["actions"]>, default: undefined },
+    actions: {
+      type: Object as PropType<ResourceFormProps["actions"]>,
+      default: undefined,
+    },
     defaultValues: {
       type: Object as PropType<ResourceFormProps["defaultValues"]>,
       default: undefined,
@@ -47,7 +54,10 @@ export const ResourceForm = defineComponent({
       type: Function as PropType<ResourceFormProps["onSuccess"]>,
       default: undefined,
     },
-    onError: { type: Function as PropType<ResourceFormProps["onError"]>, default: undefined },
+    onError: {
+      type: Function as PropType<ResourceFormProps["onError"]>,
+      default: undefined,
+    },
     registry: {
       type: Object as PropType<Partial<VerikitFieldRegistry> | undefined>,
       default: undefined,
@@ -57,7 +67,10 @@ export const ResourceForm = defineComponent({
       default: undefined,
     },
     submitLabel: { type: String, default: "Save" },
-    className: { type: String as PropType<string | undefined>, default: undefined },
+    className: {
+      type: String as PropType<string | undefined>,
+      default: undefined,
+    },
   },
   setup(props) {
     const result = useResourceSchemaTreeForm(props.resource, {
@@ -101,7 +114,10 @@ export const ResourceForm = defineComponent({
             h(
               Button,
               { type: "submit", disabled: result.isSubmitting.value },
-              { default: () => (result.isSubmitting.value ? "Saving…" : props.submitLabel) },
+              {
+                default: () =>
+                  result.isSubmitting.value ? "Saving…" : props.submitLabel,
+              },
             ),
           ]),
         ],

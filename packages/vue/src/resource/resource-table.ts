@@ -54,8 +54,9 @@ function isPermissionDenied(error: unknown): boolean {
 type DeniedRowActions = Record<string, { update?: boolean; delete?: boolean }>;
 
 /** Props for {@link ResourceTable}. */
-export interface ResourceTableProps<TRecord extends RowData = Record<string, unknown>>
-  extends UseResourceTableOptions {
+export interface ResourceTableProps<
+  TRecord extends RowData = Record<string, unknown>,
+> extends UseResourceTableOptions {
   /** The resource (or its schema) whose fields drive columns, sorting, and paging. */
   resource: UseResourceTableSource;
   /**
@@ -66,7 +67,10 @@ export interface ResourceTableProps<TRecord extends RowData = Record<string, unk
   /** Renders per-row actions (e.g. custom edit/delete buttons). */
   renderActions?: (record: TRecord) => VNodeChild;
   /** Renders custom actions for the current row selection. */
-  renderBulkActions?: (records: TRecord[], clearSelection: () => void) => VNodeChild;
+  renderBulkActions?: (
+    records: TRecord[],
+    clearSelection: () => void,
+  ) => VNodeChild;
   /** Content shown in place of rows when the list is empty. Defaults to a plain message. */
   emptyState?: VNodeChild;
   /** Class name applied to the outer container. */
@@ -76,7 +80,9 @@ export interface ResourceTableProps<TRecord extends RowData = Record<string, unk
 // `useResourceTable` always sets `header` to `field.label` (a required,
 // non-empty string field on every `FieldSchema`), so this always reads a
 // plain string back — no function-header or missing-header case to guard.
-function headerText(header: { column: { columnDef: { header?: unknown } } }): string {
+function headerText(header: {
+  column: { columnDef: { header?: unknown } };
+}): string {
   return header.column.columnDef.header as string;
 }
 
@@ -115,8 +121,14 @@ function sortIcon(direction: false | "asc" | "desc") {
 export const ResourceTable = defineComponent({
   name: "ResourceTable",
   props: {
-    resource: { type: Object as PropType<UseResourceTableSource>, required: true },
-    pageSize: { type: Number as PropType<number | undefined>, default: undefined },
+    resource: {
+      type: Object as PropType<UseResourceTableSource>,
+      required: true,
+    },
+    pageSize: {
+      type: Number as PropType<number | undefined>,
+      default: undefined,
+    },
     actions: { type: Boolean, default: false },
     renderActions: {
       type: Function as PropType<ResourceTableProps["renderActions"]>,
@@ -130,15 +142,16 @@ export const ResourceTable = defineComponent({
       type: null as unknown as PropType<VNodeChild>,
       required: false,
     },
-    className: { type: String as PropType<string | undefined>, default: undefined },
+    className: {
+      type: String as PropType<string | undefined>,
+      default: undefined,
+    },
   },
   setup(props) {
     type TRecord = Record<string, unknown>;
 
-    const { table, isLoading, error, fields, filters, setFilters } = useResourceTable<TRecord>(
-      props.resource,
-      { pageSize: props.pageSize },
-    );
+    const { table, isLoading, error, fields, filters, setFilters } =
+      useResourceTable<TRecord>(props.resource, { pageSize: props.pageSize });
 
     const createOpen = ref(false);
     const createDenied = ref(false);
@@ -182,12 +195,18 @@ export const ResourceTable = defineComponent({
       bulkDeleting.value = true;
       bulkDeleteError.value = null;
 
-      const selectedRecords = table.getSelectedRowModel().rows.map((row) => row.original);
+      const selectedRecords = table
+        .getSelectedRowModel()
+        .rows.map((row) => row.original);
       const ids = selectedRecords
         .map((record) => recordId(record))
         .filter((id): id is string => id !== undefined);
-      const results = await Promise.allSettled(ids.map((id) => deleteMutation.mutateAsync(id)));
-      const failedCount = results.filter((result) => result.status === "rejected").length;
+      const results = await Promise.allSettled(
+        ids.map((id) => deleteMutation.mutateAsync(id)),
+      );
+      const failedCount = results.filter(
+        (result) => result.status === "rejected",
+      ).length;
 
       bulkDeleting.value = false;
 
@@ -265,9 +284,12 @@ export const ResourceTable = defineComponent({
       const selectedRecords = selectedRows.map((row) => row.original);
       const selectedCount = selectedRows.length;
       const editId = editRecord.value ? recordId(editRecord.value) : undefined;
-      const deleteId = deleteRecord.value ? recordId(deleteRecord.value) : undefined;
+      const deleteId = deleteRecord.value
+        ? recordId(deleteRecord.value)
+        : undefined;
       const hasActionsColumn = props.actions || Boolean(props.renderActions);
-      const hasSelectionColumn = props.actions || Boolean(props.renderBulkActions);
+      const hasSelectionColumn =
+        props.actions || Boolean(props.renderBulkActions);
       const hasFilterableFields = filterableFields(fields).length > 0;
       const activeFilterCount = Object.keys(filters.value).length;
 
@@ -276,7 +298,9 @@ export const ResourceTable = defineComponent({
       const headerGroup = table.getHeaderGroups()[0]!;
       const rows = table.getRowModel().rows;
       const columnCount =
-        headerGroup.headers.length + (hasActionsColumn ? 1 : 0) + (hasSelectionColumn ? 1 : 0);
+        headerGroup.headers.length +
+        (hasActionsColumn ? 1 : 0) +
+        (hasSelectionColumn ? 1 : 0);
       const resolvedEmptyState = props.emptyState ?? "No records found.";
 
       return h("div", { class: cn("w-full", props.className) }, [
@@ -357,7 +381,11 @@ export const ResourceTable = defineComponent({
                   "mb-3 flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2",
               },
               [
-                h("span", { class: "text-sm text-muted-foreground" }, `${selectedCount} selected`),
+                h(
+                  "span",
+                  { class: "text-sm text-muted-foreground" },
+                  `${selectedCount} selected`,
+                ),
                 h("div", { class: "flex items-center gap-2" }, [
                   props.renderBulkActions
                     ? props.renderBulkActions(selectedRecords, clearSelection)
@@ -376,7 +404,12 @@ export const ResourceTable = defineComponent({
                     : null,
                   h(
                     Button,
-                    { type: "button", variant: "outline", size: "sm", onClick: clearSelection },
+                    {
+                      type: "button",
+                      variant: "outline",
+                      size: "sm",
+                      onClick: clearSelection,
+                    },
                     { default: () => "Clear" },
                   ),
                 ]),
@@ -385,53 +418,66 @@ export const ResourceTable = defineComponent({
           : null,
 
         error.value
-          ? h("p", { role: "alert", class: "pb-3 text-sm text-destructive" }, error.value.message)
+          ? h(
+              "p",
+              { role: "alert", class: "pb-3 text-sm text-destructive" },
+              error.value.message,
+            )
           : null,
 
-        h("div", { class: "hidden overflow-x-auto rounded-lg border border-border md:block" }, [
-          h("table", { class: "w-full text-left text-sm" }, [
-            h("thead", { class: "bg-muted/50 text-muted-foreground" }, [
-              h("tr", {}, [
-                hasSelectionColumn
-                  ? h("th", { class: "w-8 px-3 py-2" }, [
-                      h(Checkbox, {
-                        "aria-label": "Select all rows",
-                        checked: rows.length > 0 && table.getIsAllPageRowsSelected(),
-                        indeterminate:
-                          !table.getIsAllPageRowsSelected() && table.getIsSomePageRowsSelected(),
-                        onCheckedChange: (checked: boolean) =>
-                          table.toggleAllPageRowsSelected(checked === true),
-                      }),
-                    ])
-                  : null,
-                ...headerGroup.headers.map((header) =>
-                  h("th", { key: header.id, class: "px-3 py-2 font-medium" }, [
-                    header.column.getCanSort()
-                      ? h(
-                          "button",
-                          {
-                            type: "button",
-                            class: "inline-flex items-center gap-1 hover:text-foreground",
-                            onClick: header.column.getToggleSortingHandler(),
-                          },
-                          [headerText(header), sortIcon(header.column.getIsSorted())],
-                        )
-                      : headerText(header),
-                  ]),
-                ),
-                hasActionsColumn ? h("th", { class: "px-3 py-2" }) : null,
-              ]),
-            ]),
-            h("tbody", {}, [
-              isLoading.value
-                ? h("tr", {}, [
+        h(
+          "div",
+          {
+            class:
+              "hidden overflow-x-auto rounded-lg border border-border md:block",
+          },
+          [
+            h("table", { class: "w-full text-left text-sm" }, [
+              h("thead", { class: "bg-muted/50 text-muted-foreground" }, [
+                h("tr", {}, [
+                  hasSelectionColumn
+                    ? h("th", { class: "w-8 px-3 py-2" }, [
+                        h(Checkbox, {
+                          "aria-label": "Select all rows",
+                          checked:
+                            rows.length > 0 && table.getIsAllPageRowsSelected(),
+                          indeterminate:
+                            !table.getIsAllPageRowsSelected() &&
+                            table.getIsSomePageRowsSelected(),
+                          onCheckedChange: (checked: boolean) =>
+                            table.toggleAllPageRowsSelected(checked === true),
+                        }),
+                      ])
+                    : null,
+                  ...headerGroup.headers.map((header) =>
                     h(
-                      "td",
-                      { colspan: columnCount, class: "px-3 py-6 text-center text-muted-foreground" },
-                      "Loading…",
+                      "th",
+                      { key: header.id, class: "px-3 py-2 font-medium" },
+                      [
+                        header.column.getCanSort()
+                          ? h(
+                              "button",
+                              {
+                                type: "button",
+                                class:
+                                  "inline-flex items-center gap-1 hover:text-foreground",
+                                onClick:
+                                  header.column.getToggleSortingHandler(),
+                              },
+                              [
+                                headerText(header),
+                                sortIcon(header.column.getIsSorted()),
+                              ],
+                            )
+                          : headerText(header),
+                      ],
                     ),
-                  ])
-                : rows.length === 0
+                  ),
+                  hasActionsColumn ? h("th", { class: "px-3 py-2" }) : null,
+                ]),
+              ]),
+              h("tbody", {}, [
+                isLoading.value
                   ? h("tr", {}, [
                       h(
                         "td",
@@ -439,38 +485,65 @@ export const ResourceTable = defineComponent({
                           colspan: columnCount,
                           class: "px-3 py-6 text-center text-muted-foreground",
                         },
-                        resolvedEmptyState,
+                        "Loading…",
                       ),
                     ])
-                  : rows.map((row) =>
-                      h("tr", { key: row.id, class: "border-t border-border" }, [
-                        hasSelectionColumn
-                          ? h("td", { class: "px-3 py-2" }, [
-                              h(Checkbox, {
-                                "aria-label": "Select row",
-                                checked: row.getIsSelected(),
-                                onCheckedChange: (checked: boolean) =>
-                                  row.toggleSelected(checked === true),
-                              }),
-                            ])
-                          : null,
-                        ...row
-                          .getAllCells()
-                          .map((cell) =>
-                            h("td", { key: cell.id, class: "px-3 py-2" }, cellText(cell.getValue())),
-                          ),
-                        hasActionsColumn
-                          ? h("td", { class: "px-3 py-2 text-right" }, [rowActions(row.original)])
-                          : null,
-                      ]),
-                    ),
+                  : rows.length === 0
+                    ? h("tr", {}, [
+                        h(
+                          "td",
+                          {
+                            colspan: columnCount,
+                            class:
+                              "px-3 py-6 text-center text-muted-foreground",
+                          },
+                          resolvedEmptyState,
+                        ),
+                      ])
+                    : rows.map((row) =>
+                        h(
+                          "tr",
+                          { key: row.id, class: "border-t border-border" },
+                          [
+                            hasSelectionColumn
+                              ? h("td", { class: "px-3 py-2" }, [
+                                  h(Checkbox, {
+                                    "aria-label": "Select row",
+                                    checked: row.getIsSelected(),
+                                    onCheckedChange: (checked: boolean) =>
+                                      row.toggleSelected(checked === true),
+                                  }),
+                                ])
+                              : null,
+                            ...row
+                              .getAllCells()
+                              .map((cell) =>
+                                h(
+                                  "td",
+                                  { key: cell.id, class: "px-3 py-2" },
+                                  cellText(cell.getValue()),
+                                ),
+                              ),
+                            hasActionsColumn
+                              ? h("td", { class: "px-3 py-2 text-right" }, [
+                                  rowActions(row.original),
+                                ])
+                              : null,
+                          ],
+                        ),
+                      ),
+              ]),
             ]),
-          ]),
-        ]),
+          ],
+        ),
 
         h("div", { class: "grid gap-2 md:hidden" }, [
           isLoading.value
-            ? h("p", { class: "py-6 text-center text-sm text-muted-foreground" }, "Loading…")
+            ? h(
+                "p",
+                { class: "py-6 text-center text-sm text-muted-foreground" },
+                "Loading…",
+              )
             : rows.length === 0
               ? h(
                   "p",
@@ -478,25 +551,30 @@ export const ResourceTable = defineComponent({
                   resolvedEmptyState,
                 )
               : rows.map((row) =>
-                  h("div", { key: row.id, class: "rounded-lg border border-border p-3" }, [
-                    hasSelectionColumn
-                      ? h("div", { class: "flex justify-end pb-2" }, [
-                          h(Checkbox, {
-                            "aria-label": "Select row",
-                            checked: row.getIsSelected(),
-                            onCheckedChange: (checked: boolean) =>
-                              row.toggleSelected(checked === true),
-                          }),
-                        ])
-                      : null,
-                    ...row
-                      .getAllCells()
-                      .map((cell) =>
+                  h(
+                    "div",
+                    {
+                      key: row.id,
+                      class: "rounded-lg border border-border p-3",
+                    },
+                    [
+                      hasSelectionColumn
+                        ? h("div", { class: "flex justify-end pb-2" }, [
+                            h(Checkbox, {
+                              "aria-label": "Select row",
+                              checked: row.getIsSelected(),
+                              onCheckedChange: (checked: boolean) =>
+                                row.toggleSelected(checked === true),
+                            }),
+                          ])
+                        : null,
+                      ...row.getAllCells().map((cell) =>
                         h(
                           "div",
                           {
                             key: cell.id,
-                            class: "flex items-center justify-between gap-2 py-1 text-sm",
+                            class:
+                              "flex items-center justify-between gap-2 py-1 text-sm",
                           },
                           [
                             h(
@@ -504,50 +582,64 @@ export const ResourceTable = defineComponent({
                               { class: "text-muted-foreground" },
                               headerText({ column: cell.column }),
                             ),
-                            h("span", { class: "text-right" }, cellText(cell.getValue())),
+                            h(
+                              "span",
+                              { class: "text-right" },
+                              cellText(cell.getValue()),
+                            ),
                           ],
                         ),
                       ),
-                    hasActionsColumn
-                      ? h("div", { class: "flex justify-end gap-2 pt-2" }, [rowActions(row.original)])
-                      : null,
-                  ]),
+                      hasActionsColumn
+                        ? h("div", { class: "flex justify-end gap-2 pt-2" }, [
+                            rowActions(row.original),
+                          ])
+                        : null,
+                    ],
+                  ),
                 ),
         ]),
 
-        h("div", { class: "flex items-center justify-between pt-3 text-sm text-muted-foreground" }, [
-          h(
-            "span",
-            {},
-            `Page ${table.store.state.pagination.pageIndex + 1} of ${Math.max(1, table.getPageCount())} · ${table.getRowCount()} total`,
-          ),
-          h("div", { class: "flex gap-1" }, [
+        h(
+          "div",
+          {
+            class:
+              "flex items-center justify-between pt-3 text-sm text-muted-foreground",
+          },
+          [
             h(
-              Button,
-              {
-                type: "button",
-                variant: "outline",
-                size: "icon-sm",
-                disabled: !table.getCanPreviousPage(),
-                onClick: () => table.previousPage(),
-                "aria-label": "Previous page",
-              },
-              { default: () => h(ChevronLeftIcon) },
+              "span",
+              {},
+              `Page ${table.store.state.pagination.pageIndex + 1} of ${Math.max(1, table.getPageCount())} · ${table.getRowCount()} total`,
             ),
-            h(
-              Button,
-              {
-                type: "button",
-                variant: "outline",
-                size: "icon-sm",
-                disabled: !table.getCanNextPage(),
-                onClick: () => table.nextPage(),
-                "aria-label": "Next page",
-              },
-              { default: () => h(ChevronRightIcon) },
-            ),
-          ]),
-        ]),
+            h("div", { class: "flex gap-1" }, [
+              h(
+                Button,
+                {
+                  type: "button",
+                  variant: "outline",
+                  size: "icon-sm",
+                  disabled: !table.getCanPreviousPage(),
+                  onClick: () => table.previousPage(),
+                  "aria-label": "Previous page",
+                },
+                { default: () => h(ChevronLeftIcon) },
+              ),
+              h(
+                Button,
+                {
+                  type: "button",
+                  variant: "outline",
+                  size: "icon-sm",
+                  disabled: !table.getCanNextPage(),
+                  onClick: () => table.nextPage(),
+                  "aria-label": "Next page",
+                },
+                { default: () => h(ChevronRightIcon) },
+              ),
+            ]),
+          ],
+        ),
 
         props.actions
           ? h(
@@ -560,19 +652,34 @@ export const ResourceTable = defineComponent({
               },
               {
                 default: () =>
-                  h(DialogContent, {}, {
-                    default: () => [
-                      h(DialogHeader, {}, { default: () => h(DialogTitle, {}, { default: () => `New ${props.resource.name}` }) }),
-                      h(ResourceForm, {
-                        resource: props.resource,
-                        onSuccess: () => {
-                          createOpen.value = false;
-                        },
-                        onError: handleCreateError,
-                        submitLabel: "Create",
-                      }),
-                    ],
-                  }),
+                  h(
+                    DialogContent,
+                    {},
+                    {
+                      default: () => [
+                        h(
+                          DialogHeader,
+                          {},
+                          {
+                            default: () =>
+                              h(
+                                DialogTitle,
+                                {},
+                                { default: () => `New ${props.resource.name}` },
+                              ),
+                          },
+                        ),
+                        h(ResourceForm, {
+                          resource: props.resource,
+                          onSuccess: () => {
+                            createOpen.value = false;
+                          },
+                          onError: handleCreateError,
+                          submitLabel: "Create",
+                        }),
+                      ],
+                    },
+                  ),
               },
             )
           : null,
@@ -590,23 +697,40 @@ export const ResourceTable = defineComponent({
               },
               {
                 default: () =>
-                  h(DialogContent, {}, {
-                    default: () => [
-                      h(DialogHeader, {}, { default: () => h(DialogTitle, {}, { default: () => `Edit ${props.resource.name}` }) }),
-                      editRecord.value
-                        ? h(ResourceForm, {
-                            resource: props.resource,
-                            id: editId!,
-                            defaultValues: editRecord.value,
-                            onSuccess: () => {
-                              editRecord.value = null;
-                            },
-                            onError: handleEditError(editId!),
-                            submitLabel: "Save changes",
-                          })
-                        : null,
-                    ],
-                  }),
+                  h(
+                    DialogContent,
+                    {},
+                    {
+                      default: () => [
+                        h(
+                          DialogHeader,
+                          {},
+                          {
+                            default: () =>
+                              h(
+                                DialogTitle,
+                                {},
+                                {
+                                  default: () => `Edit ${props.resource.name}`,
+                                },
+                              ),
+                          },
+                        ),
+                        editRecord.value
+                          ? h(ResourceForm, {
+                              resource: props.resource,
+                              id: editId!,
+                              defaultValues: editRecord.value,
+                              onSuccess: () => {
+                                editRecord.value = null;
+                              },
+                              onError: handleEditError(editId!),
+                              submitLabel: "Save changes",
+                            })
+                          : null,
+                      ],
+                    },
+                  ),
               },
             )
           : null,
@@ -624,41 +748,82 @@ export const ResourceTable = defineComponent({
               },
               {
                 default: () =>
-                  h(DialogContent, {}, {
-                    default: () => [
-                      h(DialogHeader, {}, {
-                        default: () => [
-                          h(DialogTitle, {}, { default: () => `Delete this ${props.resource.name}?` }),
-                          h(DialogDescription, {}, { default: () => "This can't be undone." }),
-                        ],
-                      }),
-                      deleteMutation.error.value && !isPermissionDenied(deleteMutation.error.value)
-                        ? h(
-                            "p",
-                            { role: "alert", class: "text-sm text-destructive" },
-                            deleteMutation.error.value.message,
-                          )
-                        : null,
-                      h(DialogFooter, {}, {
-                        default: () => [
-                          h(DialogClose, { asChild: true }, {
-                            default: () =>
-                              h(Button, { type: "button", variant: "outline" }, { default: () => "Cancel" }),
-                          }),
-                          h(
-                            Button,
-                            {
-                              type: "button",
-                              variant: "destructive",
-                              disabled: deleteMutation.isPending.value,
-                              onClick: () => deleteMutation.mutate(deleteId!),
-                            },
-                            { default: () => (deleteMutation.isPending.value ? "Deleting…" : "Delete") },
-                          ),
-                        ],
-                      }),
-                    ],
-                  }),
+                  h(
+                    DialogContent,
+                    {},
+                    {
+                      default: () => [
+                        h(
+                          DialogHeader,
+                          {},
+                          {
+                            default: () => [
+                              h(
+                                DialogTitle,
+                                {},
+                                {
+                                  default: () =>
+                                    `Delete this ${props.resource.name}?`,
+                                },
+                              ),
+                              h(
+                                DialogDescription,
+                                {},
+                                { default: () => "This can't be undone." },
+                              ),
+                            ],
+                          },
+                        ),
+                        deleteMutation.error.value &&
+                        !isPermissionDenied(deleteMutation.error.value)
+                          ? h(
+                              "p",
+                              {
+                                role: "alert",
+                                class: "text-sm text-destructive",
+                              },
+                              deleteMutation.error.value.message,
+                            )
+                          : null,
+                        h(
+                          DialogFooter,
+                          {},
+                          {
+                            default: () => [
+                              h(
+                                DialogClose,
+                                { asChild: true },
+                                {
+                                  default: () =>
+                                    h(
+                                      Button,
+                                      { type: "button", variant: "outline" },
+                                      { default: () => "Cancel" },
+                                    ),
+                                },
+                              ),
+                              h(
+                                Button,
+                                {
+                                  type: "button",
+                                  variant: "destructive",
+                                  disabled: deleteMutation.isPending.value,
+                                  onClick: () =>
+                                    deleteMutation.mutate(deleteId!),
+                                },
+                                {
+                                  default: () =>
+                                    deleteMutation.isPending.value
+                                      ? "Deleting…"
+                                      : "Delete",
+                                },
+                              ),
+                            ],
+                          },
+                        ),
+                      ],
+                    },
+                  ),
               },
             )
           : null,
@@ -676,39 +841,78 @@ export const ResourceTable = defineComponent({
               },
               {
                 default: () =>
-                  h(DialogContent, {}, {
-                    default: () => [
-                      h(DialogHeader, {}, {
-                        default: () => [
-                          h(DialogTitle, {}, {
-                            default: () => `Delete ${selectedCount} ${props.resource.name}?`,
-                          }),
-                          h(DialogDescription, {}, { default: () => "This can't be undone." }),
-                        ],
-                      }),
-                      bulkDeleteError.value
-                        ? h("p", { role: "alert", class: "text-sm text-destructive" }, bulkDeleteError.value)
-                        : null,
-                      h(DialogFooter, {}, {
-                        default: () => [
-                          h(DialogClose, { asChild: true }, {
-                            default: () =>
-                              h(Button, { type: "button", variant: "outline" }, { default: () => "Cancel" }),
-                          }),
-                          h(
-                            Button,
-                            {
-                              type: "button",
-                              variant: "destructive",
-                              disabled: bulkDeleting.value,
-                              onClick: () => void confirmBulkDelete(),
-                            },
-                            { default: () => (bulkDeleting.value ? "Deleting…" : "Delete") },
-                          ),
-                        ],
-                      }),
-                    ],
-                  }),
+                  h(
+                    DialogContent,
+                    {},
+                    {
+                      default: () => [
+                        h(
+                          DialogHeader,
+                          {},
+                          {
+                            default: () => [
+                              h(
+                                DialogTitle,
+                                {},
+                                {
+                                  default: () =>
+                                    `Delete ${selectedCount} ${props.resource.name}?`,
+                                },
+                              ),
+                              h(
+                                DialogDescription,
+                                {},
+                                { default: () => "This can't be undone." },
+                              ),
+                            ],
+                          },
+                        ),
+                        bulkDeleteError.value
+                          ? h(
+                              "p",
+                              {
+                                role: "alert",
+                                class: "text-sm text-destructive",
+                              },
+                              bulkDeleteError.value,
+                            )
+                          : null,
+                        h(
+                          DialogFooter,
+                          {},
+                          {
+                            default: () => [
+                              h(
+                                DialogClose,
+                                { asChild: true },
+                                {
+                                  default: () =>
+                                    h(
+                                      Button,
+                                      { type: "button", variant: "outline" },
+                                      { default: () => "Cancel" },
+                                    ),
+                                },
+                              ),
+                              h(
+                                Button,
+                                {
+                                  type: "button",
+                                  variant: "destructive",
+                                  disabled: bulkDeleting.value,
+                                  onClick: () => void confirmBulkDelete(),
+                                },
+                                {
+                                  default: () =>
+                                    bulkDeleting.value ? "Deleting…" : "Delete",
+                                },
+                              ),
+                            ],
+                          },
+                        ),
+                      ],
+                    },
+                  ),
               },
             )
           : null,
