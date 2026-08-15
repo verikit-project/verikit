@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["packages/ui-core/src/index.ts"],
+  "out": "docs/api/ui-core",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "ui-core",
+  "readme": "none"
+}

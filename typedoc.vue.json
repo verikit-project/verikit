@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["packages/vue/src/index.ts"],
+  "out": "docs/api/vue",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "vue",
+  "readme": "none"
+}
