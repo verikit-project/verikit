@@ -7,7 +7,8 @@ export {
   submitVerikitResourceForm,
   validationIssuesToFieldErrors,
 } from "@verikit/ui-core/form/submission";
-export { resolveVerikitFields, useVerikitForm } from "./use-verikit-form.js";
+export { resolveVerikitFields } from "@verikit/ui-core/form/resolve-fields";
+export { useVerikitForm } from "./use-verikit-form.js";
 export {
   inferAndValidateSchemaTree,
   submitVerikitSchemaTreeActionForm,
@@ -28,8 +29,8 @@ export type {
 export type {
   UseVerikitFormOptions,
   UseVerikitFormResult,
-  VerikitFormSource,
 } from "./use-verikit-form.js";
+export type { VerikitFormSource } from "@verikit/ui-core/form/resolve-fields";
 export type {
   SubmitVerikitSchemaTreeActionFormOptions,
   SubmitVerikitSchemaTreeFormOptions,

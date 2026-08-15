@@ -6,7 +6,7 @@ import type {
   SchemaActionRegistry,
   SchemaRenderProps,
 } from "../layout/types.js";
-import { isResource } from "./use-verikit-form.js";
+import { isResource } from "@verikit/ui-core/form/resolve-fields";
 import { submitVerikitSchemaTreeForm } from "@verikit/ui-core/form/schema-tree";
 import {
   firstFieldError,

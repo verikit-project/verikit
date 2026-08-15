@@ -19,7 +19,7 @@ import {
 import type { ListParams } from "@verikit/client";
 import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
 import { recordId } from "@verikit/ui-core/query/optimistic";
-import { resolveVerikitFields } from "../form/use-verikit-form.js";
+import { resolveVerikitFields } from "@verikit/ui-core/form/resolve-fields";
 import { useListResource } from "./use-resource-queries.js";
 
 // `columnFilteringFeature` is required by TanStack's global filtering feature.

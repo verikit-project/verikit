@@ -1,7 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import { useForm, type AnyFormApi } from "@tanstack/react-form";
-import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
+import type { FieldSchema } from "@verikit/core";
 import type { VerikitFieldComponentProps } from "../fields/index.js";
+import {
+  resolveVerikitFields,
+  type VerikitFormSource,
+} from "@verikit/ui-core/form/resolve-fields";
 import {
   firstFieldError,
   omitFieldError,
@@ -11,9 +15,6 @@ import {
   type VerikitFormValues,
   type VerikitResourceSubmitResult,
 } from "@verikit/ui-core/form/submission";
-
-/** Source accepted by the flat Verikit form hook. */
-export type VerikitFormSource = VerikitFormFields | Resource | ResourceSchema;
 
 /** Options for creating a flat Verikit form hook instance. */
 export interface UseVerikitFormOptions<TResult = unknown> {
@@ -49,30 +50,6 @@ export interface UseVerikitFormResult<TResult = unknown> {
   getFieldError: (name: string) => string | undefined;
   /** Builds props for rendering a field with the registry components. */
   getFieldProps: (name: string) => VerikitFieldComponentProps;
-}
-
-/** Returns true when a source is a resource builder. */
-export function isResource(value: VerikitFormSource): value is Resource {
-  return typeof (value as Resource).toSchema === "function";
-}
-
-function isResourceSchema(value: VerikitFormSource): value is ResourceSchema {
-  return (value as ResourceSchema).type === "resource";
-}
-
-/** Resolves any supported form source into a field schema map. */
-export function resolveVerikitFields(
-  source: VerikitFormSource,
-): VerikitFormFields {
-  if (isResource(source)) {
-    return source.toSchema().fields;
-  }
-
-  if (isResourceSchema(source)) {
-    return source.fields as VerikitFormFields;
-  }
-
-  return source;
 }
 
 /** Creates a TanStack-backed form for a flat Verikit resource schema. */

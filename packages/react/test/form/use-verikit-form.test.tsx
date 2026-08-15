@@ -1,38 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { email, text, number, defineResource } from "@verikit/core";
+import { email, text, number } from "@verikit/core";
 import { renderToStaticMarkup } from "react-dom/server";
-import {
-  resolveVerikitFields,
-  useVerikitForm,
-  type VerikitFormFields,
-} from "../../src/index.js";
+import { useVerikitForm, type VerikitFormFields } from "../../src/index.js";
 
 const fields: VerikitFormFields = {
   email: email().required().toSchema("email"),
   name: text().required().toSchema("name"),
   seats: number().required().toSchema("seats"),
 };
-
-test("resolveVerikitFields accepts maps, resource schemas, and resources", () => {
-  const resource = defineResource("User", {
-    fields: {
-      email: email().required(),
-      name: text().required(),
-    },
-  });
-  const schema = resource.toSchema();
-
-  assert.equal(resolveVerikitFields(fields), fields);
-  assert.deepEqual(Object.keys(resolveVerikitFields(schema)), [
-    "email",
-    "name",
-  ]);
-  assert.deepEqual(Object.keys(resolveVerikitFields(resource)), [
-    "email",
-    "name",
-  ]);
-});
 
 test("useVerikitForm exposes TanStack form state and field props", async () => {
   let captured: ReturnType<typeof useVerikitForm<string>> | undefined;
