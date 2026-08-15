@@ -2,10 +2,10 @@
 
 ## Setup
 
-Requires Node.js 24 and pnpm 11  pinned by `.nvmrc`/`.node-version` (Node) and the root
-`package.json`'s `packageManager` field (pnpm, via Corepack). Run `corepack enable` once per
-machine, then a version manager that reads `.nvmrc`/`.node-version` (nvm, fnm, mise, ...) will
-pick up the right Node version automatically.
+Requires Node.js 24 and pnpm 11. Node is pinned by `.nvmrc`/`.node-version`; the root
+`package.json` accepts compatible pnpm 11.x releases through `devEngines`. CI installs pnpm 11
+directly. Run `corepack enable` once per machine, then a version manager that reads
+`.nvmrc`/`.node-version` (nvm, fnm, mise, ...) will pick up the right Node version automatically.
 
 ```sh
 corepack enable
