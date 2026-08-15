@@ -1,4 +1,4 @@
-import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import type { QueryClient, QueryKey } from "@tanstack/query-core";
 import type { ListResponse } from "@verikit/client";
 import type { ResourceQueryKeys } from "./query-keys.js";
 

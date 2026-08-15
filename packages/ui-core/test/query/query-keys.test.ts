@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resourceQueryKeys } from "../../src/query/index.js";
+import { resourceQueryKeys } from "../../src/index.js";
 
 test("resourceQueryKeys builds the documented all/list/find shape", () => {
   const keys = resourceQueryKeys("posts");
