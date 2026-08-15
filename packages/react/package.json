@@ -1,6 +1,6 @@
 {
   "name": "@verikit/react",
-  "version": "0.21.0",
+  "version": "0.22.0",
   "description": "React UI bindings for Verikit resource workflows.",
   "type": "module",
   "main": "./dist/index.js",
