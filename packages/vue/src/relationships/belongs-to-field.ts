@@ -40,8 +40,8 @@ export const BelongsToRelationshipField = defineComponent({
       required: true,
     },
     id: { type: String as PropType<string | undefined>, default: undefined },
-    value: { type: Object as unknown as PropType<unknown>, default: undefined },
-    error: { type: Object as unknown as PropType<VNodeChild>, default: undefined },
+    value: { type: null as unknown as PropType<unknown>, required: false },
+    error: { type: null as unknown as PropType<VNodeChild>, required: false },
     disabled: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     readOnly: { type: Boolean as PropType<boolean | undefined>, default: undefined },
     className: { type: String as PropType<string | undefined>, default: undefined },
@@ -52,18 +52,24 @@ export const BelongsToRelationshipField = defineComponent({
     onBlur: { type: Function as PropType<(() => void) | undefined>, default: undefined },
   },
   setup(props) {
+    // Hoisted out of the render closure, which Vue calls repeatedly on every
+    // reactive update: calling a `useQuery`-backed composable there instead
+    // of once here creates a brand-new query (with its own watchers) on
+    // every render, each one immediately reporting state and triggering
+    // another render — an infinite loop.
+    const relationshipName = props.relationship.name ?? "";
+    const relationshipQuery = useResourceRelationship<Record<string, unknown>>(
+      props.relationship.resource,
+      relationshipName,
+      { pageSize: RELATIONSHIP_PICKER_PAGE_SIZE },
+      { enabled: relationshipName.length > 0 },
+    );
+
     return () => {
-      const relationshipName = props.relationship.name ?? "";
       const inputId =
         props.id ??
         `verikit-relationship-${props.relationship.resource}-${relationshipName}`;
       const errorId = props.error ? `${inputId}-error` : undefined;
-      const relationshipQuery = useResourceRelationship<Record<string, unknown>>(
-        props.relationship.resource,
-        relationshipName,
-        { pageSize: RELATIONSHIP_PICKER_PAGE_SIZE },
-        { enabled: relationshipName.length > 0 },
-      );
       const records = relationshipQuery.data.value?.records ?? [];
       const currentValue =
         props.value === null || props.value === undefined ? "" : String(props.value);

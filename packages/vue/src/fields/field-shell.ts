@@ -23,7 +23,7 @@ export const FieldShell = defineComponent({
   props: {
     field: { type: Object as PropType<FieldSchema>, required: true },
     id: { type: String, required: true },
-    error: { type: null as unknown as PropType<VNodeChild>, default: undefined },
+    error: { type: null as unknown as PropType<VNodeChild>, required: false },
     className: { type: String as PropType<string | undefined>, default: undefined },
   },
   setup(props, { slots }) {

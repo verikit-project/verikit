@@ -11,6 +11,33 @@ export function installJsdom(): () => void {
   const dom = new JSDOM("<!doctype html><body></body>");
   const { window } = dom;
 
+  // jsdom implements neither of these. Reka UI's floating-ui-backed
+  // components (Select, and anything using @floating-ui/vue) call them while
+  // positioning/mounting their popup, throwing a bare `ReferenceError` there
+  // when they're missing. Minimal stubs are enough: nothing under test
+  // asserts on actual resize/media-query behavior.
+  class ResizeObserverPolyfill {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  }
+  function matchMediaPolyfill(query: string): MediaQueryList {
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    } as unknown as MediaQueryList;
+  }
+
+  const win = window as unknown as Record<string, unknown>;
+  win.ResizeObserver = ResizeObserverPolyfill;
+  win.matchMedia = matchMediaPolyfill;
+
   const globals = {
     window,
     document: window.document,
@@ -21,7 +48,10 @@ export function installJsdom(): () => void {
     Node: window.Node,
     Text: window.Text,
     Event: window.Event,
+    DocumentFragment: window.DocumentFragment,
     getComputedStyle: window.getComputedStyle.bind(window),
+    ResizeObserver: ResizeObserverPolyfill,
+    matchMedia: matchMediaPolyfill,
     requestAnimationFrame: (callback: FrameRequestCallback) =>
       setTimeout(() => callback(Date.now()), 16) as unknown as number,
     cancelAnimationFrame: (handle: number) => clearTimeout(handle),
