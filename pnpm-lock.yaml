@@ -336,6 +336,9 @@ importers:
       '@verikit/theme':
         specifier: workspace:*
         version: link:../theme
+      '@verikit/ui-core':
+        specifier: workspace:*
+        version: link:../ui-core
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -420,6 +423,28 @@ importers:
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
+
+  packages/ui-core:
+    dependencies:
+      '@tanstack/query-core':
+        specifier: ^5.101.4
+        version: 5.101.4
+      '@verikit/client':
+        specifier: workspace:*
+        version: link:../client
+      '@verikit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verikit/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
 packages:
 

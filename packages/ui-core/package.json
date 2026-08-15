@@ -1,0 +1,61 @@
+{
+  "name": "@verikit/ui-core",
+  "version": "0.21.0",
+  "description": "Framework-neutral form, layout, and query logic shared by Verikit UI bindings.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "keywords": [
+    "typescript",
+    "resource",
+    "schema",
+    "resource-model",
+    "metadata",
+    "builder",
+    "validation",
+    "framework"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./form/*": {
+      "types": "./dist/form/*.d.ts",
+      "default": "./dist/form/*.js"
+    },
+    "./layout/*": {
+      "types": "./dist/layout/*.d.ts",
+      "default": "./dist/layout/*.js"
+    },
+    "./query/*": {
+      "types": "./dist/query/*.d.ts",
+      "default": "./dist/query/*.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "build": "pnpm clean && tsc -b",
+    "prepack": "pnpm build",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@tanstack/query-core": "^5.101.4",
+    "@verikit/client": "workspace:*",
+    "@verikit/core": "workspace:*",
+    "@verikit/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "typescript": "^6.0.3"
+  }
+}
