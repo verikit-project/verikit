@@ -38,11 +38,16 @@ test("useResourceTable derives one column per visible field, skipping hidden one
   await waitFor(() => result().isLoading.value === false);
 
   const headers = result().table.getHeaderGroups()[0]?.headers;
-  assert.deepEqual(headers?.map((header) => header.id), ["title", "status"]);
+  assert.deepEqual(
+    headers?.map((header) => header.id),
+    ["title", "status"],
+  );
   assert.equal(headers?.[0]?.column.getCanSort(), true);
   assert.equal(headers?.[1]?.column.getCanSort(), false);
   assert.deepEqual(
-    result().table.getRowModel().rows.map((row) => row.original.title),
+    result()
+      .table.getRowModel()
+      .rows.map((row) => row.original.title),
     ["Hello"],
   );
 
@@ -63,7 +68,10 @@ test("useResourceTable skips tableHidden fields as columns", async () => {
   await waitFor(() => result().isLoading.value === false);
 
   const headers = result().table.getHeaderGroups()[0]?.headers;
-  assert.deepEqual(headers?.map((header) => header.id), ["title"]);
+  assert.deepEqual(
+    headers?.map((header) => header.id),
+    ["title"],
+  );
 
   harness.cleanup();
 });
@@ -100,12 +108,18 @@ test("useResourceTable's sorting state drives the list request's sort param", as
   result().table.getColumn("title")?.toggleSorting(true);
 
   await waitFor(() => fixture.calls.list === 2);
-  assert.deepEqual(fixture.lastListParams?.sort, { field: "title", direction: "desc" });
+  assert.deepEqual(fixture.lastListParams?.sort, {
+    field: "title",
+    direction: "desc",
+  });
 
   result().table.getColumn("title")?.toggleSorting(false);
 
   await waitFor(() => fixture.calls.list === 3);
-  assert.deepEqual(fixture.lastListParams?.sort, { field: "title", direction: "asc" });
+  assert.deepEqual(fixture.lastListParams?.sort, {
+    field: "title",
+    direction: "asc",
+  });
 
   harness.cleanup();
 });
@@ -207,10 +221,15 @@ test("useResourceTable's row selection state selects and deselects rows by their
 
   result().table.getRowModel().rows[0]!.toggleSelected(true);
   await waitFor(
-    () => result().table.getSelectedRowModel().rows.map((row) => row.original.id).length === 1,
+    () =>
+      result()
+        .table.getSelectedRowModel()
+        .rows.map((row) => row.original.id).length === 1,
   );
   assert.deepEqual(
-    result().table.getSelectedRowModel().rows.map((row) => row.original.id),
+    result()
+      .table.getSelectedRowModel()
+      .rows.map((row) => row.original.id),
     ["1"],
   );
 
@@ -221,7 +240,9 @@ test("useResourceTable's row selection state selects and deselects rows by their
 });
 
 test("useResourceTable falls back to a row's index as its id when the record carries no usable id", async () => {
-  const { client } = createFakeClient([{ title: "No id" } as unknown as FakeRecord]);
+  const { client } = createFakeClient([
+    { title: "No id" } as unknown as FakeRecord,
+  ]);
   const harness = setupHarness(client);
   const result = mountTable(harness);
 

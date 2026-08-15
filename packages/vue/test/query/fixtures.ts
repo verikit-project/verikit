@@ -281,10 +281,18 @@ export function setupHarness(client: VerikitClient): TestHarness {
     },
   });
   const wrappers: VueWrapper[] = [];
+  const containers: HTMLElement[] = [];
 
   return {
     queryClient,
     mountWithProvider: (component, props) => {
+      // Attached to a real `document.body` container (not VTU's default
+      // detached one), so Dialog/Select content teleported to `document.body`
+      // is reachable via plain `document.querySelector` in interactive tests.
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      containers.push(container);
+
       const wrapper = mount(
         defineComponent({
           setup() {
@@ -294,6 +302,7 @@ export function setupHarness(client: VerikitClient): TestHarness {
               );
           },
         }),
+        { attachTo: container },
       );
       wrappers.push(wrapper);
       return wrapper;
@@ -301,6 +310,9 @@ export function setupHarness(client: VerikitClient): TestHarness {
     cleanup: () => {
       for (const wrapper of wrappers) {
         wrapper.unmount();
+      }
+      for (const container of containers) {
+        container.remove();
       }
       queryClient.clear();
     },
