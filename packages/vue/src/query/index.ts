@@ -35,3 +35,10 @@ export type {
   UseResourceSchemaTreeFormOptions,
   UseResourceSchemaTreeFormResult,
 } from "./use-resource-schema-tree-form.js";
+export { useResourceTable } from "./use-resource-table.js";
+export type {
+  ResourceTableFilters,
+  UseResourceTableOptions,
+  UseResourceTableResult,
+  UseResourceTableSource,
+} from "./use-resource-table.js";
