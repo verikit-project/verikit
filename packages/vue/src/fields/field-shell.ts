@@ -24,7 +24,10 @@ export const FieldShell = defineComponent({
     field: { type: Object as PropType<FieldSchema>, required: true },
     id: { type: String, required: true },
     error: { type: null as unknown as PropType<VNodeChild>, required: false },
-    className: { type: String as PropType<string | undefined>, default: undefined },
+    className: {
+      type: String as PropType<string | undefined>,
+      default: undefined,
+    },
   },
   setup(props, { slots }) {
     return () => {
@@ -38,7 +41,11 @@ export const FieldShell = defineComponent({
           ? h(Label, { for: props.id, class: "gap-1" }, () => [
               props.field.label,
               props.field.required
-                ? h("span", { class: "text-destructive", "aria-hidden": "true" }, "*")
+                ? h(
+                    "span",
+                    { class: "text-destructive", "aria-hidden": "true" },
+                    "*",
+                  )
                 : null,
             ])
           : null,
@@ -51,7 +58,11 @@ export const FieldShell = defineComponent({
             )
           : null,
         props.error
-          ? h("p", { id: errorId, class: "text-sm text-destructive" }, props.error)
+          ? h(
+              "p",
+              { id: errorId, class: "text-sm text-destructive" },
+              props.error,
+            )
           : null,
       ]);
     };

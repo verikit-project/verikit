@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { FieldSchema } from "@verikit/core";
 import { h } from "vue";
-import { FieldShell, fieldAriaProps, fieldId } from "../../src/fields/field-shell.js";
+import {
+  FieldShell,
+  fieldAriaProps,
+  fieldId,
+} from "../../src/fields/field-shell.js";
 import { asVNode, childrenOf, renderComponent } from "../support/vnode.js";
 
 function field(patch: Partial<FieldSchema>): FieldSchema {
@@ -39,6 +43,18 @@ test("field shell renders label, required marker, description, and error", () =>
   const error = asVNode(errorNode);
   assert.equal(error.props?.id, "title-error");
   assert.equal(childrenOf(error)[0], "Required");
+});
+
+test("field shell renders a label without a required marker when the field isn't required", () => {
+  const vnode = renderComponent(
+    FieldShell,
+    { field: field({ label: "Title", required: false }), id: "title" },
+    { slots: { default: () => h("input") } },
+  );
+  const [labelNode] = childrenOf(vnode);
+  const [, requiredMark] = childrenOf(asVNode(labelNode));
+
+  assert.equal(requiredMark, null);
 });
 
 test("field shell renders nothing extra without a label, description, or error", () => {

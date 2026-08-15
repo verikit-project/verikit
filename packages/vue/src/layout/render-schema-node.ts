@@ -156,7 +156,8 @@ function renderRelationshipNode(
     error: props.errors?.[pathKey(foreignKeyPath)],
     disabled: props.disabled,
     readOnly: props.readOnly,
-    onValueChange: (value: unknown) => props.onFieldChange?.(foreignKeyPath, value),
+    onValueChange: (value: unknown) =>
+      props.onFieldChange?.(foreignKeyPath, value),
     onBlur: () => props.onFieldBlur?.(foreignKeyPath),
   });
 }
@@ -168,7 +169,11 @@ function renderSectionNode(
 ): VNode {
   return h("section", { class: cn("grid gap-4", props.className) }, [
     h("h3", { class: "text-sm font-medium text-foreground" }, node.title),
-    RenderSchemaTree({ ...schemaRenderProps(props), nodes: node.children, path }),
+    RenderSchemaTree({
+      ...schemaRenderProps(props),
+      nodes: node.children,
+      path,
+    }),
   ]);
 }
 
@@ -183,7 +188,13 @@ function renderGridNode(
       class: cn("grid gap-4", props.className),
       style: { gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` },
     },
-    [RenderSchemaTree({ ...schemaRenderProps(props), nodes: node.children, path })],
+    [
+      RenderSchemaTree({
+        ...schemaRenderProps(props),
+        nodes: node.children,
+        path,
+      }),
+    ],
   );
 }
 
@@ -216,11 +227,13 @@ function renderTabsNode(
       ),
     ),
     activeTabEntry
-      ? h(
-          "div",
-          { role: "tabpanel" },
-          [RenderSchemaTree({ ...schemaRenderProps(props), nodes: activeTabEntry.children, path })],
-        )
+      ? h("div", { role: "tabpanel" }, [
+          RenderSchemaTree({
+            ...schemaRenderProps(props),
+            nodes: activeTabEntry.children,
+            path,
+          }),
+        ])
       : null,
   ]);
 }
@@ -251,7 +264,11 @@ function renderWizardNode(
       ),
     ),
     activeStepEntry
-      ? RenderSchemaTree({ ...schemaRenderProps(props), nodes: activeStepEntry.children, path })
+      ? RenderSchemaTree({
+          ...schemaRenderProps(props),
+          nodes: activeStepEntry.children,
+          path,
+        })
       : null,
     h("div", { class: "flex justify-between gap-2" }, [
       h(
@@ -344,7 +361,11 @@ function renderActionNode(
 
   return h("div", { class: cn("grid gap-4", props.className) }, [
     input
-      ? RenderSchemaTree({ ...schemaRenderProps(props), nodes: input, path: actionPath })
+      ? RenderSchemaTree({
+          ...schemaRenderProps(props),
+          nodes: input,
+          path: actionPath,
+        })
       : null,
     h(
       Button,
@@ -386,8 +407,13 @@ export function RenderSchemaNode(props: RenderSchemaNodeProps): VNodeChild {
 }
 
 /** Renders a list of Verikit schema nodes. */
-export function RenderSchemaTree({ nodes, ...rest }: RenderSchemaTreeProps): VNode[] {
+export function RenderSchemaTree({
+  nodes,
+  ...rest
+}: RenderSchemaTreeProps): VNode[] {
   return nodes.map((node, index) =>
-    h(Fragment, { key: schemaNodeKey(node, index) }, [RenderSchemaNode({ node, ...rest })]),
+    h(Fragment, { key: schemaNodeKey(node, index) }, [
+      RenderSchemaNode({ node, ...rest }),
+    ]),
   );
 }

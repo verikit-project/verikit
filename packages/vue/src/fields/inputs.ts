@@ -101,11 +101,26 @@ function fieldProps() {
     name: { type: String as PropType<string | undefined>, default: undefined },
     value: { type: null as unknown as PropType<unknown>, required: false },
     error: { type: null as unknown as PropType<unknown>, required: false },
-    disabled: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    readOnly: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    className: { type: String as PropType<string | undefined>, default: undefined },
-    inputClassName: { type: String as PropType<string | undefined>, default: undefined },
-    onBlur: { type: Function as PropType<(() => void) | undefined>, default: undefined },
+    disabled: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
+    readOnly: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
+    className: {
+      type: String as PropType<string | undefined>,
+      default: undefined,
+    },
+    inputClassName: {
+      type: String as PropType<string | undefined>,
+      default: undefined,
+    },
+    onBlur: {
+      type: Function as PropType<(() => void) | undefined>,
+      default: undefined,
+    },
     onValueChange: {
       type: Function as PropType<((value: unknown) => void) | undefined>,
       default: undefined,
@@ -113,7 +128,9 @@ function fieldProps() {
   };
 }
 
-function makeInputField(type: "text" | "email" | "number" | "date" | "datetime-local") {
+function makeInputField(
+  type: "text" | "email" | "number" | "date" | "datetime-local",
+) {
   return defineComponent({
     props: fieldProps(),
     setup(props: VerikitFieldComponentProps) {
@@ -126,7 +143,12 @@ function makeInputField(type: "text" | "email" | "number" | "date" | "datetime-l
 
         return h(
           FieldShell,
-          { field: props.field, id: inputId, error: props.error, className: props.className },
+          {
+            field: props.field,
+            id: inputId,
+            error: props.error,
+            className: props.className,
+          },
           {
             default: () =>
               h(Input, {
@@ -142,7 +164,8 @@ function makeInputField(type: "text" | "email" | "number" | "date" | "datetime-l
                 onBlur: props.onBlur,
                 onInput: (event: Event) => {
                   const target = inputElement(event);
-                  const nextValue = type === "number" ? target.valueAsNumber : target.value;
+                  const nextValue =
+                    type === "number" ? target.valueAsNumber : target.value;
                   props.onValueChange?.(nextValue);
                 },
                 ...fieldAriaProps(props.field, inputId, props.error),
@@ -176,7 +199,12 @@ export const TextareaField = defineComponent({
 
       return h(
         FieldShell,
-        { field: props.field, id: inputId, error: props.error, className: props.className },
+        {
+          field: props.field,
+          id: inputId,
+          error: props.error,
+          className: props.className,
+        },
         {
           default: () =>
             h(Textarea, {
@@ -189,7 +217,8 @@ export const TextareaField = defineComponent({
               readonly: commonReadOnly(props.field, props.readOnly),
               class: props.inputClassName,
               onBlur: props.onBlur,
-              onInput: (event: Event) => props.onValueChange?.(inputElement(event).value),
+              onInput: (event: Event) =>
+                props.onValueChange?.(inputElement(event).value),
               ...fieldAriaProps(props.field, inputId, props.error),
               ...inputConstraints(props.field),
             }),
@@ -213,7 +242,12 @@ export const SelectField = defineComponent({
 
       return h(
         FieldShell,
-        { field: props.field, id: inputId, error: props.error, className: props.className },
+        {
+          field: props.field,
+          id: inputId,
+          error: props.error,
+          className: props.className,
+        },
         {
           default: () =>
             h(
@@ -228,7 +262,9 @@ export const SelectField = defineComponent({
                     return;
                   }
 
-                  props.onValueChange?.(valuesByKey.get(nextValue) ?? nextValue);
+                  props.onValueChange?.(
+                    valuesByKey.get(nextValue) ?? nextValue,
+                  );
                 },
               },
               {
@@ -241,18 +277,30 @@ export const SelectField = defineComponent({
                       onBlur: props.onBlur,
                       ...fieldAriaProps(props.field, inputId, props.error),
                     },
-                    { default: () => h(SelectValue, { placeholder: props.field.placeholder ?? "Select..." }) },
+                    {
+                      default: () =>
+                        h(SelectValue, {
+                          placeholder: props.field.placeholder ?? "Select...",
+                        }),
+                    },
                   ),
-                  h(SelectContent, {}, {
-                    default: () =>
-                      options.map((option) =>
-                        h(
-                          SelectItem,
-                          { key: String(option.value), value: String(option.value) },
-                          { default: () => option.label },
+                  h(
+                    SelectContent,
+                    {},
+                    {
+                      default: () =>
+                        options.map((option) =>
+                          h(
+                            SelectItem,
+                            {
+                              key: String(option.value),
+                              value: String(option.value),
+                            },
+                            { default: () => option.label },
+                          ),
                         ),
-                      ),
-                  }),
+                    },
+                  ),
                 ],
               },
             ),
@@ -275,7 +323,12 @@ export const BooleanField = defineComponent({
 
       return h(
         FieldShell,
-        { field: props.field, id: inputId, error: props.error, className: props.className },
+        {
+          field: props.field,
+          id: inputId,
+          error: props.error,
+          className: props.className,
+        },
         {
           default: () =>
             h("div", { class: "flex items-center gap-2" }, [
@@ -285,7 +338,8 @@ export const BooleanField = defineComponent({
                 checked: props.value === true,
                 disabled: isDisabled,
                 class: props.inputClassName,
-                onCheckedChange: (nextValue: boolean) => props.onValueChange?.(nextValue === true),
+                onCheckedChange: (nextValue: boolean) =>
+                  props.onValueChange?.(nextValue === true),
                 ...fieldAriaProps(props.field, inputId, props.error),
               }),
             ]),
@@ -305,7 +359,12 @@ function makeUploadField(accept: string | undefined) {
 
         return h(
           FieldShell,
-          { field: props.field, id: inputId, error: props.error, className: props.className },
+          {
+            field: props.field,
+            id: inputId,
+            error: props.error,
+            className: props.className,
+          },
           {
             default: () =>
               h("div", { class: "flex gap-2" }, [
@@ -330,7 +389,12 @@ function makeUploadField(accept: string | undefined) {
                 }),
                 h(
                   Button,
-                  { type: "button", variant: "outline", disabled: true, class: "hidden shrink-0 sm:inline-flex" },
+                  {
+                    type: "button",
+                    variant: "outline",
+                    disabled: true,
+                    class: "hidden shrink-0 sm:inline-flex",
+                  },
                   { default: () => "Browse" },
                 ),
               ]),

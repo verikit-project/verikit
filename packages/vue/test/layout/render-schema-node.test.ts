@@ -13,7 +13,10 @@ import type {
 import { text } from "@verikit/core";
 import { action } from "@verikit/runtime";
 import type { VNode } from "vue";
-import { RenderSchemaNode, RenderSchemaTree } from "../../src/layout/render-schema-node.js";
+import {
+  RenderSchemaNode,
+  RenderSchemaTree,
+} from "../../src/layout/render-schema-node.js";
 import { BelongsToRelationshipField } from "../../src/relationships/belongs-to-field.js";
 import { asVNode, childrenOf } from "../support/vnode.js";
 
@@ -51,7 +54,9 @@ test("field nodes read nested values via path and forward change/blur paths", ()
 
 test("field nodes default to an empty path when none is given", () => {
   const node: FieldNode = { type: "field", name: "title", fieldType: "text" };
-  const element = asVNode(RenderSchemaNode({ node, values: { title: "Hello" } }));
+  const element = asVNode(
+    RenderSchemaNode({ node, values: { title: "Hello" } }),
+  );
 
   assert.equal(element.props?.value, "Hello");
   assert.equal(element.props?.error, undefined);
@@ -169,7 +174,9 @@ test("a field node hidden by an unmet condition renders nothing, and renders onc
 
   assert.equal(RenderSchemaNode({ node, values: { kind: "standard" } }), null);
 
-  const element = asVNode(RenderSchemaNode({ node, values: { kind: "custom" } }));
+  const element = asVNode(
+    RenderSchemaNode({ node, values: { kind: "custom" } }),
+  );
   assert.equal(element.props?.field, node);
 });
 
@@ -184,7 +191,11 @@ test("a field node's condition falls back to unmet when its own container isn't 
   // The "items" row at index 0 is a bare string, not an object — the
   // condition has no sibling values to read, so it's treated as unmet.
   assert.equal(
-    RenderSchemaNode({ node, path: ["items", 0], values: { items: ["not-an-object"] } }),
+    RenderSchemaNode({
+      node,
+      path: ["items", 0],
+      values: { items: ["not-an-object"] },
+    }),
     null,
   );
 });
@@ -196,7 +207,12 @@ test("section nodes render a title and recurse into children with an inherited p
     children: [{ type: "field", name: "title", fieldType: "text" }],
   };
   const element = asVNode(
-    RenderSchemaNode({ node, values: { a: { title: "Hi" } }, path: ["a"], className: "extra" }),
+    RenderSchemaNode({
+      node,
+      values: { a: { title: "Hi" } },
+      path: ["a"],
+      className: "extra",
+    }),
   );
 
   assert.equal(element.type, "section");
@@ -218,7 +234,9 @@ test("grid nodes set a column-count style and recurse into children", () => {
   };
   const element = asVNode(RenderSchemaNode({ node, values: {} }));
 
-  assert.deepEqual(element.props?.style, { gridTemplateColumns: "repeat(3, minmax(0, 1fr))" });
+  assert.deepEqual(element.props?.style, {
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+  });
 
   const [tree] = childrenOf(element);
   const fieldVNode = asVNode(treeNodeAt(tree, 0));
@@ -229,8 +247,14 @@ test("tabs render only the active tab and report clicks", () => {
   const node: TabsNode = {
     type: "tabs",
     tabs: [
-      { title: "General", children: [{ type: "field", name: "name", fieldType: "text" }] },
-      { title: "Advanced", children: [{ type: "field", name: "slug", fieldType: "text" }] },
+      {
+        title: "General",
+        children: [{ type: "field", name: "name", fieldType: "text" }],
+      },
+      {
+        title: "Advanced",
+        children: [{ type: "field", name: "slug", fieldType: "text" }],
+      },
     ],
   };
   const changes: number[] = [];
@@ -250,6 +274,8 @@ test("tabs render only the active tab and report clicks", () => {
   assert.equal(buttons[1]?.props?.["aria-selected"], true);
   assert.equal(buttons[0]?.props?.variant, "ghost");
   assert.equal(buttons[1]?.props?.variant, "secondary");
+  assert.equal(childrenOf(buttons[0])[0], "General");
+  assert.equal(childrenOf(buttons[1])[0], "Advanced");
   (buttons[0]?.props?.onClick as () => void)();
   assert.deepEqual(changes, [0]);
 
@@ -259,12 +285,17 @@ test("tabs render only the active tab and report clicks", () => {
 });
 
 test("tabs clamp an out-of-range active index and render nothing with no tabs", () => {
-  const node: TabsNode = { type: "tabs", tabs: [{ title: "Only", children: [] }] };
+  const node: TabsNode = {
+    type: "tabs",
+    tabs: [{ title: "Only", children: [] }],
+  };
   const clamped = asVNode(RenderSchemaNode({ node, values: {}, activeTab: 5 }));
   const [, panel] = childrenOf(clamped);
   assert.notEqual(panel, null);
 
-  const empty = asVNode(RenderSchemaNode({ node: { type: "tabs", tabs: [] }, values: {} }));
+  const empty = asVNode(
+    RenderSchemaNode({ node: { type: "tabs", tabs: [] }, values: {} }),
+  );
   const [, emptyPanel] = childrenOf(empty);
   assert.equal(emptyPanel, null);
 });
@@ -273,7 +304,10 @@ test("wizard renders steps, disables boundary nav buttons, and reports navigatio
   const node: WizardNode = {
     type: "wizard",
     steps: [
-      { title: "Basics", children: [{ type: "field", name: "name", fieldType: "text" }] },
+      {
+        title: "Basics",
+        children: [{ type: "field", name: "name", fieldType: "text" }],
+      },
       { title: "Review", children: [] },
     ],
   };
@@ -291,23 +325,30 @@ test("wizard renders steps, disables boundary nav buttons, and reports navigatio
 
   assert.equal(items[0]?.props?.["aria-current"], "step");
   assert.equal(items[1]?.props?.["aria-current"], undefined);
+  assert.equal(childrenOf(items[0])[0], "Basics");
 
   const [back, next] = childrenOf(nav).map((button) => asVNode(button));
   assert.equal(back?.props?.disabled, true);
   assert.equal(next?.props?.disabled, false);
+  assert.equal(childrenOf(back)[0], "Back");
+  assert.equal(childrenOf(next)[0], "Next");
   (back?.props?.onClick as () => void)();
   (next?.props?.onClick as () => void)();
   assert.deepEqual(changes, [-1, 1]);
 
   const last = asVNode(RenderSchemaNode({ node, values: {}, activeStep: 1 }));
   const [, , lastNav] = childrenOf(last);
-  const [lastBack, lastNext] = childrenOf(lastNav).map((button) => asVNode(button));
+  const [lastBack, lastNext] = childrenOf(lastNav).map((button) =>
+    asVNode(button),
+  );
   assert.equal(lastBack?.props?.disabled, false);
   assert.equal(lastNext?.props?.disabled, true);
 });
 
 test("wizard with no steps renders no step content", () => {
-  const element = asVNode(RenderSchemaNode({ node: { type: "wizard", steps: [] }, values: {} }));
+  const element = asVNode(
+    RenderSchemaNode({ node: { type: "wizard", steps: [] }, values: {} }),
+  );
   const [, tree] = childrenOf(element);
 
   assert.equal(tree, null);
@@ -337,9 +378,11 @@ test("repeater renders one block per array item and reports add/remove", () => {
   const [tree0, removeButton0] = childrenOf(rows[0]);
   const fieldVNode0 = asVNode(treeNodeAt(tree0, 0));
   assert.equal(fieldVNode0.props?.field, node.children[0]);
+  assert.equal(childrenOf(removeButton0)[0], "Remove");
   (asVNode(removeButton0).props?.onClick as () => void)();
   assert.deepEqual(removed, [[["tags"], 0]]);
 
+  assert.equal(childrenOf(addButton)[0], "Add");
   (asVNode(addButton).props?.onClick as () => void)();
   assert.deepEqual(added, [["tags"]]);
 });
@@ -349,8 +392,13 @@ test("repeater rows use getRepeaterRowKey when supplied, falling back to index o
   const values = { tags: [{ label: "a" }, { label: "b" }] };
 
   const withoutKeySource = asVNode(RenderSchemaNode({ node, values }));
-  const defaultRows = childrenOf(withoutKeySource).slice(0, 2).map((row) => asVNode(row));
-  assert.deepEqual(defaultRows.map((row) => row.key), [0, 1]);
+  const defaultRows = childrenOf(withoutKeySource)
+    .slice(0, 2)
+    .map((row) => asVNode(row));
+  assert.deepEqual(
+    defaultRows.map((row) => row.key),
+    [0, 1],
+  );
 
   const seen: Array<[readonly unknown[], number]> = [];
   const withKeySource = asVNode(
@@ -363,7 +411,9 @@ test("repeater rows use getRepeaterRowKey when supplied, falling back to index o
       },
     }),
   );
-  const keyedRows = childrenOf(withKeySource).slice(0, 2).map((row) => asVNode(row));
+  const keyedRows = childrenOf(withKeySource)
+    .slice(0, 2)
+    .map((row) => asVNode(row));
 
   assert.deepEqual(
     keyedRows.map((row) => row.key),
@@ -415,9 +465,15 @@ test("action nodes can render runtime action forms by name", () => {
     label: "Layout label",
     input: [{ type: "field", name: "layoutOnly", fieldType: "text" }],
   };
-  const publish = action("publish").label("Runtime label").form({ note: text() });
+  const publish = action("publish")
+    .label("Runtime label")
+    .form({ note: text() });
   const element = asVNode(
-    RenderSchemaNode({ node, values: { publish: { note: "Ready" } }, actions: { publish } }),
+    RenderSchemaNode({
+      node,
+      values: { publish: { note: "Ready" } },
+      actions: { publish },
+    }),
   );
   const [tree, button] = childrenOf(element);
   const fieldVNode = asVNode(treeNodeAt(tree, 0));
@@ -429,7 +485,9 @@ test("action nodes can render runtime action forms by name", () => {
 test("action nodes use runtime labels when no layout label is set", () => {
   const node: ActionNode = { type: "action", name: "archive" };
   const archive = action("archive").label("Archive record");
-  const element = asVNode(RenderSchemaNode({ node, values: {}, actions: { archive } }));
+  const element = asVNode(
+    RenderSchemaNode({ node, values: {}, actions: { archive } }),
+  );
   const [, button] = childrenOf(element);
 
   assert.equal(childrenOf(button)[0], "Archive record");
@@ -471,7 +529,11 @@ test("RenderSchemaTree maps every node with a stable, type-scoped key", () => {
   const nodes = [
     { type: "field", name: "title", fieldType: "text" } as FieldNode,
     { type: "section", title: "Extra", children: [] } as SectionNode,
-    { type: "relationship", relationshipType: "belongsTo", resource: "users" } as RelationshipNode,
+    {
+      type: "relationship",
+      relationshipType: "belongsTo",
+      resource: "users",
+    } as RelationshipNode,
   ];
   const rendered = RenderSchemaTree({ nodes, values: { title: "Hi" } });
 

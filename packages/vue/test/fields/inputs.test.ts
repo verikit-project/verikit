@@ -19,7 +19,10 @@ function field(patch: Partial<FieldSchema>): FieldSchema {
   return { type: "field", name: "title", fieldType: "text", ...patch };
 }
 
-function fieldControl(component: Parameters<typeof renderComponent>[0], props: Record<string, unknown>) {
+function fieldControl(
+  component: Parameters<typeof renderComponent>[0],
+  props: Record<string, unknown>,
+) {
   return asVNode(childrenOf(renderComponent(component, props))[0]);
 }
 
@@ -47,7 +50,9 @@ test("input-backed fields render values, constraints, and change/blur handlers",
   assert.equal(control.props?.maxLength, 12);
   assert.equal(control.props?.required, true);
   assert.equal(control.props?.placeholder, "Untitled");
-  (control.props?.onInput as (event: unknown) => void)({ target: { value: "Ready" } });
+  (control.props?.onInput as (event: unknown) => void)({
+    target: { value: "Ready" },
+  });
   (control.props?.onBlur as () => void)();
   assert.deepEqual(changes, ["Ready", "blur"]);
 
@@ -144,17 +149,22 @@ test("select field maps string values back to option values", () => {
   });
 
   assert.equal(select.props?.value, "1");
-  const onValueChange = select.props?.onValueChange as (value: string | null) => void;
+  const onValueChange = select.props?.onValueChange as (
+    value: string | null,
+  ) => void;
   onValueChange("1");
   onValueChange("missing");
   onValueChange(null);
   assert.deepEqual(changes, [1, "missing", null]);
 
-  const [trigger] = childrenOf(select);
+  const [trigger, content] = childrenOf(select);
   const triggerVNode = asVNode(trigger);
   assert.match(String(triggerVNode.props?.class), /w-72/);
   (triggerVNode.props?.onBlur as () => void)();
   assert.deepEqual(blurs, ["blur"]);
+
+  const items = childrenOf(content).map((item) => childrenOf(item)[0]);
+  assert.deepEqual(items, ["Draft", "Published"]);
 });
 
 test("select field disables interaction when the field itself is disabled", () => {
@@ -193,15 +203,20 @@ test("boolean and upload fields wire the Reka UI-backed controls", () => {
     } as Partial<FieldSchema>),
     onValueChange: (value: unknown) => uploadChanges.push(value),
   });
-  const [uploadInputNode] = childrenOf(uploadWrapper);
+  const [uploadInputNode, browseButtonNode] = childrenOf(uploadWrapper);
   const uploadInput = asVNode(uploadInputNode);
   const files = { length: 1 };
   assert.equal(uploadInput.props?.type, "file");
   assert.equal(uploadInput.props?.accept, ".pdf");
   assert.equal(uploadInput.props?.multiple, true);
-  (uploadInput.props?.onChange as (event: unknown) => void)({ target: { files } });
-  (uploadInput.props?.onChange as (event: unknown) => void)({ target: { files: null } });
+  (uploadInput.props?.onChange as (event: unknown) => void)({
+    target: { files },
+  });
+  (uploadInput.props?.onChange as (event: unknown) => void)({
+    target: { files: null },
+  });
   assert.deepEqual(uploadChanges, [files]);
+  assert.equal(childrenOf(browseButtonNode)[0], "Browse");
 
   const imageWrapper = fieldControl(ImageField, {
     disabled: true,
@@ -222,7 +237,9 @@ test("field components cover fallback branches", () => {
   });
   assert.equal(textControl.props?.name, "custom_name");
   assert.equal(textControl.props?.value, "");
-  (textControl.props?.onInput as (event: unknown) => void)({ target: { value: "Ignored" } });
+  (textControl.props?.onInput as (event: unknown) => void)({
+    target: { value: "Ignored" },
+  });
   assert.deepEqual(unnamedChanges, []);
 
   const validDateTime = fieldControl(DateTimeField, {
@@ -231,14 +248,18 @@ test("field components cover fallback branches", () => {
   });
   assert.equal(validDateTime.props?.value, "2026-07-25T12:30");
 
-  const select = fieldControl(SelectField, { field: field({ fieldType: "select" }) });
+  const select = fieldControl(SelectField, {
+    field: field({ fieldType: "select" }),
+  });
   const [triggerNode] = childrenOf(select);
   const trigger = asVNode(triggerNode);
   const [valueNode] = childrenOf(trigger);
   assert.equal(select.props?.value, "");
   assert.equal(asVNode(valueNode).props?.placeholder, "Select...");
 
-  const booleanWrapper = fieldControl(BooleanField, { field: field({ fieldType: "boolean" }) });
+  const booleanWrapper = fieldControl(BooleanField, {
+    field: field({ fieldType: "boolean" }),
+  });
   const checkbox = asVNode(childrenOf(booleanWrapper)[0]);
   assert.equal(checkbox.props?.checked, false);
   assert.equal(checkbox.props?.disabled, false);

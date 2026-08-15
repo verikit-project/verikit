@@ -42,14 +42,26 @@ export const BelongsToRelationshipField = defineComponent({
     id: { type: String as PropType<string | undefined>, default: undefined },
     value: { type: null as unknown as PropType<unknown>, required: false },
     error: { type: null as unknown as PropType<VNodeChild>, required: false },
-    disabled: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    readOnly: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-    className: { type: String as PropType<string | undefined>, default: undefined },
+    disabled: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
+    readOnly: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
+    className: {
+      type: String as PropType<string | undefined>,
+      default: undefined,
+    },
     onValueChange: {
       type: Function as PropType<((value: string | null) => void) | undefined>,
       default: undefined,
     },
-    onBlur: { type: Function as PropType<(() => void) | undefined>, default: undefined },
+    onBlur: {
+      type: Function as PropType<(() => void) | undefined>,
+      default: undefined,
+    },
   },
   setup(props) {
     // Hoisted out of the render closure, which Vue calls repeatedly on every
@@ -72,11 +84,17 @@ export const BelongsToRelationshipField = defineComponent({
       const errorId = props.error ? `${inputId}-error` : undefined;
       const records = relationshipQuery.data.value?.records ?? [];
       const currentValue =
-        props.value === null || props.value === undefined ? "" : String(props.value);
+        props.value === null || props.value === undefined
+          ? ""
+          : String(props.value);
 
       return h("div", { class: cn("grid gap-2", props.className) }, [
         props.relationship.label
-          ? h(Label, { for: inputId }, { default: () => props.relationship.label })
+          ? h(
+              Label,
+              { for: inputId },
+              { default: () => props.relationship.label },
+            )
           : null,
         h(
           Select,
@@ -100,25 +118,41 @@ export const BelongsToRelationshipField = defineComponent({
                 {
                   default: () =>
                     h(SelectValue, {
-                      placeholder: relationshipQuery.isLoading.value ? "Loading…" : "Select…",
+                      placeholder: relationshipQuery.isLoading.value
+                        ? "Loading…"
+                        : "Select…",
                     }),
                 },
               ),
-              h(SelectContent, {}, {
-                default: () =>
-                  records.map((record) =>
-                    h(
-                      SelectItem,
-                      { key: recordId(record), value: recordId(record) },
-                      { default: () => recordLabel(record, props.relationship.displayField) },
+              h(
+                SelectContent,
+                {},
+                {
+                  default: () =>
+                    records.map((record) =>
+                      h(
+                        SelectItem,
+                        { key: recordId(record), value: recordId(record) },
+                        {
+                          default: () =>
+                            recordLabel(
+                              record,
+                              props.relationship.displayField,
+                            ),
+                        },
+                      ),
                     ),
-                  ),
-              }),
+                },
+              ),
             ],
           },
         ),
         props.error
-          ? h("p", { id: errorId, class: "text-sm text-destructive" }, props.error)
+          ? h(
+              "p",
+              { id: errorId, class: "text-sm text-destructive" },
+              props.error,
+            )
           : null,
         relationshipQuery.error.value
           ? h(

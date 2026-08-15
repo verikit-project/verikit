@@ -88,7 +88,9 @@ test("shows a loading placeholder while the picker's records are in flight", asy
   assert.match(wrapper.find('[data-slot="select-value"]').text(), /Loading/);
 
   release();
-  await waitFor(() => /Select/.test(wrapper.find('[data-slot="select-value"]').text()));
+  await waitFor(() =>
+    /Select/.test(wrapper.find('[data-slot="select-value"]').text()),
+  );
 
   harness.cleanup();
 });
