@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useForm, type AnyFormApi } from "@tanstack/react-form";
 import type { Resource, ResourceSchema, SchemaNode } from "@verikit/core";
-import { pathKey, type SchemaPath } from "../layout/path.js";
+import { pathKey, type SchemaPath } from "@verikit/ui-core/layout/path";
 import type {
   SchemaActionRegistry,
   SchemaRenderProps,
 } from "../layout/types.js";
 import { isResource } from "./use-verikit-form.js";
-import { submitVerikitSchemaTreeForm } from "./schema-tree.js";
+import { submitVerikitSchemaTreeForm } from "@verikit/ui-core/form/schema-tree";
 import {
   firstFieldError,
   firstFieldErrors,
@@ -15,7 +15,7 @@ import {
   type VerikitFieldErrors,
   type VerikitFormValues,
   type VerikitResourceSubmitResult,
-} from "./submission.js";
+} from "@verikit/ui-core/form/submission";
 
 /** Source accepted by the schema tree form hook. */
 export type VerikitSchemaTreeSource = Resource | ResourceSchema;

@@ -9,7 +9,7 @@ import {
 import {
   validationIssuesToFieldErrors,
   type VerikitFormValues,
-} from "../form/submission.js";
+} from "@verikit/ui-core/form/submission";
 import {
   useCreateResource,
   useUpdateResource,

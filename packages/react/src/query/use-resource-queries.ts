@@ -2,7 +2,7 @@ import type { UseQueryOptions, UseQueryResult } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import type { ListParams, ListResponse } from "@verikit/client";
 import { useVerikitClient } from "../client/use-verikit-client.js";
-import { resourceQueryKeys } from "./query-keys.js";
+import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 
 export type UseListResourceOptions<TRecord> = Omit<
   UseQueryOptions<ListResponse<TRecord>, Error>,

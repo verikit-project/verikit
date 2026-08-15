@@ -2,7 +2,7 @@ import type { RelationshipNode, SchemaNode } from "@verikit/core";
 import type { ActionSchema } from "@verikit/runtime";
 import type { ReactNode } from "react";
 import type { VerikitFieldRegistry } from "../fields/index.js";
-import type { SchemaPath } from "./path.js";
+import type { SchemaPath } from "@verikit/ui-core/layout/path";
 
 /**
  * Runtime action builder or serialized action schema used by schema renderers.

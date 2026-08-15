@@ -12,8 +12,8 @@ import {
   restoreResourceQueries,
   snapshotResourceQueries,
   type ResourceQuerySnapshot,
-} from "./optimistic.js";
-import { resourceQueryKeys } from "./query-keys.js";
+} from "@verikit/ui-core/query/optimistic";
+import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 
 export type UseCreateResourceOptions<TRecord> = Omit<
   UseMutationOptions<TRecord, Error, Record<string, unknown>>,

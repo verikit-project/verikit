@@ -18,7 +18,7 @@ import {
 } from "@tanstack/react-table";
 import type { ListParams } from "@verikit/client";
 import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
-import { recordId } from "./optimistic.js";
+import { recordId } from "@verikit/ui-core/query/optimistic";
 import { resolveVerikitFields } from "../form/use-verikit-form.js";
 import { useListResource } from "./use-resource-queries.js";
 

@@ -16,7 +16,11 @@ import { Button } from "#components/button";
 import { cn } from "#lib/utils";
 import { RenderField } from "../fields/index.js";
 import { BelongsToRelationshipField } from "../relationships/belongs-to-field.js";
-import { getValueAtPath, pathKey, type SchemaPath } from "./path.js";
+import {
+  getValueAtPath,
+  pathKey,
+  type SchemaPath,
+} from "@verikit/ui-core/layout/path";
 import type { RenderSchemaNodeProps, RenderSchemaTreeProps } from "./types.js";
 
 function actionSchemaFor(

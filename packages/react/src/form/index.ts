@@ -6,13 +6,13 @@ export {
   submitVerikitActionForm,
   submitVerikitResourceForm,
   validationIssuesToFieldErrors,
-} from "./submission.js";
+} from "@verikit/ui-core/form/submission";
 export { resolveVerikitFields, useVerikitForm } from "./use-verikit-form.js";
 export {
   inferAndValidateSchemaTree,
   submitVerikitSchemaTreeActionForm,
   submitVerikitSchemaTreeForm,
-} from "./schema-tree.js";
+} from "@verikit/ui-core/form/schema-tree";
 export { useVerikitSchemaTreeForm } from "./use-verikit-schema-tree-form.js";
 export type {
   SubmitVerikitActionFormOptions,
@@ -24,7 +24,7 @@ export type {
   VerikitResourceSubmitResult,
   VerikitResourceSubmitSuccess,
   VerikitValidationFailure,
-} from "./submission.js";
+} from "@verikit/ui-core/form/submission";
 export type {
   UseVerikitFormOptions,
   UseVerikitFormResult,
@@ -33,7 +33,7 @@ export type {
 export type {
   SubmitVerikitSchemaTreeActionFormOptions,
   SubmitVerikitSchemaTreeFormOptions,
-} from "./schema-tree.js";
+} from "@verikit/ui-core/form/schema-tree";
 export type {
   UseVerikitSchemaTreeFormOptions,
   UseVerikitSchemaTreeFormResult,

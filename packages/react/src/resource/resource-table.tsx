@@ -24,7 +24,7 @@ import {
 } from "#components/dialog";
 import { Input } from "#components/input";
 import { cn } from "#lib/utils";
-import { recordId } from "../query/optimistic.js";
+import { recordId } from "@verikit/ui-core/query/optimistic";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
 import {
   useResourceTable,

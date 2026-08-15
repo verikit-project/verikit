@@ -22,8 +22,8 @@ export type {
   ActionResourceVariables,
   UseActionResourceOptions,
 } from "./use-resource-mutations.js";
-export { resourceQueryKeys } from "./query-keys.js";
-export type { ResourceQueryKeys } from "./query-keys.js";
+export { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
+export type { ResourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 export { useResourceForm } from "./use-resource-form.js";
 export type {
   UseResourceFormOptions,

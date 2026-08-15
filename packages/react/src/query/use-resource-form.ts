@@ -1,7 +1,7 @@
 import type { Resource, ResourceSchema } from "@verikit/core";
 import type { UseVerikitFormResult } from "../form/use-verikit-form.js";
 import { useVerikitForm } from "../form/use-verikit-form.js";
-import type { VerikitFormValues } from "../form/submission.js";
+import type { VerikitFormValues } from "@verikit/ui-core/form/submission";
 import {
   useCreateResource,
   useUpdateResource,

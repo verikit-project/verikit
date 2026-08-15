@@ -10,7 +10,7 @@ import {
   type VerikitFormFields,
   type VerikitFormValues,
   type VerikitResourceSubmitResult,
-} from "./submission.js";
+} from "@verikit/ui-core/form/submission";
 
 /** Source accepted by the flat Verikit form hook. */
 export type VerikitFormSource = VerikitFormFields | Resource | ResourceSchema;

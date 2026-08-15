@@ -4,7 +4,7 @@ import { Button } from "#components/button";
 import { cn } from "#lib/utils";
 import type { VerikitFieldRegistry } from "../fields/types.js";
 import { RenderSchemaTree } from "../layout/render-schema-node.js";
-import type { SchemaPath } from "../layout/path.js";
+import type { SchemaPath } from "@verikit/ui-core/layout/path";
 import {
   useResourceSchemaTreeForm,
   type UseResourceSchemaTreeFormOptions,
