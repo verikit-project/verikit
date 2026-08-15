@@ -64,11 +64,8 @@ export const BelongsToRelationshipField = defineComponent({
     },
   },
   setup(props) {
-    // Hoisted out of the render closure, which Vue calls repeatedly on every
-    // reactive update: calling a `useQuery`-backed composable there instead
-    // of once here creates a brand-new query (with its own watchers) on
-    // every render, each one immediately reporting state and triggering
-    // another render — an infinite loop.
+    // Create the query composable once outside the render closure; calling it
+    // during render creates new watchers on every update, causing an infinite loop.
     const relationshipName = props.relationship.name ?? "";
     const relationshipQuery = useResourceRelationship<Record<string, unknown>>(
       props.relationship.resource,

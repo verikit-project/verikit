@@ -1,6 +1,6 @@
 # VeriKit
 
-![VeriKit — TypeScript-first resource framework for building web applications](img/social-card.jpg)
+![VeriKit  TypeScript-first resource framework for building web applications](img/social-card.jpg)
 
 **Define a resource once, get the rest for free.**
 

@@ -1,11 +1,9 @@
 import type { VNode } from "vue";
 
 /**
- * Minimal shape needed to call a `defineComponent` object's `setup` directly,
- * bypassing a real mount. Parameters are typed `never` (not their real prop
- * shape) so that any concrete component's more-specific `setup` is still
- * assignable here — contravariant parameter checking against `never` always
- * succeeds. `renderComponent` casts back to a callable shape when invoking it.
+ * Minimal shape for calling a component's `setup()` directly.
+ * Parameters use `never` so concrete setup signatures remain assignable
+ * under contravariant checking.
  */
 export interface RawComponent {
   setup?: (props: never, context: never) => unknown;
@@ -19,13 +17,10 @@ export interface RawSetupContext {
 }
 
 /**
- * Invokes a `defineComponent` object's `setup()` directly and calls the
- * returned render function, without a real Vue component instance. Works for
- * components that don't rely on `inject`/lifecycle hooks/`useAttrs` — the
- * field, layout, and filter components here are all pure prop-in/vnode-out.
- * Props are passed loosely (not type-checked against the component's own
- * prop validators), since this only ever needs to exercise them, not model
- * Vue's own prop-resolution/defaulting behavior.
+ * Invokes a component's `setup()` and returned render function directly,
+ * without creating a Vue component instance. Intended for pure
+ * prop-in/vnode-out components that don't depend on Vue instance APIs.
+ * Props are intentionally passed without Vue's runtime prop resolution.
  */
 export function renderComponent(
   component: RawComponent,

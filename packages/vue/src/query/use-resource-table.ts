@@ -36,10 +36,10 @@ const resourceTableFeatures = tableFeatures({
 
 type ResourceTableFeatures = typeof resourceTableFeatures;
 
-/** A resource builder or its finalized schema — either carries its own name. */
+/** A resource builder or its finalized schema  either carries its own name. */
 export type UseResourceTableSource = Resource | ResourceSchema;
 
-/** Active per-field filters, keyed by field name — the same shape `ListParams.filters` sends to the server. */
+/** Active per-field filters, keyed by field name  the same shape `ListParams.filters` sends to the server. */
 export type ResourceTableFilters = NonNullable<ListParams["filters"]>;
 
 /** Options for creating a resource-backed table. */
@@ -52,7 +52,7 @@ export interface UseResourceTableOptions {
 export interface UseResourceTableResult<
   TRecord extends RowData = Record<string, unknown>,
 > {
-  /** The TanStack Table instance — headless: render your own markup from it. */
+  /** The TanStack Table instance  headless: render your own markup from it. */
   table: Table<ResourceTableFeatures, TRecord>;
   /** Whether the current page's initial fetch is still in flight. */
   isLoading: UseQueryReturnType<ListResponse<TRecord>, Error>["isLoading"];

@@ -188,7 +188,7 @@ test("a field node's condition falls back to unmet when its own container isn't 
     condition: { field: "kind", equals: "custom" },
   };
 
-  // The "items" row at index 0 is a bare string, not an object — the
+  // The "items" row at index 0 is a bare string, not an object  the
   // condition has no sibling values to read, so it's treated as unmet.
   assert.equal(
     RenderSchemaNode({

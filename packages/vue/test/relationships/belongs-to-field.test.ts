@@ -21,7 +21,7 @@ function relationship(
  * Reka UI's Select only mounts its popup content once genuinely opened via
  * its own floating-ui-driven interaction (real pointer geometry jsdom
  * doesn't provide), so the rendered option list isn't reachable through the
- * DOM here — the trigger's own placeholder/loading text is. The mapping from
+ * DOM here  the trigger's own placeholder/loading text is. The mapping from
  * fetched records to `<SelectItem>`s still runs as part of building
  * `<Select>`'s children on every render regardless of whether the popup is
  * open, so a mount with resolved records is enough to exercise it.

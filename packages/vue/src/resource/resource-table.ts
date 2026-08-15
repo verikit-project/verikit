@@ -77,9 +77,7 @@ export interface ResourceTableProps<
   className?: string;
 }
 
-// `useResourceTable` always sets `header` to `field.label` (a required,
-// non-empty string field on every `FieldSchema`), so this always reads a
-// plain string back — no function-header or missing-header case to guard.
+// `header` is always the field's required string label.
 function headerText(header: {
   column: { columnDef: { header?: unknown } };
 }): string {

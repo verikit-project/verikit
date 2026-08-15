@@ -306,7 +306,7 @@ function filterControl(
 
 /** Props for {@link ResourceTableFilterPanel}. */
 export interface ResourceTableFilterPanelProps {
-  /** Field schemas to render controls for — only entries with `filterable: true` produce a control. */
+  /** Field schemas to render controls for  only entries with `filterable: true` produce a control. */
   fields: Record<string, FieldSchema>;
   /** The table's current active filters. */
   filters: ResourceTableFilters;
@@ -315,10 +315,8 @@ export interface ResourceTableFilterPanelProps {
 }
 
 /**
- * A grid of per-field filter controls — one per `filterable` field, typed to
- * that field's `fieldType` (boolean toggle, select dropdown, number/date
- * range, or exact-match text) — that read and write `ResourceTable`'s active
- * filters. Renders nothing if no field is `filterable`.
+ * Renders field-appropriate controls for each filterable field and syncs
+ * them with the ResourceTable's active filters.
  */
 export const ResourceTableFilterPanel = defineComponent({
   name: "ResourceTableFilterPanel",

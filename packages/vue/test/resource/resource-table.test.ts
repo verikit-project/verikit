@@ -845,7 +845,7 @@ test("the mobile card layout's own row checkbox selects the same row as its desk
   });
   await waitFor(() => root(wrapper).textContent?.includes("Hello") === true);
 
-  // With one row, `[aria-label="Select row"]` matches twice — once in the
+  // With one row, `[aria-label="Select row"]` matches twice  once in the
   // (CSS-hidden, but still mounted) desktop table, once in the mobile card
   // layout. The second is the mobile card's own checkbox.
   const checkboxes = root(wrapper).querySelectorAll(
@@ -989,7 +989,7 @@ test("renderBulkActions renders custom bulk content and works without `actions`"
   const table = root(wrapper).querySelector("table") as HTMLElement;
   await click(table.querySelector('[aria-label="Select row"]'));
   assert.match(root(wrapper).textContent ?? "", /1 selected/);
-  // No `actions`, so no built-in bulk delete — only the custom bulk action.
+  // No `actions`, so no built-in bulk delete  only the custom bulk action.
   assert.equal(
     Array.from(root(wrapper).querySelectorAll("button")).some(
       (button) => button.textContent === "Delete selected",

@@ -20,7 +20,7 @@ export interface UseResourceFormOptions<TRecord> {
   onSuccess?: (record: TRecord) => void;
   /**
    * Called when the create/update mutation itself fails (e.g. a network error
-   * or a permission-denied response) — not for client-side field validation
+   * or a permission-denied response)  not for client-side field validation
    * failures, which surface via `fieldErrors`/`submitError` instead.
    */
   onError?: (error: Error) => void;
@@ -37,13 +37,9 @@ export interface UseResourceFormResult<
 }
 
 /**
- * The single resource-backed form hook: takes a `Resource` (or its
- * `ResourceSchema`) and wires `useVerikitForm` straight to its create/update
- * mutation hooks  its own name is the one source of truth for both the
- * fields and which resource to submit to, so there's no separate `name`
- * string or raw field map to keep in sync with it. Submitting infers,
- * validates, and sends the request in one step. Creates when no `id` option
- * is given, updates that record's id otherwise.
+ * Resource-backed form hook that uses the resource as the source of truth
+ * for fields, validation, and create/update mutations. Creates when no `id`
+ * is provided; otherwise updates the specified record.
  */
 export function useResourceForm<TRecord = Record<string, unknown>>(
   resource: UseResourceFormSource,
