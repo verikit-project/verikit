@@ -14,10 +14,7 @@ import { text } from "@verikit/core";
 import { action } from "@verikit/runtime";
 import { isValidElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import {
-  RenderSchemaNode,
-  RenderSchemaTree,
-} from "../../src/layout/index.js";
+import { RenderSchemaNode, RenderSchemaTree } from "../../src/layout/index.js";
 import { BelongsToRelationshipField } from "../../src/relationships/index.js";
 
 type AnyElement = ReactElement<Record<string, unknown>>;

@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  number,
-  text,
-  type FieldNode,
-  type SchemaNode,
-} from "@verikit/core";
+import { number, text, type FieldNode, type SchemaNode } from "@verikit/core";
 import { action } from "@verikit/runtime";
 import {
   inferAndValidateSchemaTree,
