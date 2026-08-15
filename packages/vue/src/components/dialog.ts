@@ -16,7 +16,10 @@ export const Dialog = defineComponent({
   name: "Dialog",
   inheritAttrs: false,
   props: {
-    open: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    open: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
     onOpenChange: {
       type: Function as PropType<(open: boolean) => void>,
       default: undefined,
@@ -90,39 +93,43 @@ export const DialogContent = defineComponent({
   setup(props, { slots, attrs }) {
     return () => {
       const { class: className, ...rest } = attrs as Record<string, unknown>;
-      return h(DialogPortal, {}, {
-        default: () => [
-          h(DialogBackdrop),
-          h(
-            RekaDialogContent,
-            {
-              "data-slot": "dialog-content",
-              class: cn(
-                "fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-background p-6 shadow-lg duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-                className as string,
-              ),
-              ...rest,
-            },
-            {
-              default: () => [
-                slots.default?.(),
-                props.showClose
-                  ? h(
-                      RekaDialogClose,
-                      {
-                        "data-slot": "dialog-close",
-                        "aria-label": "Close",
-                        class:
-                          "absolute top-4 right-4 rounded-md opacity-70 outline-none transition-opacity hover:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50",
-                      },
-                      { default: () => h(XIcon, { class: "size-4" }) },
-                    )
-                  : null,
-              ],
-            },
-          ),
-        ],
-      });
+      return h(
+        DialogPortal,
+        {},
+        {
+          default: () => [
+            h(DialogBackdrop),
+            h(
+              RekaDialogContent,
+              {
+                "data-slot": "dialog-content",
+                class: cn(
+                  "fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-background p-6 shadow-lg duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+                  className as string,
+                ),
+                ...rest,
+              },
+              {
+                default: () => [
+                  slots.default?.(),
+                  props.showClose
+                    ? h(
+                        RekaDialogClose,
+                        {
+                          "data-slot": "dialog-close",
+                          "aria-label": "Close",
+                          class:
+                            "absolute top-4 right-4 rounded-md opacity-70 outline-none transition-opacity hover:opacity-100 focus-visible:ring-3 focus-visible:ring-ring/50",
+                        },
+                        { default: () => h(XIcon, { class: "size-4" }) },
+                      )
+                    : null,
+                ],
+              },
+            ),
+          ],
+        },
+      );
     };
   },
 });

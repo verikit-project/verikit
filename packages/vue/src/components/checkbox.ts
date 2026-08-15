@@ -8,7 +8,10 @@ export const Checkbox = defineComponent({
   name: "Checkbox",
   inheritAttrs: false,
   props: {
-    checked: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    checked: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
     indeterminate: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     onCheckedChange: {
@@ -19,7 +22,9 @@ export const Checkbox = defineComponent({
   setup(props, { attrs }) {
     return () => {
       const { class: className, ...rest } = attrs as Record<string, unknown>;
-      const modelValue = props.indeterminate ? "indeterminate" : (props.checked ?? false);
+      const modelValue = props.indeterminate
+        ? "indeterminate"
+        : (props.checked ?? false);
 
       return h(
         CheckboxRoot,
@@ -42,7 +47,8 @@ export const Checkbox = defineComponent({
               CheckboxIndicator,
               {
                 "data-slot": "checkbox-indicator",
-                class: "grid place-content-center text-current transition-none [&>svg]:size-3.5",
+                class:
+                  "grid place-content-center text-current transition-none [&>svg]:size-3.5",
               },
               { default: () => h(CheckIcon) },
             ),

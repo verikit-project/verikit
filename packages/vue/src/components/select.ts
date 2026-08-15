@@ -74,7 +74,10 @@ export const SelectValue = defineComponent({
   name: "SelectValue",
   inheritAttrs: false,
   props: {
-    placeholder: { type: String as PropType<string | undefined>, default: undefined },
+    placeholder: {
+      type: String as PropType<string | undefined>,
+      default: undefined,
+    },
   },
   setup(props, { attrs }) {
     return () => {
@@ -149,35 +152,35 @@ export const SelectContent = defineComponent({
   setup(props, { slots, attrs }) {
     return () => {
       const { class: className, ...rest } = attrs as Record<string, unknown>;
-      return h(SelectPortal, {}, {
-        default: () =>
-          h(
-            RekaSelectContent,
-            {
-              position: "popper",
-              side: props.side,
-              sideOffset: props.sideOffset,
-              align: props.align,
-              alignOffset: props.alignOffset,
-              class: cn(
-                "relative isolate z-50 max-h-(--reka-popper-available-height) w-(--reka-popper-anchor-width) min-w-36 origin-(--reka-popper-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-                className as string,
-              ),
-              ...rest,
-            },
-            {
-              default: () => [
-                h(SelectScrollUpButton),
-                h(
-                  SelectViewport,
-                  {},
-                  { default: () => slots.default?.() },
+      return h(
+        SelectPortal,
+        {},
+        {
+          default: () =>
+            h(
+              RekaSelectContent,
+              {
+                position: "popper",
+                side: props.side,
+                sideOffset: props.sideOffset,
+                align: props.align,
+                alignOffset: props.alignOffset,
+                class: cn(
+                  "relative isolate z-50 max-h-(--reka-popper-available-height) w-(--reka-popper-anchor-width) min-w-36 origin-(--reka-popper-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+                  className as string,
                 ),
-                h(SelectScrollDownButton),
-              ],
-            },
-          ),
-      });
+                ...rest,
+              },
+              {
+                default: () => [
+                  h(SelectScrollUpButton),
+                  h(SelectViewport, {}, { default: () => slots.default?.() }),
+                  h(SelectScrollDownButton),
+                ],
+              },
+            ),
+        },
+      );
     };
   },
 });
@@ -193,7 +196,10 @@ export const SelectLabel = defineComponent({
         RekaSelectLabel,
         {
           "data-slot": "select-label",
-          class: cn("px-1.5 py-1 text-xs text-muted-foreground", className as string),
+          class: cn(
+            "px-1.5 py-1 text-xs text-muted-foreground",
+            className as string,
+          ),
           ...rest,
         },
         slots,
@@ -256,7 +262,10 @@ export const SelectSeparator = defineComponent({
       const { class: className, ...rest } = attrs as Record<string, unknown>;
       return h(RekaSelectSeparator, {
         "data-slot": "select-separator",
-        class: cn("pointer-events-none -mx-1 my-1 h-px bg-border", className as string),
+        class: cn(
+          "pointer-events-none -mx-1 my-1 h-px bg-border",
+          className as string,
+        ),
         ...rest,
       });
     };

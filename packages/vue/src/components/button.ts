@@ -40,7 +40,9 @@ export const buttonVariants = cva(
   },
 );
 
-type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
+type ButtonVariant = NonNullable<
+  VariantProps<typeof buttonVariants>["variant"]
+>;
 type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
 
 /** shadcn-compatible button built on a native `<button>`. */
