@@ -27,3 +27,5 @@ export type {
   SubmitVerikitSchemaTreeActionFormOptions,
   SubmitVerikitSchemaTreeFormOptions,
 } from "./schema-tree.js";
+export { isResource, resolveVerikitFields } from "./resolve-fields.js";
+export type { VerikitFormSource } from "./resolve-fields.js";
