@@ -1,0 +1,87 @@
+{
+  "name": "@verikit/vue",
+  "version": "0.22.0",
+  "description": "Vue UI bindings for Verikit resource workflows.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "keywords": [
+    "typescript",
+    "resource",
+    "schema",
+    "resource-model",
+    "metadata",
+    "builder",
+    "validation",
+    "framework"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./components/*": {
+      "types": "./dist/components/*.d.ts",
+      "default": "./dist/components/*.js"
+    },
+    "./lib/*": {
+      "types": "./dist/lib/*.d.ts",
+      "default": "./dist/lib/*.js"
+    }
+  },
+  "imports": {
+    "#components/*": {
+      "types": "./src/components/*.ts",
+      "default": "./dist/components/*.js"
+    },
+    "#lib/*": {
+      "types": "./src/lib/*.ts",
+      "default": "./dist/lib/*.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "build": "pnpm clean && tsc -b",
+    "prepack": "pnpm build",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --import ./.test-dist/test/register.js --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --import ./.test-dist/test/register.js --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@tanstack/vue-form": "^1.33.5",
+    "@tanstack/vue-query": "^5.101.4",
+    "@tanstack/vue-table": "^9.1.2",
+    "@verikit/client": "workspace:*",
+    "@verikit/core": "workspace:*",
+    "@verikit/runtime": "workspace:*",
+    "@verikit/theme": "workspace:*",
+    "@verikit/ui-core": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^1.0.0",
+    "reka-ui": "^2.10.3",
+    "tailwind-merge": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.3",
+    "@types/node": "^26.1.1",
+    "@vue/test-utils": "^2.4.11",
+    "jsdom": "^30.0.1",
+    "typescript": "^6.0.3",
+    "vue": "^3.5.41"
+  },
+  "peerDependencies": {
+    "@tanstack/vue-form": "^1.33.5",
+    "@tanstack/vue-query": "^5.101.4",
+    "@tanstack/vue-table": "^9.1.2",
+    "reka-ui": "^2.10.3",
+    "vue": "^3.5.0"
+  }
+}
