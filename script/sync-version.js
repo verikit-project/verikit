@@ -96,7 +96,9 @@ if (checkOnly) {
   }
 
   if (mismatched.length > 0) {
-    console.error(`Versions are out of sync with root package.json (${version}):`);
+    console.error(
+      `Versions are out of sync with root package.json (${version}):`,
+    );
     for (const line of mismatched) {
       console.error(`  ${line}`);
     }
