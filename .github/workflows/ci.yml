@@ -4,9 +4,42 @@ on:
   push:
     branches: [main, dev]
   pull_request:
+    branches: [main, dev]
 
 jobs:
+  dev-ci:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+
+    name: Node 24 / React 19 (dev)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          # Keep CI on the supported pnpm major while allowing compatible upgrades.
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm format:check
+
+      - run: pnpm lint
+
+      - run: pnpm typecheck
+
+      - run: pnpm test
+
   ci:
+    if: > 
+      github.event_name == 'pull_request' || 
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
 
     name: Node 24 / React 19

@@ -72,11 +72,41 @@ const findPackageJsons = (dir, results = []) => {
   return results;
 };
 
+const checkOnly = process.argv.includes("--check");
+
 const rootPackagePath = path.join(rootDir, "package.json");
 const rootPkg = readJson(rootPackagePath);
 const version = rootPkg.version;
 
 const packageJsons = findPackageJsons(rootDir);
+
+if (checkOnly) {
+  const mismatched = [];
+
+  for (const packageJsonPath of packageJsons) {
+    if (packageJsonPath === rootPackagePath) {
+      continue;
+    }
+
+    const pkg = readJson(packageJsonPath);
+
+    if (pkg.version !== version) {
+      mismatched.push(`${pkg.name}: expected ${version}, found ${pkg.version}`);
+    }
+  }
+
+  if (mismatched.length > 0) {
+    console.error(`Versions are out of sync with root package.json (${version}):`);
+    for (const line of mismatched) {
+      console.error(`  ${line}`);
+    }
+    console.error("Run `pnpm vsync` to fix.");
+    process.exit(1);
+  }
+
+  console.log(`Versions are in sync (${version}).`);
+  process.exit(0);
+}
 
 for (const packageJsonPath of packageJsons) {
   if (packageJsonPath === rootPackagePath) {
