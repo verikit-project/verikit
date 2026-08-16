@@ -127,7 +127,10 @@ for (const packageJsonPath of packageJsons) {
     changed = true;
   }
 
-  const lockPath = path.join(path.dirname(packageJsonPath), "package-lock.json");
+  const lockPath = path.join(
+    path.dirname(packageJsonPath),
+    "package-lock.json",
+  );
   const lockChanged = syncPackageLockVersion(
     path.dirname(packageJsonPath),
     version,
@@ -161,10 +164,14 @@ const git = (args) =>
 const tagRef = `v${version}`;
 const tagAlreadyExists = (() => {
   try {
-    execFileSync("git", ["rev-parse", "-q", "--verify", `refs/tags/${tagRef}`], {
-      cwd: rootDir,
-      stdio: "ignore",
-    });
+    execFileSync(
+      "git",
+      ["rev-parse", "-q", "--verify", `refs/tags/${tagRef}`],
+      {
+        cwd: rootDir,
+        stdio: "ignore",
+      },
+    );
     return true;
   } catch {
     return false;
@@ -172,7 +179,13 @@ const tagAlreadyExists = (() => {
 })();
 
 if (changedFiles.length > 0) {
-  git(["commit", "-m", `chore: version release ${tagRef}`, "--", ...changedFiles]);
+  git([
+    "commit",
+    "-m",
+    `chore: version release ${tagRef}`,
+    "--",
+    ...changedFiles,
+  ]);
   console.log(`Committed: chore: version release ${tagRef}`);
 }
 
@@ -183,4 +196,6 @@ if (tagAlreadyExists) {
   console.log(`Tagged HEAD as ${tagRef}.`);
 }
 
-console.log(`Run \`git push && git push origin ${tagRef}\` to publish the release.`);
+console.log(
+  `Run \`git push && git push origin ${tagRef}\` to publish the release.`,
+);
