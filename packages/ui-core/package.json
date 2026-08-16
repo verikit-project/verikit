@@ -1,6 +1,6 @@
 {
   "name": "@verikit/ui-core",
-  "version": "0.23.5",
+  "version": "0.23.6",
   "description": "Framework-neutral form, layout, and query logic shared by Verikit UI bindings.",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@verikit/server",
-  "version": "0.23.5",
+  "version": "0.23.6",
   "description": "Web-standard CRUD/action server for Verikit resources.",
   "type": "module",
   "main": "./dist/index.js",
