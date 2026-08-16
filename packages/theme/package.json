@@ -17,6 +17,11 @@
   ],
   "author": "Chidi E <hi@ceeso.dev>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/verikit-project/verikit",
+    "directory": "packages/theme"
+  },
   "engines": {
     "node": ">=24"
   },
