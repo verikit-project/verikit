@@ -39,5 +39,5 @@ jobs:
       - run: pnpm smoke-test
 
       - run: pnpm --filter "./packages/*" publish --access public --provenance --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # env:
+        #   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

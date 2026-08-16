@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -110,6 +111,8 @@ if (checkOnly) {
   process.exit(0);
 }
 
+const changedFiles = [];
+
 for (const packageJsonPath of packageJsons) {
   if (packageJsonPath === rootPackagePath) {
     continue;
@@ -124,6 +127,7 @@ for (const packageJsonPath of packageJsons) {
     changed = true;
   }
 
+  const lockPath = path.join(path.dirname(packageJsonPath), "package-lock.json");
   const lockChanged = syncPackageLockVersion(
     path.dirname(packageJsonPath),
     version,
@@ -131,6 +135,11 @@ for (const packageJsonPath of packageJsons) {
 
   if (changed) {
     writeJson(packageJsonPath, pkg);
+    changedFiles.push(packageJsonPath);
+  }
+
+  if (lockChanged) {
+    changedFiles.push(lockPath);
   }
 
   if (changed || lockChanged) {
@@ -141,3 +150,37 @@ for (const packageJsonPath of packageJsons) {
 }
 
 console.log("Versions synced!");
+
+// Keep the "vX.Y.Z" tag and the commit that actually syncs every package to
+// that version inseparable, so a tag can never point at a commit where
+// packages/*/package.json still lag the root version (see the v0.23.3
+// incident: the tag landed on the root-only bump, one commit before sync).
+const git = (args) =>
+  execFileSync("git", args, { cwd: rootDir, stdio: "inherit" });
+
+const tagRef = `v${version}`;
+const tagAlreadyExists = (() => {
+  try {
+    execFileSync("git", ["rev-parse", "-q", "--verify", `refs/tags/${tagRef}`], {
+      cwd: rootDir,
+      stdio: "ignore",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+})();
+
+if (changedFiles.length > 0) {
+  git(["commit", "-m", `chore: version release ${tagRef}`, "--", ...changedFiles]);
+  console.log(`Committed: chore: version release ${tagRef}`);
+}
+
+if (tagAlreadyExists) {
+  console.log(`Tag ${tagRef} already exists, skipping.`);
+} else {
+  git(["tag", "-a", tagRef, "-m", version]);
+  console.log(`Tagged HEAD as ${tagRef}.`);
+}
+
+console.log(`Run \`git push && git push origin ${tagRef}\` to publish the release.`);
