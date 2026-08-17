@@ -50,8 +50,9 @@ export async function maybeCheckAction<TActor, TRecord>(
 }
 
 /**
- * Returns field names the context cannot read.
- * Permission evaluation failures fail closed and are treated as denied.
+ * Returns field names the context cannot read. Permission failures fail closed.
+ * Static read rules are resolved directly; only record-dependent rules invoke
+ * `checkFieldAccess`, avoiding unnecessary per-row permission checks.
  */
 export async function unreadableFieldNames<TActor, TRecord>(
   fields: Record<string, FieldSchema>,
@@ -63,8 +64,26 @@ export async function unreadableFieldNames<TActor, TRecord>(
   }
 
   const runtime = permissions.getRuntime();
+  const hidden = new Set<string>();
+  const contextual: string[] = [];
+
+  for (const name of Object.keys(fields)) {
+    const rule = runtime.fields[name]?.read;
+    if (!rule) {
+      hidden.add(name);
+      continue;
+    }
+
+    const staticValue = staticPermissionValue(rule);
+    if (staticValue === false) {
+      hidden.add(name);
+    } else if (staticValue !== true) {
+      contextual.push(name);
+    }
+  }
+
   const checks = await Promise.all(
-    Object.keys(fields).map(async (name) => {
+    contextual.map(async (name) => {
       try {
         const access = await checkFieldAccess(runtime, name, "read", context);
         return [name, access.allowed] as const;
@@ -74,9 +93,11 @@ export async function unreadableFieldNames<TActor, TRecord>(
     }),
   );
 
-  return new Set(
-    checks.filter(([, allowed]) => !allowed).map(([name]) => name),
-  );
+  for (const [name, allowed] of checks) {
+    if (!allowed) hidden.add(name);
+  }
+
+  return hidden;
 }
 
 /**

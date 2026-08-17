@@ -74,6 +74,19 @@ test("unreadableFieldNames fails closed: fields with no read rule are hidden", a
   assert.deepEqual(hidden, new Set(["body", "published"]));
 });
 
+test("unreadableFieldNames resolves a static `read: false` rule without evaluating it per row", async () => {
+  const fields = createPostResource().toSchema().fields;
+  const permissions = definePermissions<Actor>()
+    .field("title", { read: true })
+    .field("body", { read: false });
+
+  const hidden = await unreadableFieldNames(fields, permissions, {
+    actor: { role: "viewer" },
+  });
+
+  assert.deepEqual(hidden, new Set(["body", "published"]));
+});
+
 test("redactFields removes hidden keys, and returns the same object when nothing is hidden", () => {
   const record = { id: "1", title: "Hi", body: "text" };
 
