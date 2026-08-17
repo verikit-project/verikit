@@ -82,13 +82,13 @@ export interface PrismaAdapterOptions<TFields extends FieldMap> {
   id: PrismaIdConfig;
   /** See `PrismaSearchProvider`. */
   provider?: PrismaSearchProvider;
-/**
- * Runs `list()` records and count queries in the same transaction to keep
- * pagination consistent. Required because the adapter cannot open a transaction
- * from a model delegate alone.
- *
- * Use Prisma's `RepeatableRead` isolation for a stable pagination snapshot.
- */
+  /**
+   * Runs `list()` records and count queries in the same transaction to keep
+   * pagination consistent. Required because the adapter cannot open a transaction
+   * from a model delegate alone.
+   *
+   * Use Prisma's `RepeatableRead` isolation for a stable pagination snapshot.
+   */
   listTransaction: PrismaListTransaction;
 }
 
