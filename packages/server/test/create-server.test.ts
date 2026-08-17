@@ -5,6 +5,7 @@ import {
   defineResource,
   belongsTo,
   ConflictError,
+  VerikitError,
   file,
   image,
   number,
@@ -595,6 +596,60 @@ test("file fields upload through the configured storage backend", async () => {
     },
   });
   assert.equal(stored.length, 1);
+});
+
+test("uploads run the security processor before storage", async () => {
+  const resource = defineResource("asset", {
+    fields: { attachment: image().accept(["image/png"]) },
+  });
+  let stored = false;
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+    uploadProcessor: async ({ file, resource: resourceName, field }) => {
+      assert.equal(resourceName, "asset");
+      assert.equal(field, "attachment");
+      if ((await file.text()) !== "verified image bytes") {
+        throw new VerikitError(
+          "Upload content was rejected.",
+          "UPLOAD_REJECTED",
+          415,
+        );
+      }
+      return file;
+    },
+    storage: {
+      async put({ file }) {
+        stored = true;
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+
+  const rejected = new FormData();
+  rejected.set(
+    "file",
+    new Blob(["not an image"], { type: "image/png" }),
+    "a.png",
+  );
+  const response = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: rejected,
+    }),
+  );
+
+  assert.equal(response.status, 415);
+  assert.deepEqual(await response.json(), {
+    error: { code: "UPLOAD_REJECTED", message: "Upload content was rejected." },
+  });
+  assert.equal(stored, false);
 });
 
 test("uploads to a non-file field or unknown field name 404", async () => {

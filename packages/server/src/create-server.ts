@@ -10,7 +10,7 @@ import { handleList } from "./handlers/list.js";
 import { handleRelationshipPicker } from "./handlers/relationship-picker.js";
 import { handleUpdate } from "./handlers/update.js";
 import { handleUpload } from "./handlers/upload.js";
-import type { FileStorage } from "./storage.js";
+import type { FileStorage, UploadProcessor } from "./storage.js";
 import {
   errorResponse,
   methodNotAllowedResponse,
@@ -51,6 +51,11 @@ export interface CreateServerOptions<TActor = unknown> {
   resources: ServerResourceConfig<TActor>[];
   /** Backend used by `POST /{resource}/uploads/{fileField}`. */
   storage?: FileStorage;
+  /**
+   * Inspects or transforms uploads before they reach `storage`. Use this to
+   * verify file signatures, scan content, or re-encode untrusted images.
+   */
+  uploadProcessor?: UploadProcessor;
   /**
    * Derives the actor used for permission checks from the incoming request.
    */
@@ -364,7 +369,12 @@ export function createServer<TActor = unknown>(
           );
         case "upload":
           return withCors(
-            await handleUpload(ctx, action.field, options.storage),
+            await handleUpload(
+              ctx,
+              action.field,
+              options.storage,
+              options.uploadProcessor,
+            ),
             responseCorsHeaders,
           );
       }

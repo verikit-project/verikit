@@ -161,8 +161,8 @@ export async function validateResourceInput<TActor, TRecord>(
         );
   }
 
-// Validate permitted client and trusted fields against the schema.
-// Both use merged values as context, with each field validated once.
+  // Validate permitted client and trusted fields against the schema.
+  // Both use merged values as context, with each field validated once.
   const clientFields: Record<string, FieldSchema> = {};
   const trustedFields: Record<string, FieldSchema> = {};
 

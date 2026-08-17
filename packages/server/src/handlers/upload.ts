@@ -10,7 +10,7 @@ import { dataResponse } from "../http/responses.js";
 import { readRequestBytes } from "../http/parse-request.js";
 import { maybeCheckResourceOperation } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
-import type { FileStorage } from "../storage.js";
+import type { FileStorage, UploadProcessor } from "../storage.js";
 
 interface UploadField {
   fieldType: "file" | "image";
@@ -18,11 +18,33 @@ interface UploadField {
   maxSize?: number;
 }
 
+function assertFileConstraints(file: File, field: UploadField): void {
+  if (field.maxSize !== undefined && file.size > field.maxSize) {
+    throw new VerikitError(
+      "File exceeds the field's maximum size.",
+      "PAYLOAD_TOO_LARGE",
+      413,
+    );
+  }
+  if (
+    field.accept &&
+    field.accept.length > 0 &&
+    !matchesAccept(field.accept, file)
+  ) {
+    throw new VerikitError(
+      "File type is not accepted by this field.",
+      "UNSUPPORTED_MEDIA_TYPE",
+      415,
+    );
+  }
+}
+
 /** Handles `POST {base}/uploads/:field` multipart requests. */
 export async function handleUpload(
   ctx: HandlerContext,
   fieldName: string,
   storage: FileStorage | undefined,
+  uploadProcessor: UploadProcessor | undefined,
 ): Promise<Response> {
   const field = ctx.entry.fields[fieldName];
   if (!field || (field.fieldType !== "file" && field.fieldType !== "image")) {
@@ -87,24 +109,18 @@ export async function handleUpload(
     typeof (candidate as File).name !== "string"
   )
     throw new ValidationError('Expected a "file" part.');
-  const file = candidate as File;
-  if (uploadField.maxSize !== undefined && file.size > uploadField.maxSize) {
-    throw new VerikitError(
-      "File exceeds the field's maximum size.",
-      "PAYLOAD_TOO_LARGE",
-      413,
-    );
-  }
-  if (
-    uploadField.accept &&
-    uploadField.accept.length > 0 &&
-    !matchesAccept(uploadField.accept, file)
-  ) {
-    throw new VerikitError(
-      "File type is not accepted by this field.",
-      "UNSUPPORTED_MEDIA_TYPE",
-      415,
-    );
+  let file = candidate as File;
+  assertFileConstraints(file, uploadField);
+  if (uploadProcessor) {
+    file = await uploadProcessor({
+      resource: ctx.entry.config.resource.name,
+      field: fieldName,
+      file,
+      actor: ctx.actor,
+    });
+    // A processor may re-encode an image or otherwise replace the bytes, so
+    // enforce the declared size and type constraints on its output as well.
+    assertFileConstraints(file, uploadField);
   }
   const stored = await storage.put({
     resource: ctx.entry.config.resource.name,
