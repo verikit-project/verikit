@@ -27,19 +27,35 @@ export async function validateWritableFields<TActor, TRecord>(
     Object.entries(fields)
       .filter(([name, schema]) => shouldValidateField(name, schema, values))
       .map(async ([name, schema]): Promise<[string, ValidationResult]> => {
-        const access = await checkFieldAccess(runtime, name, "write", context);
-
-        if (!access.allowed) {
+        try {
+          const access = await checkFieldAccess(
+            runtime,
+            name,
+            "write",
+            context,
+          );
+          if (!access.allowed) {
+            return [
+              name,
+              {
+                success: false,
+                issues: [
+                  {
+                    path: [],
+                    message: access.reason ?? defaultDeniedMessage(name),
+                  },
+                ],
+              },
+            ];
+          }
+        } catch {
+          // Permission rule failures fail closed and are treated as denied
+          // writes, matching read-path field-access behavior.
           return [
             name,
             {
               success: false,
-              issues: [
-                {
-                  path: [],
-                  message: access.reason ?? defaultDeniedMessage(name),
-                },
-              ],
+              issues: [{ path: [], message: defaultDeniedMessage(name) }],
             },
           ];
         }

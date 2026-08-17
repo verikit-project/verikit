@@ -560,6 +560,31 @@ test("validateWritableFields surfaces the denying rule's custom reason", async (
   });
 });
 
+test("validateWritableFields fails closed when a write rule throws", async () => {
+  const permissions = definePermissions<Actor, Post>().field("salary", {
+    write: () => {
+      throw new Error("permission service unavailable");
+    },
+  });
+
+  const result = await validateWritableFields(
+    { salary: text().toSchema("salary") },
+    { salary: "100000" },
+    permissions,
+    { actor: { role: "editor" } },
+  );
+
+  assert.deepEqual(result, {
+    success: false,
+    issues: [
+      {
+        path: ["salary"],
+        message: 'You do not have permission to write to "salary".',
+      },
+    ],
+  });
+});
+
 test("validateWritableFields runs normal field validation for writable fields", async () => {
   const permissions = definePermissions<Actor, Post>().field("title", {
     write: true,
