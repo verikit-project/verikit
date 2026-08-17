@@ -49,11 +49,11 @@ export type PrismaListTransaction = <T>(
 export interface PrismaIdConfig<TId = unknown> {
   /** The Prisma scalar name of the model's primary (or other unique) id field. */
   field: string;
-/**
- * Decodes a route-segment ID for Prisma `where` clauses.
- * Return `undefined` for invalid IDs to skip the query and report "missing".
- * Defaults to identity; numeric or composite IDs require an implementation.
- */
+  /**
+   * Decodes a route-segment ID for Prisma `where` clauses.
+   * Return `undefined` for invalid IDs to skip the query and report "missing".
+   * Defaults to identity; numeric or composite IDs require an implementation.
+   */
   fromPath?: (segment: string) => TId | undefined;
   /**
    * Encodes the raw Prisma id value into the canonical string `id` returned to clients.
@@ -313,8 +313,8 @@ export function createPrismaAdapter<
         const where = combinedWhere(scope, { [id.field]: value });
 
         try {
- // Return the updated row directly when supported; older Prisma delegates
-// fall back to `updateMany` followed by a scoped read.
+          // Return the updated row directly when supported; older Prisma delegates
+          // fall back to `updateMany` followed by a scoped read.
           if (model.updateManyAndReturn) {
             const [row] = await model.updateManyAndReturn({
               where,
