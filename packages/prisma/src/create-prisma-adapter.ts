@@ -16,12 +16,8 @@ import {
 } from "./mapping.js";
 
 /**
- * Structural subset of a generated Prisma model delegate (e.g. `prisma.post`) that this
- * adapter drives. Kept loose (`any` args/results) rather than imported from `@prisma/client`:
- * a generated client's per-model argument/return types are specific to that model and schema,
- * there's no exported type that describes "any model delegate" generically, and every real
- * delegate is a structural superset of this anyway (same shape `@verikit/drizzle`'s
- * `AnyDrizzleDatabase` uses for the same reason).
+ * Structural subset of a Prisma model delegate used by this adapter.
+ * Kept generic to avoid coupling to generated model-specific types.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any -- see above */
 export interface PrismaModelDelegate {
@@ -39,22 +35,25 @@ export interface PrismaModelDelegate {
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 /**
- * Id coercion between the adapter's raw string path segment and the value Prisma's `where`
- * expects. Unlike `@verikit/drizzle` (which introspects a real column's `dataType` to coerce
- * automatically), a Prisma model delegate exposes no such runtime metadata, so this is
- * explicit configuration rather than inference.
+ * Runs a list operation with the model delegate bound to a Prisma transaction.
+ * For example: `(operation) => prisma.$transaction((tx) => operation(tx.post))`.
+ */
+export type PrismaListTransaction = <T>(
+  operation: (model: PrismaModelDelegate) => Promise<T>,
+) => Promise<T>;
+
+/**
+ * Coerces raw string IDs into the type expected by Prisma `where` clauses.
+ * Explicit configuration is required because Prisma exposes no runtime ID type metadata.
  */
 export interface PrismaIdConfig<TId = unknown> {
   /** The Prisma scalar name of the model's primary (or other unique) id field. */
   field: string;
-  /**
-   * Decodes a route-segment string into the value used in Prisma's `where`. Return
-   * `undefined` to signal the segment can never correspond to a real record (e.g. a
-   * non-numeric segment against an `Int` id), which lets `find`/`update`/`delete` report
-   * "missing" without even querying, mirroring `@verikit/drizzle`'s `coerceId`. Defaults to
-   * the identity function, which only suits a string-typed id (cuid/uuid); a numeric or
-   * composite id must supply this.
-   */
+/**
+ * Decodes a route-segment ID for use in Prisma `where` clauses.
+ * Return `undefined` for invalid IDs to skip the query and report "missing".
+ * Defaults to identity; numeric or composite IDs must provide an implementation.
+ */
   fromPath?: (segment: string) => TId | undefined;
   /**
    * Encodes the raw Prisma id value into the canonical string `id` returned to clients.
@@ -64,44 +63,31 @@ export interface PrismaIdConfig<TId = unknown> {
 }
 
 /**
- * Which case-insensitive search strategy `.searchable()` fields use. Prisma's `mode:
- * "insensitive"` filter is only implemented for PostgreSQL (and MongoDB); passing it on
- * SQLite or MySQL throws `PrismaClientValidationError` at query time. SQLite's own `contains`
- * is already ASCII-case-insensitive without it; MySQL's case-sensitivity is a property of the
- * column's collation, which Prisma can't override from the query API. Omit this (or pass
- * `"sqlite"`/`"mysql"`, which take the same code path) unless the datasource is PostgreSQL.
- * Only `"sqlite"` is exercised by this package's own test suite; `"postgresql"`'s branch is
- * implemented per Prisma's documented behavior but isn't integration-tested here (no
- * PostgreSQL instance in this repo's test environment)  establish and test your own
- * provider's search behavior before relying on it in production.
- *
- * Separately, unlike `@verikit/drizzle` (which escapes `%`/`_` in the search term before
- * building its own `LIKE ... ESCAPE '\'`), this adapter's search goes through Prisma's
- * `contains` filter, which has no escape-character option. A search term containing `%` or
- * `_` is passed through and interpreted as a SQL wildcard by the underlying database, not
- * matched literally. There's no adapter-level fix for this without dropping to raw SQL (and
- * losing cross-provider portability with it); a consumer that needs literal-substring search
- * semantics must filter or escape those characters itself before calling the adapter.
+ * Case-insensitive search strategy for `.searchable()` fields.
+ * Use `"postgresql"` to enable Prisma's `mode: "insensitive"`; SQLite and
+ * MySQL use their native collation behavior. Prisma `contains` does not
+ * provide literal escaping for `%` or `_`.
  */
 export type PrismaSearchProvider = "postgresql" | "sqlite" | "mysql";
 
 export interface PrismaAdapterOptions<TFields extends FieldMap> {
   /** The generated Prisma model delegate this adapter reads/writes, e.g. `prisma.post`. */
   model: PrismaModelDelegate;
-  /**
-   * Required resource-field-to-Prisma-scalar mapping, covering every field the resource
-   * declares. Used for reads, writes, search, and sorting. There is no automatic
-   * same-name fallback (unlike `@verikit/drizzle`'s column resolution) because a Prisma
-   * delegate has no introspectable schema to fall back against; every field must be listed
-   * explicitly. Relation fields and arbitrary Prisma `include`/`select` values are out of
-   * scope  see `ResourceAdapter`'s docstring on why relationship loading isn't part of this
-   * contract yet.
-   */
+/**
+ * Maps every resource field to its Prisma scalar field.
+ * All fields must be explicitly mapped; relations and Prisma `include`/`select`
+ * values are not supported.
+ */
   fields: { [K in keyof TFields & string]: string };
   /** Names the model's primary (or other unique) scalar and how to codec it. */
   id: PrismaIdConfig;
   /** See `PrismaSearchProvider`. */
   provider?: PrismaSearchProvider;
+ /**
+ * Runs `list()` records and count queries in the same transaction.
+ * Use repeatable-read isolation when a stable pagination snapshot is required.
+ */
+  listTransaction?: PrismaListTransaction;
 }
 
 /** A canonical API record returned by the Prisma adapter. */
@@ -111,13 +97,11 @@ export interface PrismaResourceRecord extends Record<string, unknown> {
 }
 
 /**
- * Builds a `ResourceAdapter` backed by a Prisma model delegate, so `@verikit/server` never
- * has to import `@prisma/client` itself. Every operation selects and returns only the
- * configured `fields` plus the canonical `id`  never a whole model row  matching
- * `ResourceAdapter`'s contract that adapter records are API records, not ORM rows.
- * @throws {Error} If `fields` is missing a mapping for a field the resource declares, or if a
- * `.searchable()` field's `fieldType` isn't text-like (`text`/`textarea`/`email`)  Prisma's
- * `contains` filter only works on `String` scalars.
+ * Creates a Prisma-backed `ResourceAdapter`.
+ * Selects only configured fields plus `id`, never full model rows.
+ *
+ * @throws {Error} If a resource field is unmapped or a `.searchable()` field
+ * is not text-like.
  */
 export function createPrismaAdapter<
   TFields extends FieldMap,
@@ -224,9 +208,7 @@ export function createPrismaAdapter<
 
   return {
     async list(params: ResourceListParams) {
-      // A search term against a resource with no searchable fields can never match
-      // anything; treat it as an unsatisfiable filter (zero results), matching
-      // @verikit/drizzle's convention for the same case.
+// Search with no searchable fields can never match; return zero results.
       const permittedSearchScalars = params.searchFields
         ? searchableScalars
             .filter(([name]) => params.searchFields!.includes(name))
@@ -248,21 +230,23 @@ export function createPrismaAdapter<
       const orderBy =
         sort && sortScalar ? { [sortScalar]: sort.direction } : undefined;
 
-      // Two independent queries, not one transaction: only the model delegate is
-      // available here, not the top-level PrismaClient that owns `$transaction`. A
-      // concurrent write between these two calls can make `total` and `records.length`
-      // momentarily disagree across a page boundary; a consumer that needs a consistent
-      // snapshot should pass a delegate bound to an active `$transaction` callback.
-      const [rows, total] = await Promise.all([
-        model.findMany({
-          where,
-          select,
-          ...(orderBy && { orderBy }),
-          skip: (params.page - 1) * params.pageSize,
-          take: params.pageSize,
-        }),
-        model.count({ where }),
-      ]);
+      const readPage = async (listModel: PrismaModelDelegate) => {
+        const [rows, total] = await Promise.all([
+          listModel.findMany({
+            where,
+            select,
+            ...(orderBy && { orderBy }),
+            skip: (params.page - 1) * params.pageSize,
+            take: params.pageSize,
+          }),
+          listModel.count({ where }),
+        ]);
+
+        return { rows, total };
+      };
+      const { rows, total } = options.listTransaction
+        ? await options.listTransaction(readPage)
+        : await readPage(model);
 
       return {
         records: rows.map((row) => present(row)!),

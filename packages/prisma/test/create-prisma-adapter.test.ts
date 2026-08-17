@@ -322,6 +322,53 @@ test("list paginates and reports the total across all pages", async (t) => {
   assert.equal(page3.records.length, 1);
 });
 
+test("list uses the injected transaction delegate for rows and total", async () => {
+  const rootCalls: string[] = [];
+  const transactionCalls: string[] = [];
+  const rootModel: PrismaModelDelegate = {
+    findMany: async () => {
+      rootCalls.push("findMany");
+      return [];
+    },
+    count: async () => {
+      rootCalls.push("count");
+      return 0;
+    },
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+  const transactionModel: PrismaModelDelegate = {
+    ...rootModel,
+    findMany: async () => {
+      transactionCalls.push("findMany");
+      return [{ id: "1", title: "In transaction", body: "", published: false }];
+    },
+    count: async () => {
+      transactionCalls.push("count");
+      return 1;
+    },
+  };
+  let transactions = 0;
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model: rootModel,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+    listTransaction: async (operation) => {
+      transactions += 1;
+      return operation(transactionModel);
+    },
+  });
+
+  const page = await adapter.list({ page: 1, pageSize: 10 });
+  assert.equal(transactions, 1);
+  assert.deepEqual(rootCalls, []);
+  assert.deepEqual(transactionCalls.sort(), ["count", "findMany"]);
+  assert.equal(page.total, 1);
+  assert.equal(page.records[0]?.title, "In transaction");
+});
+
 test("find/update/delete/list honor a scope, and reject an unmapped scope field", async (t) => {
   const db = await createTestDb();
   t.after(() => db.$disconnect());
