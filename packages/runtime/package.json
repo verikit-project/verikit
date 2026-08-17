@@ -1,6 +1,6 @@
 {
   "name": "@verikit/runtime",
-  "version": "0.23.6",
+  "version": "0.23.7",
   "description": "Runtime helpers for executing Verikit resource workflows.",
   "type": "module",
   "main": "./dist/index.js",

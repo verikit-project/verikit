@@ -1,6 +1,6 @@
 {
   "name": "@verikit/core",
-  "version": "0.23.6",
+  "version": "0.23.7",
   "description": "Core resource schema and validation primitives for Verikit.",
   "type": "module",
   "main": "./dist/index.js",
