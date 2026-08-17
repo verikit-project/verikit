@@ -50,9 +50,9 @@ export interface PrismaIdConfig<TId = unknown> {
   /** The Prisma scalar name of the model's primary (or other unique) id field. */
   field: string;
 /**
- * Decodes a route-segment ID for use in Prisma `where` clauses.
+ * Decodes a route-segment ID for Prisma `where` clauses.
  * Return `undefined` for invalid IDs to skip the query and report "missing".
- * Defaults to identity; numeric or composite IDs must provide an implementation.
+ * Defaults to identity; numeric or composite IDs require an implementation.
  */
   fromPath?: (segment: string) => TId | undefined;
   /**
@@ -65,7 +65,7 @@ export interface PrismaIdConfig<TId = unknown> {
 /**
  * Case-insensitive search strategy for `.searchable()` fields.
  * Use `"postgresql"` to enable Prisma's `mode: "insensitive"`; SQLite and
- * MySQL use their native collation behavior. Prisma `contains` does not
+ * MySQL rely on database collation behavior. Prisma `contains` does not
  * provide literal escaping for `%` or `_`.
  */
 export type PrismaSearchProvider = "postgresql" | "sqlite" | "mysql";
@@ -73,20 +73,20 @@ export type PrismaSearchProvider = "postgresql" | "sqlite" | "mysql";
 export interface PrismaAdapterOptions<TFields extends FieldMap> {
   /** The generated Prisma model delegate this adapter reads/writes, e.g. `prisma.post`. */
   model: PrismaModelDelegate;
-/**
- * Maps every resource field to its Prisma scalar field.
- * All fields must be explicitly mapped; relations and Prisma `include`/`select`
- * values are not supported.
- */
+  /**
+   * Maps every resource field to its Prisma scalar field.
+   * All fields must be explicitly mapped; relations and Prisma `include`/`select`
+   * values are not supported.
+   */
   fields: { [K in keyof TFields & string]: string };
   /** Names the model's primary (or other unique) scalar and how to codec it. */
   id: PrismaIdConfig;
   /** See `PrismaSearchProvider`. */
   provider?: PrismaSearchProvider;
- /**
- * Runs `list()` records and count queries in the same transaction.
- * Use repeatable-read isolation when a stable pagination snapshot is required.
- */
+  /**
+   * Runs `list()` records and count queries in the same transaction.
+   * Use repeatable-read isolation when a stable pagination snapshot is required.
+   */
   listTransaction?: PrismaListTransaction;
 }
 
@@ -208,7 +208,7 @@ export function createPrismaAdapter<
 
   return {
     async list(params: ResourceListParams) {
-// Search with no searchable fields can never match; return zero results.
+      // Search with no searchable fields can never match; return zero results.
       const permittedSearchScalars = params.searchFields
         ? searchableScalars
             .filter(([name]) => params.searchFields!.includes(name))
@@ -313,10 +313,8 @@ export function createPrismaAdapter<
         const where = combinedWhere(scope, { [id.field]: value });
 
         try {
-          // returns the written row directly,
-          // so the scoped write and the canonical-record read happen in one round
-          // trip instead of two. Older Prisma delegates fall back to updateMany
-          // plus a follow-up scoped find.
+ // Return the updated row directly when supported; older Prisma delegates
+// fall back to `updateMany` followed by a scoped read.
           if (model.updateManyAndReturn) {
             const [row] = await model.updateManyAndReturn({
               where,
