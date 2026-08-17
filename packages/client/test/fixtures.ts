@@ -57,18 +57,18 @@ export function createTestServerFetch(initial: readonly Post[] = []): {
 } {
   const adapter = createInMemoryAdapter(initial);
 
-  // Permissions are fail-closed: every operation without an explicit rule is denied,
-  // so CRUD reads/creates/updates must be allowed explicitly even though this
-  // fixture's real goal is gating `delete` and the `publish` action to admins (to exercise 403/404/409 paths from the client).
+  // Permissions are fail-closed; CRUD is explicitly allowed while delete/publish
+  // remain admin-gated. Queryable fields use static `read: true`, since contextual
+  // read rules fail closed for search/sort/filter capabilities.
   const permissions = definePermissions<Actor>()
     .can("create", () => true)
     .can("list", () => true)
     .can("read", () => true)
     .can("update", () => true)
     .can("delete", ({ actor }) => actor.role === "admin")
-    .field("title", { read: () => true, write: () => true })
-    .field("body", { read: () => true, write: () => true })
-    .field("published", { read: () => true, write: () => true })
+    .field("title", { read: true, write: true })
+    .field("body", { read: true, write: true })
+    .field("published", { read: true, write: true })
     .action("publish", ({ actor }) => actor.role === "admin");
 
   const publish = action("publish")
