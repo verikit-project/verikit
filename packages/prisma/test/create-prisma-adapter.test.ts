@@ -597,7 +597,7 @@ test("list restricts free-text search to server-authorized searchable fields", a
   assert.equal(result.records[0]?.title, "Visible match");
 });
 
-test("a literal percent sign in the search term is interpreted as a SQL wildcard, unlike @verikit/drizzle's escaped search", async (t) => {
+test("list searches a literal percent sign", async (t) => {
   const db = await createTestDb();
   t.after(() => db.$disconnect());
   const adapter = createPostAdapter(db);
@@ -605,13 +605,37 @@ test("a literal percent sign in the search term is interpreted as a SQL wildcard
   await adapter.create({ title: "50% off", body: "" });
   await adapter.create({ title: "50000 off", body: "" });
 
-  // Prisma's `contains` filter has no escape-character option, so it can't neutralize
-  // `%`/`_` in a search term the way @verikit/drizzle's hand-built `LIKE ... ESCAPE '\'`
-  // does. "50%" matches both rows here: literally against the first, and as a "50" then
-  // anything then nothing wildcard against the second. This is a documented adapter-parity
-  // gap (see `PrismaAdapterOptions.provider`'s docstring), not the intended search UX.
+  // `%` is matched literally, not as a SQL LIKE wildcard.
   const result = await adapter.list({ page: 1, pageSize: 10, search: "50%" });
-  assert.equal(result.total, 2);
+  assert.equal(result.total, 1);
+  assert.equal(result.records[0]?.title, "50% off");
+});
+
+test("list searches literal underscores and backslashes", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPostAdapter(db);
+
+  await adapter.create({ title: "item_1", body: "" });
+  await adapter.create({ title: "itemX1", body: "" });
+  await adapter.create({ title: "C:\\uploads", body: "" });
+  await adapter.create({ title: "C:/uploads", body: "" });
+
+  const underscore = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    search: "item_1",
+  });
+  assert.equal(underscore.total, 1);
+  assert.equal(underscore.records[0]?.title, "item_1");
+
+  const backslash = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    search: "C:\\uploads",
+  });
+  assert.equal(backslash.total, 1);
+  assert.equal(backslash.records[0]?.title, "C:\\uploads");
 });
 
 test("list with a search term returns zero results for a resource with no searchable fields, without querying", async (t) => {

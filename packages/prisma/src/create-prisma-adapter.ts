@@ -64,8 +64,8 @@ export interface PrismaIdConfig<TId = unknown> {
 
 /**
  * Case-insensitive search strategy for `.searchable()` fields.
- * `"postgresql"` uses Prisma's `mode: "insensitive"`; SQLite and MySQL
- * rely on database collation. `%` and `_` are not escaped in `contains`.
+ * PostgreSQL uses Prisma's `mode: "insensitive"`; SQLite and MySQL rely on
+ * collation. `%`, `_`, and `\` are matched literally across providers.
  */
 export type PrismaSearchProvider = "postgresql" | "sqlite" | "mysql";
 
@@ -82,15 +82,13 @@ export interface PrismaAdapterOptions<TFields extends FieldMap> {
   id: PrismaIdConfig;
   /** See `PrismaSearchProvider`. */
   provider?: PrismaSearchProvider;
-  /**
-   * Runs `list()`'s records and count queries in the same transaction, so a
-   * concurrent write between them can never desync the page from `meta.total`.
-   * Required, unlike `@verikit/drizzle`, which is handed a full database client
-   * and can always wrap `list()` in a transaction itself, this adapter only ever
-   * sees a single model delegate, so it has no way to open one on its own.
-   * Use repeatable-read isolation when a stable pagination snapshot is required:
-   * `(operation) => prisma.$transaction((tx) => operation(tx.post), { isolationLevel: "RepeatableRead" })`.
-   */
+/**
+ * Runs `list()` records and count queries in the same transaction to keep
+ * pagination consistent. Required because the adapter cannot open a transaction
+ * from a model delegate alone.
+ *
+ * Use Prisma's `RepeatableRead` isolation for a stable pagination snapshot.
+ */
   listTransaction: PrismaListTransaction;
 }
 
@@ -169,6 +167,21 @@ export function createPrismaAdapter<
     };
   }
 
+  function matchesLiteralSearch(
+    row: Record<string, unknown>,
+    term: string,
+    searchable: readonly string[],
+  ): boolean {
+    const normalizedTerm = term.toLowerCase();
+    return searchable.some((scalar) => {
+      const value = row[scalar];
+      return (
+        typeof value === "string" &&
+        value.toLowerCase().includes(normalizedTerm)
+      );
+    });
+  }
+
   function scopeWhere(scope: Record<string, unknown> | undefined) {
     if (!scope || Object.keys(scope).length === 0) return undefined;
     return Object.fromEntries(
@@ -222,9 +235,17 @@ export function createPrismaAdapter<
         return { records: [], total: 0 };
       }
 
+      // Prisma's `contains` cannot express `LIKE ... ESCAPE` for every
+      // supported provider (notably SQLite). Fetch the already scoped and
+      // filtered candidates, then apply literal matching for a term that
+      // contains a LIKE metacharacter. This prevents `%`, `_`, and `\\` from
+      // widening the result set while preserving the adapter's search API.
+      const literalSearch =
+        params.search !== undefined && /[\\%_]/.test(params.search);
+
       const where = combinedWhere(
         params.scope,
-        params.search
+        params.search && !literalSearch
           ? searchWhere(params.search, permittedSearchScalars)
           : undefined,
         params.filters,
@@ -235,6 +256,22 @@ export function createPrismaAdapter<
         sort && sortScalar ? { [sortScalar]: sort.direction } : undefined;
 
       const readPage = async (listModel: PrismaModelDelegate) => {
+        if (literalSearch) {
+          const rows = await listModel.findMany({
+            where,
+            select,
+            ...(orderBy && { orderBy }),
+          });
+          const matchingRows = rows.filter((row) =>
+            matchesLiteralSearch(row, params.search!, permittedSearchScalars),
+          );
+          const offset = (params.page - 1) * params.pageSize;
+          return {
+            rows: matchingRows.slice(offset, offset + params.pageSize),
+            total: matchingRows.length,
+          };
+        }
+
         const [rows, total] = await Promise.all([
           listModel.findMany({
             where,
