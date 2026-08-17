@@ -47,7 +47,8 @@
   ],
   "dependencies": {
     "@verikit/core": "workspace:*",
-    "@verikit/runtime": "workspace:*"
+    "@verikit/runtime": "workspace:*",
+    "file-type": "^22.0.2"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

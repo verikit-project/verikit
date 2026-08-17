@@ -28,6 +28,16 @@ interface Actor {
 
 const post: Post = { id: "1", title: "Hello", body: "world", published: false };
 
+const pngBytes = Uint8Array.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49,
+  0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06,
+  0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89,
+]);
+
+function pngBlob(type = "image/png"): Blob {
+  return new Blob([pngBytes], { type });
+}
+
 /**
  * Hand-encodes a single-file multipart body instead of using `FormData`. Node's `FormData`
  * bodies stream through an internal lazy encoder; cancelling `request.body`'s reader partway
@@ -559,7 +569,7 @@ test("list supports opt-in exact field filters", async () => {
 test("file fields upload through the configured storage backend", async () => {
   const stored: { name: string; type: string; size: number }[] = [];
   const resource = defineResource("asset", {
-    fields: { attachment: image().maxSize(10) },
+    fields: { attachment: image().maxSize(100) },
   });
   const handler = createServer({
     resources: [
@@ -578,7 +588,7 @@ test("file fields upload through the configured storage backend", async () => {
     },
   });
   const form = new FormData();
-  form.set("file", new Blob(["hello"], { type: "image/png" }), "avatar.png");
+  form.set("file", pngBlob(), "avatar.png");
 
   const response = await handler(
     new Request("https://x/asset/uploads/attachment", {
@@ -592,10 +602,60 @@ test("file fields upload through the configured storage backend", async () => {
       url: "https://files.example/avatar.png",
       name: "avatar.png",
       type: "image/png",
-      size: 5,
+      size: 33,
     },
   });
   assert.equal(stored.length, 1);
+});
+
+test("uploads reject spoofed image metadata and store detected MIME types", async () => {
+  let stored = false;
+  const resource = defineResource("asset", {
+    fields: { attachment: image().accept(["image/png"]) },
+  });
+  const handler = createServer({
+    resources: [
+      { resource, adapter: createInMemoryAdapter(), permissions: "open" },
+    ],
+    storage: {
+      async put({ file: uploaded }) {
+        stored = true;
+        assert.equal(uploaded.type, "image/png");
+        return {
+          url: "https://files.example/a.png",
+          name: uploaded.name,
+          type: uploaded.type,
+          size: uploaded.size,
+        };
+      },
+    },
+  });
+
+  const spoofed = new FormData();
+  spoofed.set(
+    "file",
+    new Blob(["<svg onload=alert(1) />"], { type: "image/png" }),
+    "a.png",
+  );
+  const rejected = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: spoofed,
+    }),
+  );
+  assert.equal(rejected.status, 415);
+  assert.equal(stored, false);
+
+  const valid = new FormData();
+  valid.set("file", pngBlob("application/octet-stream"), "a.png");
+  const accepted = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: valid,
+    }),
+  );
+  assert.equal(accepted.status, 201);
+  assert.equal(stored, true);
 });
 
 test("uploads run the security processor before storage", async () => {
@@ -828,7 +888,7 @@ test("uploads are denied for an actor who can only update (not create) the resou
   });
 
   const form = new FormData();
-  form.set("file", new Blob(["hello"], { type: "image/png" }), "a.png");
+  form.set("file", pngBlob(), "a.png");
 
   const response = await handler(
     new Request("https://x/asset/uploads/attachment", {
@@ -866,7 +926,7 @@ test("uploads succeed for an actor with resource-level create access and field w
   });
 
   const form = new FormData();
-  form.set("file", new Blob(["hello"], { type: "image/png" }), "a.png");
+  form.set("file", pngBlob(), "a.png");
 
   const response = await handler(
     new Request("https://x/asset/uploads/attachment", {
@@ -1030,7 +1090,7 @@ test("uploads honor case-insensitive extension accept patterns", async () => {
   const accepted = new FormData();
   accepted.set(
     "file",
-    new Blob(["pdf"], { type: "application/pdf" }),
+    new Blob(["%PDF-1.4\n"], { type: "application/pdf" }),
     "REPORT.PDF",
   );
   assert.equal(
@@ -1103,7 +1163,11 @@ test("uploads accept unrestricted and exact MIME file rules", async () => {
   );
 
   const pdf = new FormData();
-  pdf.set("file", new Blob(["pdf"], { type: "application/pdf" }), "report.bin");
+  pdf.set(
+    "file",
+    new Blob(["%PDF-1.4\n"], { type: "application/pdf" }),
+    "report.bin",
+  );
   assert.equal(
     (
       await handler(

@@ -6,6 +6,7 @@ import {
   ValidationError,
   VerikitError,
 } from "@verikit/core";
+import { fileTypeFromBlob } from "file-type";
 import { dataResponse } from "../http/responses.js";
 import { readRequestBytes } from "../http/parse-request.js";
 import { maybeCheckResourceOperation } from "../permissions.js";
@@ -18,7 +19,7 @@ interface UploadField {
   maxSize?: number;
 }
 
-function assertFileConstraints(file: File, field: UploadField): void {
+function assertFileSize(file: File, field: UploadField): void {
   if (field.maxSize !== undefined && file.size > field.maxSize) {
     throw new VerikitError(
       "File exceeds the field's maximum size.",
@@ -26,10 +27,31 @@ function assertFileConstraints(file: File, field: UploadField): void {
       413,
     );
   }
+}
+
+/**
+ * Verifies declared accept rules against the file signature, not multipart
+ * metadata. The returned File has the detected MIME type so storage backends
+ * cannot accidentally persist an attacker-controlled Content-Type.
+ */
+async function assertFileConstraints(
+  file: File,
+  field: UploadField,
+): Promise<File> {
+  assertFileSize(file, field);
+  if (!field.accept || field.accept.length === 0) return file;
+
+  const detected = await fileTypeFromBlob(file);
+  // A signature is required whenever a field constrains file types. In
+  // particular, image() defaults to image/*, so markup such as SVG cannot
+  // masquerade as a PNG merely by supplying a multipart MIME header.
   if (
-    field.accept &&
-    field.accept.length > 0 &&
-    !matchesAccept(field.accept, file)
+    !detected ||
+    !matchesAccept(field.accept, {
+      type: detected.mime,
+      name: `file.${detected.ext}`,
+      size: file.size,
+    })
   ) {
     throw new VerikitError(
       "File type is not accepted by this field.",
@@ -37,6 +59,11 @@ function assertFileConstraints(file: File, field: UploadField): void {
       415,
     );
   }
+
+  return new File([file], file.name, {
+    type: detected.mime,
+    lastModified: file.lastModified,
+  });
 }
 
 /** Handles `POST {base}/uploads/:field` multipart requests. */
@@ -110,7 +137,10 @@ export async function handleUpload(
   )
     throw new ValidationError('Expected a "file" part.');
   let file = candidate as File;
-  assertFileConstraints(file, uploadField);
+  // Check the size before invoking a custom processor, but defer type
+  // verification until afterwards so a processor can safely re-encode an
+  // input into a detectable output format.
+  assertFileSize(file, uploadField);
   if (uploadProcessor) {
     file = await uploadProcessor({
       resource: ctx.entry.config.resource.name,
@@ -118,10 +148,10 @@ export async function handleUpload(
       file,
       actor: ctx.actor,
     });
-    // A processor may re-encode an image or otherwise replace the bytes, so
-    // enforce the declared size and type constraints on its output as well.
-    assertFileConstraints(file, uploadField);
   }
+  // A processor may re-encode an image or otherwise replace the bytes, so
+  // enforce size and signature-derived type constraints on its output.
+  file = await assertFileConstraints(file, uploadField);
   const stored = await storage.put({
     resource: ctx.entry.config.resource.name,
     field: fieldName,
