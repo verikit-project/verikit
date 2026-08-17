@@ -456,14 +456,13 @@ test("scoped update falls back to updateMany + a follow-up find when the delegat
     listTransaction: (operation) => operation(model),
   });
 
-  const updated = await adapter.update(
-    "1",
-    { body: "updated" },
-    { title: "Mine" },
-  );
+  // Calling the method without an adapter-object receiver must not break the
+  // updateMany-then-find fallback.
+  const { update } = adapter;
+  const updated = await update("1", { body: "updated" }, { title: "Mine" });
   assert.equal(updated?.body, "updated");
 
-  const missed = await adapter.update("2", { body: "nope" }, { title: "Mine" });
+  const missed = await update("2", { body: "nope" }, { title: "Mine" });
   assert.equal(missed, undefined);
 });
 

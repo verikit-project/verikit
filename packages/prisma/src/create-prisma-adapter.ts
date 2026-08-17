@@ -223,6 +223,31 @@ export function createPrismaAdapter<
         : { AND: constraints };
   }
 
+  async function findRecord(
+    pathId: string,
+    scope?: Record<string, unknown>,
+  ): Promise<PrismaResourceRecord | undefined> {
+    const value = fromPath(pathId);
+
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (scope && !model.findFirst) {
+      throw new Error(
+        "@verikit/prisma: scoped reads require a Prisma delegate with findFirst().",
+      );
+    }
+    const row = scope
+      ? await model.findFirst!({
+          where: combinedWhere(scope, { [id.field]: value }),
+          select,
+        })
+      : await model.findUnique({ where: { [id.field]: value }, select });
+
+    return present(row);
+  }
+
   return {
     async list(params: ResourceListParams) {
       // Search with no searchable fields can never match; return zero results.
@@ -235,11 +260,8 @@ export function createPrismaAdapter<
         return { records: [], total: 0 };
       }
 
-      // Prisma's `contains` cannot express `LIKE ... ESCAPE` for every
-      // supported provider (notably SQLite). Fetch the already scoped and
-      // filtered candidates, then apply literal matching for a term that
-      // contains a LIKE metacharacter. This prevents `%`, `_`, and `\\` from
-      // widening the result set while preserving the adapter's search API.
+      // Prisma `contains` can't escape LIKE metacharacters across all providers.
+      // Apply literal matching locally so `%`, `_`, and `\` cannot widen results.
       const literalSearch =
         params.search !== undefined && /[\\%_]/.test(params.search);
 
@@ -293,27 +315,7 @@ export function createPrismaAdapter<
       };
     },
 
-    async find(pathId: string, scope?: Record<string, unknown>) {
-      const value = fromPath(pathId);
-
-      if (value === undefined) {
-        return undefined;
-      }
-
-      if (scope && !model.findFirst) {
-        throw new Error(
-          "@verikit/prisma: scoped reads require a Prisma delegate with findFirst().",
-        );
-      }
-      const row = scope
-        ? await model.findFirst!({
-            where: combinedWhere(scope, { [id.field]: value }),
-            select,
-          })
-        : await model.findUnique({ where: { [id.field]: value }, select });
-
-      return present(row);
-    },
+    find: findRecord,
 
     async create(values: Record<string, unknown>) {
       const data = mapValuesToData(values, fields);
@@ -369,7 +371,7 @@ export function createPrismaAdapter<
             );
           }
           const result = await model.updateMany({ where, data });
-          return result.count === 0 ? undefined : this.find(pathId, scope);
+          return result.count === 0 ? undefined : findRecord(pathId, scope);
         } catch (error) {
           if (isUniqueConstraintError(error)) {
             throw new UniqueConstraintError(
