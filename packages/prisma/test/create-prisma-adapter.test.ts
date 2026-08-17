@@ -605,7 +605,12 @@ test("list searches a literal percent sign", async (t) => {
   await adapter.create({ title: "50000 off", body: "" });
 
   // `%` is matched literally, not as a SQL LIKE wildcard.
-  const result = await adapter.list({ page: 1, pageSize: 10, search: "50%" });
+  const result = await adapter.list({
+    page: 1,
+    pageSize: 10,
+    search: "50%",
+    sort: { field: "title", direction: "asc" },
+  });
   assert.equal(result.total, 1);
   assert.equal(result.records[0]?.title, "50% off");
 });

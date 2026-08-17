@@ -670,14 +670,14 @@ test("uploads run the security processor before storage", async () => {
     uploadProcessor: async ({ file, resource: resourceName, field }) => {
       assert.equal(resourceName, "asset");
       assert.equal(field, "attachment");
-      if ((await file.text()) !== "verified image bytes") {
+      if (file.name === "reject.png") {
         throw new VerikitError(
           "Upload content was rejected.",
           "UPLOAD_REJECTED",
           415,
         );
       }
-      return file;
+      return new File([pngBytes], file.name, { type: "image/png" });
     },
     storage: {
       async put({ file }) {
@@ -696,7 +696,7 @@ test("uploads run the security processor before storage", async () => {
   rejected.set(
     "file",
     new Blob(["not an image"], { type: "image/png" }),
-    "a.png",
+    "reject.png",
   );
   const response = await handler(
     new Request("https://x/asset/uploads/attachment", {
@@ -710,6 +710,21 @@ test("uploads run the security processor before storage", async () => {
     error: { code: "UPLOAD_REJECTED", message: "Upload content was rejected." },
   });
   assert.equal(stored, false);
+
+  const transformed = new FormData();
+  transformed.set(
+    "file",
+    new Blob(["untrusted image"], { type: "application/octet-stream" }),
+    "a.png",
+  );
+  const accepted = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: transformed,
+    }),
+  );
+  assert.equal(accepted.status, 201);
+  assert.equal(stored, true);
 });
 
 test("uploads to a non-file field or unknown field name 404", async () => {
