@@ -8,6 +8,7 @@ import {
   defineResourcePermissions,
   normalizePermissionResult,
   normalizePermissionRule,
+  staticPermissionValue,
   PermissionsBuilder,
   resolveResourceSchema,
   validateWritableFields,
@@ -77,6 +78,19 @@ test(".field() merges read/write access set across separate calls", () => {
   assert.equal(typeof state.fields.salary?.read, "function");
   assert.equal(typeof state.fields.salary?.write, "function");
   assert.equal(state.fields.salary?.read?.({ actor: { role: "admin" } }), true);
+});
+
+test("staticPermissionValue distinguishes boolean rules from contextual rules", () => {
+  assert.equal(staticPermissionValue(normalizePermissionRule(true)), true);
+  assert.equal(staticPermissionValue(normalizePermissionRule(false)), false);
+  assert.equal(
+    staticPermissionValue(
+      normalizePermissionRule(
+        ({ actor }: { actor: Actor }) => actor.role === "admin",
+      ),
+    ),
+    undefined,
+  );
 });
 
 test(".field() rejects an empty field name", () => {

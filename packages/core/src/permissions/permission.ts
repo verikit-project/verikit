@@ -1,9 +1,9 @@
 /**
- * Baseline CRUD-style operations a resource-level rule can gate. `"list"` gates the list/search
- * routes, which check every request once against the whole collection rather than a
- * `context.record` (there's no single record to check yet). `"read"` gates a single-record fetch
- * (`GET .../:id`), where `context.record` is the actual fetched record  a `.can("read", ({
- * record }) => ...)` rule only ever runs there, never against list/search results.
+ * CRUD operations that resource-level rules can gate.
+ *
+ * `"list"` gates collection queries without record context.
+ * `"read"` gates single-record fetches with `context.record`; read rules are
+ * never evaluated against list/search results.
  */
 export type ResourceOperation =
   "create" | "list" | "read" | "update" | "delete";
@@ -38,6 +38,12 @@ export type PermissionRule<TActor = unknown, TRecord = unknown> = (
 export type PermissionRuleInput<TActor = unknown, TRecord = unknown> =
   PermissionRule<TActor, TRecord> | boolean;
 
+const staticPermissionResult = Symbol("staticPermissionResult");
+
+type StaticPermissionRule<TActor, TRecord> = PermissionRule<TActor, TRecord> & {
+  [staticPermissionResult]?: boolean;
+};
+
 /** Normalizes a `PermissionResult` to its object form. */
 export function normalizePermissionResult(result: PermissionResult): {
   allowed: boolean;
@@ -52,5 +58,24 @@ export function normalizePermissionResult(result: PermissionResult): {
 export function normalizePermissionRule<TActor = unknown, TRecord = unknown>(
   input: PermissionRuleInput<TActor, TRecord>,
 ): PermissionRule<TActor, TRecord> {
-  return typeof input === "function" ? input : () => input;
+  if (typeof input === "function") {
+    return input;
+  }
+
+  const rule = (() => input) as StaticPermissionRule<TActor, TRecord>;
+  rule[staticPermissionResult] = input;
+  return rule;
+}
+
+/**
+ * Returns the rule's boolean value, or `undefined` if evaluation requires
+ * permission context. Consumers without record context must treat `undefined`
+ * as denied.
+ */
+export function staticPermissionValue<TActor = unknown, TRecord = unknown>(
+  rule: PermissionRule<TActor, TRecord> | undefined,
+): boolean | undefined {
+  return (rule as StaticPermissionRule<TActor, TRecord> | undefined)?.[
+    staticPermissionResult
+  ];
 }

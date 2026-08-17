@@ -5,6 +5,7 @@ import {
   maybeCheckResourceOperation,
   presentRecord,
   unreadableFieldNames,
+  unreadableQueryFieldNames,
 } from "../permissions.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
@@ -30,19 +31,21 @@ export async function handleList(
 
   const { sort, ...rest } = parseListParams(url, options);
   const scope = await resolveScope(entry, actor);
-  const hidden = await unreadableFieldNames(
+  // Query parameters are evaluated before records exist. Only a static allow
+  // rule can grant query access; contextual rules fail closed so they cannot
+  // leak values through filtering, sorting, searching, or pagination totals.
+  const queryHidden = unreadableQueryFieldNames(
     entry.fields,
     entry.config.permissions,
-    { actor },
   );
   // Reject filters on unreadable fields to prevent inference through pagination totals.
   const filters = Object.fromEntries(
     Object.entries(parseFilters(url, entry.fields)).filter(
-      ([name]) => !hidden.has(name),
+      ([name]) => !queryHidden.has(name),
     ),
   );
   const searchFields = Object.entries(entry.fields)
-    .filter(([name, field]) => field.searchable && !hidden.has(name))
+    .filter(([name, field]) => field.searchable && !queryHidden.has(name))
     .map(([name]) => name);
 
   // Restrict caller-controlled sort fields to the schema's sortable allow-list
@@ -54,12 +57,22 @@ export async function handleList(
     ...(rest.search !== undefined && { searchFields }),
     ...(sort &&
       entry.fields[sort.field]?.sortable &&
-      !hidden.has(sort.field) && { sort }),
+      !queryHidden.has(sort.field) && { sort }),
   };
 
   const result = await entry.config.adapter.list(params);
-  const records = result.records.map((record) =>
-    presentRecord(record as Record<string, unknown>, entry.fields, hidden),
+  const records = await Promise.all(
+    result.records.map(async (record) => {
+      const publicRecord = record as Record<string, unknown>;
+      // Unlike query capabilities, response visibility is resolved against the
+      // actual row. This makes record-aware read rules safe for list/search.
+      const hidden = await unreadableFieldNames(
+        entry.fields,
+        entry.config.permissions,
+        { actor, record: publicRecord },
+      );
+      return presentRecord(publicRecord, entry.fields, hidden);
+    }),
   );
 
   return dataResponse(records, {

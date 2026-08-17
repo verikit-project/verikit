@@ -2,6 +2,7 @@ import {
   checkAction,
   checkFieldAccess,
   checkResourceOperation,
+  staticPermissionValue,
   validateResourceAsync,
   validateWritableFields,
   type FieldSchema,
@@ -49,7 +50,8 @@ export async function maybeCheckAction<TActor, TRecord>(
 }
 
 /**
- * Computes the set of field names the actor cannot read, once per request rather than once per record list/search apply the same set to every row; find has a real record and can pass it through `context` for record-aware rules.
+ * Returns field names the context cannot read.
+ * Permission evaluation failures fail closed and are treated as denied.
  */
 export async function unreadableFieldNames<TActor, TRecord>(
   fields: Record<string, FieldSchema>,
@@ -63,13 +65,38 @@ export async function unreadableFieldNames<TActor, TRecord>(
   const runtime = permissions.getRuntime();
   const checks = await Promise.all(
     Object.keys(fields).map(async (name) => {
-      const access = await checkFieldAccess(runtime, name, "read", context);
-      return [name, access.allowed] as const;
+      try {
+        const access = await checkFieldAccess(runtime, name, "read", context);
+        return [name, access.allowed] as const;
+      } catch {
+        return [name, false] as const;
+      }
     }),
   );
 
   return new Set(
     checks.filter(([, allowed]) => !allowed).map(([name]) => name),
+  );
+}
+
+/**
+ * Returns fields that cannot be used in list/search queries.
+ * Since query planning has no record context, filter, sort, and search require
+ * an explicit static `read: true` rule.
+ */
+export function unreadableQueryFieldNames<TActor, TRecord>(
+  fields: Record<string, FieldSchema>,
+  permissions: PermissionsBuilder<TActor, TRecord> | "open",
+): Set<string> {
+  if (permissions === "open") {
+    return new Set();
+  }
+
+  const runtime = permissions.getRuntime();
+  return new Set(
+    Object.keys(fields).filter(
+      (name) => staticPermissionValue(runtime.fields[name]?.read) !== true,
+    ),
   );
 }
 
@@ -88,8 +115,8 @@ export function redactFields(
 }
 
 /**
- * Returns the API-safe record shape: its `id` and readable resource fields.
- * Acts as a final allow-list against leaking undeclared adapter data.
+ * Returns the API-safe record shape: `id` plus readable resource fields.
+ * Prevents undeclared adapter data from leaking into responses.
  */
 export function presentRecord(
   record: Record<string, unknown>,
@@ -134,8 +161,8 @@ export async function validateResourceInput<TActor, TRecord>(
         );
   }
 
-  // Validate client fields with permissions and trusted fields against the schema.
-  // Both use the merged values for context, while each field is validated once.
+// Validate permitted client and trusted fields against the schema.
+// Both use merged values as context, with each field validated once.
   const clientFields: Record<string, FieldSchema> = {};
   const trustedFields: Record<string, FieldSchema> = {};
 

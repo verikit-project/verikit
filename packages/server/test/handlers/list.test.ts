@@ -23,7 +23,7 @@ interface Actor {
 function ctxFor(
   adapter: ReturnType<typeof createInMemoryAdapter>,
   url: string,
-  permissions?: ReturnType<typeof definePermissions<Actor>>,
+  permissions?: ReturnType<typeof definePermissions<Actor, Post>>,
   resource = createPostResource(),
 ) {
   const [entry] = buildRouteTable(
@@ -31,7 +31,11 @@ function ctxFor(
       {
         resource,
         adapter,
-        permissions: permissions ?? "open",
+        // Route-table configuration erases record types; handlers recover the
+        // concrete record from adapter results before evaluating field rules.
+        permissions: (permissions ?? "open") as unknown as ReturnType<
+          typeof definePermissions<Actor>
+        >,
       },
     ],
     "",
@@ -88,7 +92,7 @@ test("handleList is unguarded when the resource is marked open", async () => {
 });
 
 test("handleList throws a 403 ForbiddenError when the actor lacks resource-level list access", async () => {
-  const permissions = definePermissions<Actor>().can(
+  const permissions = definePermissions<Actor, Post>().can(
     "list",
     ({ actor }) => actor.role === "admin",
   );
@@ -102,7 +106,7 @@ test("handleList throws a 403 ForbiddenError when the actor lacks resource-level
 });
 
 test('handleList\'s resource-level gate is "list", not "read": a permissions builder that only attaches .can("read", ...) still denies list under fail-closed semantics', async () => {
-  const permissions = definePermissions<Actor>().can("read", true);
+  const permissions = definePermissions<Actor, Post>().can("read", true);
   const ctx = ctxFor(
     createInMemoryAdapter(samplePosts),
     "https://x/post",
@@ -113,7 +117,7 @@ test('handleList\'s resource-level gate is "list", not "read": a permissions bui
 });
 
 test("handleList redacts fields the actor cannot read from every record", async () => {
-  const permissions = definePermissions<Actor>()
+  const permissions = definePermissions<Actor, Post>()
     .can("list", true)
     .field("title", { read: true })
     .field("published", { read: true });
@@ -129,6 +133,40 @@ test("handleList redacts fields the actor cannot read from every record", async 
   assert.deepEqual(Object.keys(body.data[1]), ["id", "title", "published"]);
 });
 
+test("handleList evaluates record-aware read rules for every returned row", async () => {
+  const permissions = definePermissions<Actor, Post>()
+    .can("list", true)
+    .field("title", { read: true })
+    .field("published", { read: true })
+    .field("body", { read: ({ record }) => record?.published === true });
+  const ctx = ctxFor(
+    createInMemoryAdapter(samplePosts),
+    "https://x/post",
+    permissions,
+  );
+
+  const body = await (await handleList(ctx)).json();
+  assert.equal(body.data[0].body, "first");
+  assert.equal("body" in body.data[1], false);
+});
+
+test("handleList fails closed for query fields when a read rule requires a record", async () => {
+  const permissions = definePermissions<Actor, Post>()
+    .can("list", true)
+    .field("title", { read: true })
+    .field("published", { read: true })
+    .field("body", { read: ({ record }) => record!.published });
+  const ctx = ctxFor(
+    createInMemoryAdapter(samplePosts),
+    "https://x/post?search=Hello&filter[body]=hello",
+    permissions,
+  );
+
+  const body = await (await handleList(ctx)).json();
+  assert.equal(body.meta.total, 1);
+  assert.equal(body.data[0].body, "first");
+});
+
 test("handleList drops filters for fields the actor cannot read", async () => {
   const resource = defineResource("post", {
     fields: {
@@ -137,7 +175,7 @@ test("handleList drops filters for fields the actor cannot read", async () => {
       published: boolean().default(false),
     },
   });
-  const permissions = definePermissions<Actor>()
+  const permissions = definePermissions<Actor, Post>()
     .can("list", true)
     .field("title", { read: true })
     .field("published", { read: true });
@@ -165,7 +203,7 @@ test("handleList prevents unreadable fields from affecting sort or free-text sea
       published: boolean().default(false),
     },
   });
-  const permissions = definePermissions<Actor>()
+  const permissions = definePermissions<Actor, Post>()
     .can("list", true)
     .field("title", { read: true })
     .field("published", { read: true });
