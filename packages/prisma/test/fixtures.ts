@@ -67,6 +67,7 @@ export function createPostAdapter(db: PrismaClient) {
     model: db.post,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => db.$transaction((tx) => operation(tx.post)),
   });
 }
 
@@ -89,6 +90,8 @@ export function createLegacyPostAdapter(db: PrismaClient) {
     model: db.legacyPost,
     fields: { title: "headline" },
     id: { field: "postId" },
+    listTransaction: (operation) =>
+      db.$transaction((tx) => operation(tx.legacyPost)),
   });
 }
 
@@ -111,6 +114,8 @@ export function createCounterAdapter(db: PrismaClient) {
       },
       toPath: (value: unknown) => String(value),
     },
+    listTransaction: (operation) =>
+      db.$transaction((tx) => operation(tx.counter)),
   });
 }
 
@@ -126,5 +131,6 @@ export function createTagAdapter(db: PrismaClient) {
     model: db.tag,
     fields: { name: "name" },
     id: { field: "id" },
+    listTransaction: (operation) => db.$transaction((tx) => operation(tx.tag)),
   });
 }

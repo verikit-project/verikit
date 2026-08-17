@@ -64,9 +64,8 @@ export interface PrismaIdConfig<TId = unknown> {
 
 /**
  * Case-insensitive search strategy for `.searchable()` fields.
- * Use `"postgresql"` to enable Prisma's `mode: "insensitive"`; SQLite and
- * MySQL rely on database collation behavior. Prisma `contains` does not
- * provide literal escaping for `%` or `_`.
+ * `"postgresql"` uses Prisma's `mode: "insensitive"`; SQLite and MySQL
+ * rely on database collation. `%` and `_` are not escaped in `contains`.
  */
 export type PrismaSearchProvider = "postgresql" | "sqlite" | "mysql";
 
@@ -84,10 +83,15 @@ export interface PrismaAdapterOptions<TFields extends FieldMap> {
   /** See `PrismaSearchProvider`. */
   provider?: PrismaSearchProvider;
   /**
-   * Runs `list()` records and count queries in the same transaction.
-   * Use repeatable-read isolation when a stable pagination snapshot is required.
+   * Runs `list()`'s records and count queries in the same transaction, so a
+   * concurrent write between them can never desync the page from `meta.total`.
+   * Required, unlike `@verikit/drizzle`, which is handed a full database client
+   * and can always wrap `list()` in a transaction itself, this adapter only ever
+   * sees a single model delegate, so it has no way to open one on its own.
+   * Use repeatable-read isolation when a stable pagination snapshot is required:
+   * `(operation) => prisma.$transaction((tx) => operation(tx.post), { isolationLevel: "RepeatableRead" })`.
    */
-  listTransaction?: PrismaListTransaction;
+  listTransaction: PrismaListTransaction;
 }
 
 /** A canonical API record returned by the Prisma adapter. */
@@ -244,9 +248,7 @@ export function createPrismaAdapter<
 
         return { rows, total };
       };
-      const { rows, total } = options.listTransaction
-        ? await options.listTransaction(readPage)
-        : await readPage(model);
+      const { rows, total } = await options.listTransaction(readPage);
 
       return {
         records: rows.map((row) => present(row)!),

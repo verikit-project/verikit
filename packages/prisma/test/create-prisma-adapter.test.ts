@@ -197,6 +197,7 @@ test("create rethrows a non-P2002 error instead of swallowing it", async () => {
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
 
   await assert.rejects(
@@ -224,6 +225,7 @@ test("update rethrows a non-P2025, non-P2002 error instead of swallowing it", as
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
 
   await assert.rejects(
@@ -284,6 +286,7 @@ test("delete rethrows a non-P2025 error instead of swallowing it", async () => {
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
 
   await assert.rejects(
@@ -450,6 +453,7 @@ test("scoped update falls back to updateMany + a follow-up find when the delegat
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
 
   const updated = await adapter.update(
@@ -483,6 +487,7 @@ test("scoped update translates a P2002 unique-constraint violation into a Unique
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
 
   await assert.rejects(
@@ -543,6 +548,7 @@ test("scoped find/update/delete reject a model delegate missing findFirst/update
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
 
   await assert.rejects(
@@ -728,6 +734,7 @@ test("throws at construction when fields is missing a mapping for a declared res
         model: {} as PrismaModelDelegate,
         fields: { title: "title" } as never,
         id: { field: "id" },
+        listTransaction: (operation) => operation({} as PrismaModelDelegate),
       }),
     /has no Prisma field mapping for: nickname/,
   );
@@ -747,6 +754,7 @@ test("throws at construction when a searchable field's fieldType isn't text-like
         model: {} as PrismaModelDelegate,
         fields: { title: "title", published: "published" },
         id: { field: "id" },
+        listTransaction: (operation) => operation({} as PrismaModelDelegate),
       }),
     /Search only supports text fields/,
   );
@@ -773,6 +781,7 @@ test("list runs findMany and count exactly once each per call, with the same whe
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
 
   await adapter.list({ page: 1, pageSize: 10, search: "hello" });
@@ -807,6 +816,7 @@ test("never sends an `include`, only a `select` scoped to the configured fields 
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
 
   await adapter.find("1");
@@ -838,6 +848,7 @@ test('provider: "postgresql" adds mode: "insensitive" to the search filter; the 
     model,
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
+    listTransaction: (operation) => operation(model),
   });
   await sqliteAdapter.list({ page: 1, pageSize: 10, search: "hi" });
   assert.deepEqual(lastWhere, {
@@ -849,6 +860,7 @@ test('provider: "postgresql" adds mode: "insensitive" to the search filter; the 
     fields: { title: "title", body: "body", published: "published" },
     id: { field: "id" },
     provider: "postgresql",
+    listTransaction: (operation) => operation(model),
   });
   await postgresAdapter.list({ page: 1, pageSize: 10, search: "hi" });
   assert.deepEqual(lastWhere, {
