@@ -2,6 +2,7 @@ export * from "./base.js";
 export * from "./boolean.js";
 export * from "./date.js";
 export * from "./email.js";
+export * from "./field-applicability.js";
 export * from "./file.js";
 export * from "./from.js";
 export * from "./image.js";
