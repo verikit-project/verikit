@@ -64,6 +64,19 @@ test("date field maps to a date-formatted string with vendor range extensions", 
   });
 });
 
+test("date field serializes Date range constraints to ISO strings", () => {
+  const minimum = new Date("2024-01-01T00:00:00.000Z");
+  const maximum = new Date("2024-12-31T23:59:59.000Z");
+  const schema = date().min(minimum).max(maximum).toSchema("startDate");
+
+  assert.deepEqual(fieldToJsonSchema(schema), {
+    type: "string",
+    format: "date",
+    "x-minimum": "2024-01-01T00:00:00.000Z",
+    "x-maximum": "2024-12-31T23:59:59.000Z",
+  });
+});
+
 test("datetime field maps to a date-time-formatted string", () => {
   const schema = datetime().toSchema("publishedAt");
 
@@ -126,6 +139,12 @@ test("nullable on a select field appends null to enum instead of widening type",
   assert.deepEqual(fieldToJsonSchema(schema), {
     enum: ["a", "b", null],
   });
+});
+
+test("nullable on an option-less select leaves its unconstrained schema unchanged", () => {
+  const schema = select().nullable().toSchema("choice");
+
+  assert.deepEqual(fieldToJsonSchema(schema), {});
 });
 
 test("default value and description pass through unchanged", () => {

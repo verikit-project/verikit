@@ -6,7 +6,7 @@ import type { ImageFieldSchema } from "../fields/image.js";
 import type { NumberFieldSchema } from "../fields/number.js";
 import type { SelectFieldSchema } from "../fields/select.js";
 import type { StringLengthConstraints } from "../fields/shared/string-constraints.js";
-import type { JsonSchemaValue } from "./json-schema-value.js";
+import type { JsonSchemaType, JsonSchemaValue } from "./json-schema-value.js";
 
 function toIsoString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value;
@@ -50,9 +50,7 @@ function widenNullable(target: JsonSchemaValue, field: FieldSchema): void {
     return;
   }
 
-  target.type = Array.isArray(target.type)
-    ? [...target.type, "null"]
-    : [target.type, "null"];
+  target.type = [target.type as JsonSchemaType, "null"];
 }
 
 /**
