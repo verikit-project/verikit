@@ -459,7 +459,5 @@ export function resourcePaths<TActor>(
 }
 
 function capitalize(value: string): string {
-  return value.length === 0
-    ? value
-    : (value[0] as string).toUpperCase() + value.slice(1);
+  return value[0]!.toUpperCase() + value.slice(1);
 }

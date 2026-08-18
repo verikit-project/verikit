@@ -30,6 +30,7 @@ function buildOptions(withStorage: boolean): CreateServerOptions {
   });
 
   const publish = action("publish").label("Publish").form({ note: text() });
+  const refresh = action("refresh");
 
   const postPermissions = definePermissions()
     .can("create", true)
@@ -58,7 +59,7 @@ function buildOptions(withStorage: boolean): CreateServerOptions {
       {
         resource: post,
         adapter: createInMemoryAdapter([]),
-        actions: [publish],
+        actions: [publish, refresh],
         permissions: postPermissions,
       },
     ],
@@ -83,6 +84,13 @@ test("top-level document shape", () => {
   assert.equal(document.openapi, "3.1.0");
   assert.deepEqual(document.info, info);
   assert.deepEqual(document.servers, [{ url: "/api" }]);
+});
+
+test("omits servers when no base path is configured", () => {
+  const options = buildOptions(true);
+  options.basePath = undefined;
+
+  assert.equal(generateOpenApiDocument(options, info).servers, undefined);
 });
 
 test("list operation documents page/pageSize/search/sort/order/filter", () => {
@@ -187,6 +195,17 @@ test("action routes are concrete paths whose body wraps the form under input", (
   assert.ok("recordId" in schema.properties);
 });
 
+test("actions without forms document an unconstrained input object", () => {
+  const document = generateOpenApiDocument(buildOptions(true), info);
+  const schema = document.paths["/post/actions/refresh"]!.post!.requestBody!
+    .content["application/json"]!.schema as {
+    properties: Record<string, unknown>;
+  };
+
+  assert.deepEqual(schema.properties.input, { type: "object" });
+  assert.equal(document.components.schemas.postRefreshInput, undefined);
+});
+
 test("upload routes exist only when storage is configured", () => {
   const withStorage = generateOpenApiDocument(buildOptions(true), info);
   const withoutStorage = generateOpenApiDocument(buildOptions(false), info);
@@ -205,6 +224,32 @@ test("a belongsTo relationship gets a picker route; a hasMany relationship does 
 
   assert.ok(document.paths["/post/relationships/author"]?.get);
   assert.equal(document.paths["/post/relationships/comments"], undefined);
+});
+
+test("a picker for an unregistered relationship target has only generic query parameters", () => {
+  const author = defineResource("author", { fields: { name: text() } });
+  const post = defineResource("post", {
+    fields: { title: text() },
+    relationships: { author: belongsTo(() => author) },
+  });
+  const options: CreateServerOptions = {
+    resources: [
+      {
+        resource: post,
+        adapter: createInMemoryAdapter([]),
+        permissions: "open",
+      },
+    ],
+  };
+
+  const parameters = generateOpenApiDocument(options, info).paths[
+    "/post/relationships/author"
+  ]!.get!.parameters!;
+
+  assert.deepEqual(
+    parameters.map((parameter) => parameter.name),
+    ["page", "pageSize", "search"],
+  );
 });
 
 test('permissions !== "open" documents 403 on every operation; "open" does not', () => {
