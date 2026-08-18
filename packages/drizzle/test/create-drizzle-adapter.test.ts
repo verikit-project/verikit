@@ -585,6 +585,21 @@ test("uniqueConstraintFields resolves a SQLite error message's column to a field
   );
 });
 
+test("uniqueConstraintFields ignores a SQLite error message with no column names", () => {
+  const columnsByField = resolveFieldColumns(
+    tags,
+    createTagResource().toSchema().fields,
+  );
+
+  assert.deepEqual(
+    uniqueConstraintFields(
+      new Error("UNIQUE constraint failed: "),
+      columnsByField,
+    ),
+    [],
+  );
+});
+
 test("uniqueConstraintFields returns an empty array when the error matches neither driver's shape", () => {
   const columnsByField = resolveFieldColumns(
     tags,
