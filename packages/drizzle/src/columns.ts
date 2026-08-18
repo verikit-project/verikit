@@ -151,9 +151,15 @@ function rawUniqueConstraintColumns(error: unknown): string[] {
   }
 
   if (error instanceof Error) {
-    const match = /UNIQUE constraint failed: (.+)$/.exec(error.message);
-    if (match) {
-      return match[1]!
+    const prefix = "UNIQUE constraint failed: ";
+    const prefixIndex = error.message.indexOf(prefix);
+    if (prefixIndex !== -1) {
+      const columns = error.message.slice(prefixIndex + prefix.length);
+      if (columns.length === 0) {
+        return [];
+      }
+
+      return columns
         .split(",")
         .map((entry) => entry.trim().split(".").pop())
         .filter((entry): entry is string => Boolean(entry));

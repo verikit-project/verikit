@@ -48,7 +48,10 @@ function buildUrl(
   segments: readonly string[],
   query?: URLSearchParams,
 ): string {
-  const trimmedBase = baseUrl.replace(/\/+$/, "");
+  let trimmedBase = baseUrl;
+  while (trimmedBase.endsWith("/")) {
+    trimmedBase = trimmedBase.slice(0, -1);
+  }
   const path = segments.map(encodeURIComponent).join("/");
   const url = path.length > 0 ? `${trimmedBase}/${path}` : trimmedBase;
   const queryString = query?.toString();

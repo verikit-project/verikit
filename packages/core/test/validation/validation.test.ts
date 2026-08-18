@@ -54,6 +54,14 @@ test("missing values fall back to the field default before validation", () => {
   });
 });
 
+test("email fields accept the supported email shape and reject whitespace", () => {
+  const schema = email().toSchema("email");
+
+  assert.equal(validateField(schema, "ada@example.com").success, true);
+  assert.equal(validateField(schema, "ada @example.com").success, false);
+  assert.equal(validateField(schema, "ada@example.").success, false);
+});
+
 test("provided values take precedence over field defaults", () => {
   const schema = text().default("Anonymous").toSchema("name");
 

@@ -1,7 +1,32 @@
 import type { FieldSchema } from "../base.js";
 import type { ValidationIssue } from "../../types/validation.js";
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function isValidEmail(value: string): boolean {
+  const atIndex = value.indexOf("@");
+
+  if (atIndex <= 0 || atIndex !== value.lastIndexOf("@")) {
+    return false;
+  }
+
+  const domain = value.slice(atIndex + 1);
+  const dotIndex = domain.indexOf(".");
+
+  if (dotIndex <= 0 || dotIndex === domain.length - 1) {
+    return false;
+  }
+
+  for (const character of value) {
+    if (character === "@") {
+      continue;
+    }
+
+    if (character.trim().length === 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /** Minimal duck-typed shape for browser File/Blob-like upload values. */
 export interface FileLike {
@@ -214,7 +239,7 @@ export function validateBuiltInFieldConstraints(
       }
 
       const found = validateStringLength(schema, value);
-      if (schema.fieldType === "email" && !EMAIL_PATTERN.test(value)) {
+      if (schema.fieldType === "email" && !isValidEmail(value)) {
         found.push(issue("Must be a valid email address."));
       }
       return found;

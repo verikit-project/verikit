@@ -570,6 +570,21 @@ test("uniqueConstraintFields resolves a Postgres error's detail-reported column 
   assert.deepEqual(uniqueConstraintFields(error, columnsByField), ["name"]);
 });
 
+test("uniqueConstraintFields resolves a SQLite error message's column to a field name", () => {
+  const columnsByField = resolveFieldColumns(
+    tags,
+    createTagResource().toSchema().fields,
+  );
+
+  assert.deepEqual(
+    uniqueConstraintFields(
+      new Error("UNIQUE constraint failed: tags.name"),
+      columnsByField,
+    ),
+    ["name"],
+  );
+});
+
 test("uniqueConstraintFields returns an empty array when the error matches neither driver's shape", () => {
   const columnsByField = resolveFieldColumns(
     tags,

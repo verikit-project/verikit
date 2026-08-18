@@ -46,7 +46,7 @@ test("list() GETs the resource base with page/pageSize/sort/order/search seriali
   );
 
   const client = createClient({
-    baseUrl: "https://x.test/api/",
+    baseUrl: "https://x.test/api///",
     fetch: fetchImpl,
   });
   const result = await client.resource("posts").list({
