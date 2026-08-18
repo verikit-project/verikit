@@ -21,23 +21,35 @@ test("each named error schema fixes its code to the matching VerikitErrorCode", 
   const schemas = errorComponentSchemas();
 
   assert.deepEqual(
-    (schemas.ForbiddenError!.properties!.error as { properties: Record<string, unknown> })
-      .properties.code,
+    (
+      schemas.ForbiddenError!.properties!.error as {
+        properties: Record<string, unknown>;
+      }
+    ).properties.code,
     { type: "string", enum: ["FORBIDDEN"] },
   );
   assert.deepEqual(
-    (schemas.NotFoundError!.properties!.error as { properties: Record<string, unknown> })
-      .properties.code,
+    (
+      schemas.NotFoundError!.properties!.error as {
+        properties: Record<string, unknown>;
+      }
+    ).properties.code,
     { type: "string", enum: ["NOT_FOUND"] },
   );
   assert.deepEqual(
-    (schemas.ConflictError!.properties!.error as { properties: Record<string, unknown> })
-      .properties.code,
+    (
+      schemas.ConflictError!.properties!.error as {
+        properties: Record<string, unknown>;
+      }
+    ).properties.code,
     { type: "string", enum: ["CONFLICT"] },
   );
   assert.deepEqual(
-    (schemas.UnauthorizedError!.properties!.error as { properties: Record<string, unknown> })
-      .properties.code,
+    (
+      schemas.UnauthorizedError!.properties!.error as {
+        properties: Record<string, unknown>;
+      }
+    ).properties.code,
     { type: "string", enum: ["UNAUTHORIZED"] },
   );
 });
@@ -57,7 +69,10 @@ test("ValidationError's issues array matches the ValidationIssue shape", () => {
     properties: { issues: { items: unknown } };
   };
 
-  assert.deepEqual(errorProperty.properties.issues.items, schemas.ValidationIssue);
+  assert.deepEqual(
+    errorProperty.properties.issues.items,
+    schemas.ValidationIssue,
+  );
 });
 
 test("StoredFile matches packages/server/src/storage.ts's StoredFile shape", () => {

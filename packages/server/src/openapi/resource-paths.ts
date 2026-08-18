@@ -35,8 +35,12 @@ function forbiddenResponse(): ResponseObject {
   return jsonResponse("Not permitted for the current actor.", FORBIDDEN_REF);
 }
 
-function baseResponses(hasPermissions: boolean): Record<string, ResponseObject> {
-  const responses: Record<string, ResponseObject> = { default: defaultResponse() };
+function baseResponses(
+  hasPermissions: boolean,
+): Record<string, ResponseObject> {
+  const responses: Record<string, ResponseObject> = {
+    default: defaultResponse(),
+  };
   if (hasPermissions) {
     responses["403"] = forbiddenResponse();
   }
@@ -162,10 +166,7 @@ function listOperation(
   return {
     operationId,
     parameters: listParameters(fields, defaultPageSize),
-    responses: listResponses(
-      hasPermissions,
-      responseSchemaRef,
-    ),
+    responses: listResponses(hasPermissions, responseSchemaRef),
   };
 }
 
@@ -268,11 +269,13 @@ function actionOperation(
               input: inputRef ?? { type: "object" },
               confirmed: {
                 type: "boolean",
-                description: "Acknowledges the action's confirmation prompt, if any.",
+                description:
+                  "Acknowledges the action's confirmation prompt, if any.",
               },
               recordId: {
                 type: "string",
-                description: "The record this action applies to, for row-scoped actions.",
+                description:
+                  "The record this action applies to, for row-scoped actions.",
               },
             },
           },
@@ -283,10 +286,11 @@ function actionOperation(
       "200": jsonResponse("The action ran successfully.", {
         type: "object",
         properties: {
-    // Action result types aren't available at runtime, so the response schema
-// is intentionally unconstrained rather than inferred.
+          // Action result types aren't available at runtime, so the response schema
+          // is intentionally unconstrained rather than inferred.
           data: {
-            description: "The action's result. Shape is action-specific and not statically declared.",
+            description:
+              "The action's result. Shape is action-specific and not statically declared.",
           },
           message: { type: "string" },
         },
@@ -399,7 +403,9 @@ export function resourcePaths<TActor>(
   for (const action of config.actions ?? []) {
     const actionSchema = action.toSchema();
     const inputRef: OpenApiSchema | undefined = actionSchema.form
-      ? { $ref: `#/components/schemas/${resourceName}${capitalize(action.name)}Input` }
+      ? {
+          $ref: `#/components/schemas/${resourceName}${capitalize(action.name)}Input`,
+        }
       : undefined;
 
     paths[`${resourceBase}/actions/${action.name}`] = {
@@ -431,9 +437,11 @@ export function resourcePaths<TActor>(
       continue;
     }
 
-// Relationship pickers delegate to the target resource's list handler,
-// so their query parameters and item schema are derived from the target.
-    const targetEntry = options.entriesByResourceName.get(relationship.resource);
+    // Relationship pickers delegate to the target resource's list handler,
+    // so their query parameters and item schema are derived from the target.
+    const targetEntry = options.entriesByResourceName.get(
+      relationship.resource,
+    );
     const targetFields = targetEntry?.fields ?? {};
 
     paths[`${resourceBase}/relationships/${relationshipName}`] = {

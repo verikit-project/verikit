@@ -12,8 +12,10 @@ export interface OpenApiRef {
  * Core JSON Schema values don't support `$ref`, while OpenAPI schemas
  * routinely use references in nested positions such as array items.
  */
-export interface OpenApiSchemaObject
-  extends Omit<JsonSchemaValue, "items" | "properties"> {
+export interface OpenApiSchemaObject extends Omit<
+  JsonSchemaValue,
+  "items" | "properties"
+> {
   items?: OpenApiSchema;
   properties?: Record<string, OpenApiSchema>;
 }

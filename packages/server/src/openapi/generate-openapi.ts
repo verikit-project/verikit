@@ -3,7 +3,11 @@ import type { CreateServerOptions } from "../create-server.js";
 import { splitPath } from "../routing/match-route.js";
 import { buildRouteTable } from "../routing/route-table.js";
 import { errorComponentSchemas } from "./error-schemas.js";
-import type { OpenApiDocument, OpenApiInfo, PathItemObject } from "./openapi-types.js";
+import type {
+  OpenApiDocument,
+  OpenApiInfo,
+  PathItemObject,
+} from "./openapi-types.js";
 import { resourceComponentSchemas } from "./resource-schemas.js";
 import { resourcePaths } from "./resource-paths.js";
 

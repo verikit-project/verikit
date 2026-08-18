@@ -45,8 +45,16 @@ function buildOptions(withStorage: boolean): CreateServerOptions {
   return {
     basePath: "/api",
     resources: [
-      { resource: author, adapter: createInMemoryAdapter([]), permissions: "open" },
-      { resource: comment, adapter: createInMemoryAdapter([]), permissions: "open" },
+      {
+        resource: author,
+        adapter: createInMemoryAdapter([]),
+        permissions: "open",
+      },
+      {
+        resource: comment,
+        adapter: createInMemoryAdapter([]),
+        permissions: "open",
+      },
       {
         resource: post,
         adapter: createInMemoryAdapter([]),
@@ -134,7 +142,9 @@ test("delete operation returns a bodyless 204", () => {
   const document = generateOpenApiDocument(buildOptions(true), info);
   const del = document.paths["/post/{id}"]!.delete!;
 
-  assert.deepEqual(del.responses["204"], { description: "The record was deleted." });
+  assert.deepEqual(del.responses["204"], {
+    description: "The record was deleted.",
+  });
 });
 
 test("components.schemas contains resource and error schemas", () => {
@@ -156,7 +166,10 @@ test("components.schemas contains resource and error schemas", () => {
     "UnauthorizedError",
     "StoredFile",
   ]) {
-    assert.ok(names.includes(expected), `expected components.schemas to include "${expected}"`);
+    assert.ok(
+      names.includes(expected),
+      `expected components.schemas to include "${expected}"`,
+    );
   }
 });
 
@@ -194,7 +207,7 @@ test("a belongsTo relationship gets a picker route; a hasMany relationship does 
   assert.equal(document.paths["/post/relationships/comments"], undefined);
 });
 
-test("permissions !== \"open\" documents 403 on every operation; \"open\" does not", () => {
+test('permissions !== "open" documents 403 on every operation; "open" does not', () => {
   const document = generateOpenApiDocument(buildOptions(true), info);
 
   assert.ok(document.paths["/post"]!.get!.responses["403"]);
@@ -216,13 +229,22 @@ test("every operation carries a default error response", () => {
   const document = generateOpenApiDocument(buildOptions(true), info);
 
   for (const pathItem of Object.values(document.paths)) {
-    for (const operation of [pathItem.get, pathItem.post, pathItem.patch, pathItem.delete]) {
+    for (const operation of [
+      pathItem.get,
+      pathItem.post,
+      pathItem.patch,
+      pathItem.delete,
+    ]) {
       if (!operation) {
         continue;
       }
       assert.deepEqual(operation.responses.default, {
         description: "Unexpected error.",
-        content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } },
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
+          },
+        },
       });
     }
   }

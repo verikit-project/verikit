@@ -65,6 +65,9 @@ export function errorComponentSchemas(): Record<string, JsonSchemaValue> {
     ForbiddenError: errorEnvelope({ type: "string", enum: ["FORBIDDEN"] }),
     NotFoundError: errorEnvelope({ type: "string", enum: ["NOT_FOUND"] }),
     ConflictError: errorEnvelope({ type: "string", enum: ["CONFLICT"] }),
-    UnauthorizedError: errorEnvelope({ type: "string", enum: ["UNAUTHORIZED"] }),
+    UnauthorizedError: errorEnvelope({
+      type: "string",
+      enum: ["UNAUTHORIZED"],
+    }),
   };
 }
