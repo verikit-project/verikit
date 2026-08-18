@@ -1,4 +1,9 @@
 import { AnyFieldBuilder, FieldSchema, InferField } from "../fields/base.js";
+import {
+  introspectPermissions,
+  PermissionsIntrospection,
+} from "../permissions/introspect-permissions.js";
+import type { PermissionsBuilder } from "../permissions/permissions-builder.js";
 import type { BelongsToManyRelationshipBuilder } from "../relationships/belongs-to-many.js";
 import type { BelongsToManyRelationshipSchema } from "../relationships/belongs-to-many.js";
 import type { BelongsToRelationshipBuilder } from "../relationships/belongs-to.js";
@@ -33,6 +38,23 @@ export interface AnyRelationshipBuilder {
 
 /** Map of relationship names to their builders. */
 export type RelationshipMap = Record<string, AnyRelationshipBuilder>;
+
+/** Minimal serializable shape of a finalized action, kept loose so `core` never depends on `@verikit/runtime`'s concrete `ActionSchema`. */
+export interface ActionSchemaLike {
+  type: "action";
+  name: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Structural shape any runtime action builder (e.g. `@verikit/runtime`'s
+ * `ActionBuilder`) satisfies, letting `core` accept actions without
+ * importing from `runtime` (which itself depends on `core`).
+ */
+export interface AnyActionBuilder {
+  readonly name: string;
+  toSchema(): ActionSchemaLike;
+}
 
 declare const fieldReferenceBrand: unique symbol;
 
@@ -149,6 +171,10 @@ export interface ResourceSchema<
   };
   tree: SchemaNode[];
   meta?: Record<string, unknown>;
+  /** Present only when the resource was defined with `actions`. */
+  actions?: Record<string, ActionSchemaLike>;
+  /** Present only when the resource was defined with `permissions`. */
+  permissions?: PermissionsIntrospection;
 }
 
 /** Configuration passed to `defineResource()`. */
@@ -165,6 +191,23 @@ export interface ResourceConfig<
   /** Server-only ownership/tenancy rules; never serialized by `toSchema()`. */
   access?: ResourceAccess;
   meta?: Record<string, unknown>;
+  /**
+   * Runtime actions (e.g. `@verikit/runtime`'s `action(...)`) associated
+   * with this resource. Included in `toSchema()` by name, reusing each
+   * action's own `toSchema()` output.
+   */
+  actions?: readonly AnyActionBuilder[];
+  /**
+   * Access control for this resource's CRUD operations, fields, and actions.
+   *
+   * @param access Builder directly, or factory receiving compile-time-checked field refs.
+   * Only rule *presence* (static allow/deny/dynamic) serializes; implementations never do.
+   */
+  permissions?:
+    | PermissionsBuilder<unknown, unknown>
+    | ((
+        field: FieldReferenceFactory<TFields>,
+      ) => PermissionsBuilder<unknown, unknown>);
 }
 
 /**
@@ -196,19 +239,11 @@ export type InferResourceRelationships<TRelationships extends RelationshipMap> =
       };
 
 /**
- * Infers the plain runtime shape of a resource by merging its fields with
- * its relationship values.
+ * Infers the runtime shape of a resource by merging fields with relationship values.
  *
- * This is a schema-authoring type (e.g. form values and layout typing), not
- * a description of the server's wire format.
- *
- * Relationships are metadata and are not automatically populated by
- * `@verikit/server`. ResourceAdapter remains storage-agnostic and returns
- * flat records; relationship values require an explicit server contract
- * before adapters may populate them.
- *
- * Do not interpret this type as permission for adapters to implicitly
- * include nested relationship data.
+ * For schema authoring (forms, layout typing) only—not a wire format description.
+ * Relationships are metadata: @verikit/server doesn't auto-populate them, and
+ * adapters remain storage-agnostic. Don't assume nested relationship data is included.
  */
 export type InferResource<TResource> =
   TResource extends Resource<
@@ -257,6 +292,19 @@ function resolveRelationships<
     : ((relationships ?? {}) as TRelationships);
 }
 
+function resolvePermissions<TFields extends FieldMap>(
+  permissions:
+    | PermissionsBuilder<unknown, unknown>
+    | ((
+        field: FieldReferenceFactory<TFields>,
+      ) => PermissionsBuilder<unknown, unknown>)
+    | undefined,
+): PermissionsBuilder<unknown, unknown> | undefined {
+  return typeof permissions === "function"
+    ? permissions(fieldReference as FieldReferenceFactory<TFields>)
+    : permissions;
+}
+
 /**
  * Immutable resource definition. Finalize with `.toSchema()` to produce a serializable resource schema.
  */
@@ -272,10 +320,12 @@ export class Resource<
   readonly relationships: TRelationships;
   readonly access?: ResourceAccess;
   readonly meta?: Record<string, unknown>;
+  readonly actions: readonly AnyActionBuilder[];
+  readonly permissions?: PermissionsBuilder<unknown, unknown>;
 
-  // Stored with the builder parameters erased to `any` so TFields/TRelationships do
-  // not appear in a contravariant position here; otherwise it would make Resource
-  // invariant in those params and break inference for callers (e.g. relationship builders) that accept `Resource` generically.
+  // Params erased to `any` to keep TFields/TRelationships out of contravariant
+  // positions, preventing Resource from becoming invariant and breaking generic
+  // callers like relationship builders.
   private readonly formFactory?: (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
     builder: ResourceLayoutBuilder<any, any>,
@@ -313,6 +363,8 @@ export class Resource<
     this.relationships = cloneRelationshipMap(relationships);
     this.access = config.access ? { ...config.access } : undefined;
     this.meta = config.meta ? cloneValue(config.meta) : undefined;
+    this.actions = [...(config.actions ?? [])];
+    this.permissions = resolvePermissions<TFields>(config.permissions);
     this.formFactory = formFactory;
   }
 
@@ -339,6 +391,8 @@ export class Resource<
         relationships: this.relationships,
         access: this.access,
         meta: this.meta,
+        actions: this.actions,
+        permissions: this.permissions,
       },
       factory,
     ) as this;
@@ -362,6 +416,16 @@ export class Resource<
       ]),
     ) as ResourceSchema<TName, TFields, TRelationships>["relationships"];
 
+    const actions =
+      this.actions.length > 0
+        ? Object.fromEntries(
+            this.actions.map((actionBuilder) => [
+              actionBuilder.name,
+              actionBuilder.toSchema(),
+            ]),
+          )
+        : undefined;
+
     return {
       type: "resource",
       name: this.name,
@@ -371,6 +435,10 @@ export class Resource<
         ? this.formFactory(new ResourceLayoutBuilder(fields, relationships))
         : [...Object.values(fields), ...Object.values(relationships)],
       meta: this.meta ? cloneValue(this.meta) : undefined,
+      ...(actions && { actions }),
+      ...(this.permissions && {
+        permissions: introspectPermissions(this.permissions),
+      }),
     };
   }
 }

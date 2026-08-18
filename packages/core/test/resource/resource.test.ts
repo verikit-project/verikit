@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { email, text, type AnyFieldBuilder } from "../../src/fields/index.js";
+import { definePermissions } from "../../src/permissions/index.js";
 import {
   belongsTo,
   belongsToMany,
@@ -9,8 +10,16 @@ import {
 import {
   defineResource,
   Resource,
+  type AnyActionBuilder,
   type InferResource,
 } from "../../src/resource/index.js";
+
+function fakeAction(name: string): AnyActionBuilder {
+  return {
+    name,
+    toSchema: () => ({ type: "action", name, label: `Label:${name}` }),
+  };
+}
 
 test("defineResource composes fields into a schema with default tree ordering", () => {
   const resource = defineResource("user", {
@@ -86,6 +95,70 @@ test("resource without access config leaves access undefined", () => {
   const resource = defineResource("user", { fields: { name: text() } });
 
   assert.equal(resource.access, undefined);
+});
+
+test("resource without actions omits actions from toSchema", () => {
+  const resource = defineResource("user", { fields: { name: text() } });
+
+  assert.equal("actions" in resource.toSchema(), false);
+});
+
+test("actions attached via defineResource appear in toSchema by name", () => {
+  const publish = fakeAction("publish");
+  const resource = defineResource("post", {
+    fields: { name: text() },
+    actions: [publish],
+  });
+
+  assert.deepEqual(resource.toSchema().actions, {
+    publish: publish.toSchema(),
+  });
+});
+
+test("resource without permissions omits permissions from toSchema", () => {
+  const resource = defineResource("user", { fields: { name: text() } });
+
+  assert.equal("permissions" in resource.toSchema(), false);
+});
+
+test("permissions attached via defineResource are summarized in toSchema", () => {
+  const resource = defineResource("post", {
+    fields: { name: text() },
+    permissions: definePermissions().can("create", true).can("delete", false),
+  });
+
+  assert.deepEqual(resource.toSchema().permissions, {
+    resource: { create: "allow", delete: "deny" },
+    fields: {},
+    actions: {},
+  });
+});
+
+test("a permissions factory receives a working field reference", () => {
+  const resource = defineResource("post", {
+    fields: { email: text() },
+    permissions: (field) =>
+      definePermissions({ fields: ["email"] }).field(field("email"), {
+        read: true,
+      }),
+  });
+
+  assert.deepEqual(resource.toSchema().permissions?.fields, {
+    email: { read: "allow" },
+  });
+});
+
+test("form() carries actions and permissions through to the new resource", () => {
+  const publish = fakeAction("publish");
+  const resource = defineResource("post", {
+    fields: { name: text() },
+    actions: [publish],
+    permissions: definePermissions().can("create", true),
+  }).form((builder) => [builder.field("name")]);
+
+  const schema = resource.toSchema();
+  assert.deepEqual(schema.actions, { publish: publish.toSchema() });
+  assert.deepEqual(schema.permissions?.resource, { create: "allow" });
 });
 
 test("resource snapshots caller-owned fields, relationships, and meta", () => {
