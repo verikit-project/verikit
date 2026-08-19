@@ -41,7 +41,7 @@ export interface ServerResourceConfig<TActor = unknown> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
   actions?: ActionBuilder<string, any, TActor, any, any>[];
   /**
-   * Required access control for CRUD, fields, and actions.
+   * Required access control for resource operations, fields, and actions.
    * Use `"open"` to explicitly opt out of permission checks.
    */
   permissions: PermissionsBuilder<TActor, unknown> | "open";

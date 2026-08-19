@@ -198,7 +198,7 @@ export interface ResourceConfig<
    */
   actions?: readonly AnyActionBuilder[];
   /**
-   * Access control for this resource's CRUD operations, fields, and actions.
+   * Access control for this resource's operations, fields, and actions.
    *
    * @param access Builder directly, or factory receiving compile-time-checked field refs.
    * Only rule *presence* (static allow/deny/dynamic) serializes; implementations never do.

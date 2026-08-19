@@ -19,3 +19,8 @@ before storage.
 Storage implementations should generate server-side object keys, never use
 client filenames as paths, and serve uploads from a non-executable origin.
 Apply appropriate access control, retention, and malware-scanning policies.
+
+For resources with a `PermissionsBuilder`, uploads are fail-closed and require
+both `.can("upload", ...)` and field-level write access. Upload permission is
+separate from create/update because an upload persists to storage before any
+record mutation occurs.

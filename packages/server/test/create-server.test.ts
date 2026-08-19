@@ -798,6 +798,7 @@ test("uploads are denied when the actor lacks field write permission, even with 
   const resource = defineResource("asset", { fields: { attachment: image() } });
   const permissions = definePermissions<Actor>()
     .can("create", () => true)
+    .can("upload", () => true)
     .field("attachment", {
       write: ({ actor }) => actor.role === "admin",
     });
@@ -834,7 +835,7 @@ test("uploads are denied when the actor lacks field write permission, even with 
   assert.equal(response.status, 403);
 });
 
-test("uploads are denied when the actor lacks both resource-level create and update access", async () => {
+test("uploads are denied when the actor lacks explicit upload access", async () => {
   const resource = defineResource("asset", { fields: { attachment: image() } });
   const permissions = definePermissions<Actor>().field("attachment", {
     write: () => true,
@@ -872,14 +873,49 @@ test("uploads are denied when the actor lacks both resource-level create and upd
   assert.equal(response.status, 403);
 });
 
-test("uploads are denied for an actor who can only update (not create) the resource, even with field write access", async () => {
-  // A record-scoped "update" rule (e.g. an ownership check) can't be evaluated
-  // meaningfully before a record exists, so the upload gate only ever checks
-  // "create" at the resource level  an actor whose only resource-level grant
-  // is "update" is denied here, regardless of field write access.
+test("uploads allow an actor with explicit upload access without create access", async () => {
   const resource = defineResource("asset", { fields: { attachment: image() } });
   const permissions = definePermissions<Actor>()
     .can("update", () => true)
+    .can("upload", () => true)
+    .field("attachment", { write: () => true });
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter(),
+        permissions,
+      },
+    ],
+    context: () => ({ role: "viewer" }) satisfies Actor,
+    storage: {
+      async put({ file }) {
+        return {
+          url: `https://files.example/${file.name}`,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        };
+      },
+    },
+  });
+
+  const form = new FormData();
+  form.set("file", pngBlob(), "a.png");
+
+  const response = await handler(
+    new Request("https://x/asset/uploads/attachment", {
+      method: "POST",
+      body: form,
+    }),
+  );
+  assert.equal(response.status, 201);
+});
+
+test("uploads require explicit upload access even for actors with create access", async () => {
+  const resource = defineResource("asset", { fields: { attachment: image() } });
+  const permissions = definePermissions<Actor>()
+    .can("create", () => true)
     .field("attachment", { write: () => true });
   const handler = createServer({
     resources: [
@@ -914,10 +950,10 @@ test("uploads are denied for an actor who can only update (not create) the resou
   assert.equal(response.status, 403);
 });
 
-test("uploads succeed for an actor with resource-level create access and field write access", async () => {
+test("uploads succeed with explicit upload access and field write access", async () => {
   const resource = defineResource("asset", { fields: { attachment: image() } });
   const permissions = definePermissions<Actor>()
-    .can("create", () => true)
+    .can("upload", () => true)
     .field("attachment", { write: () => true });
   const handler = createServer({
     resources: [

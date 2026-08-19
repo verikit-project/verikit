@@ -33,7 +33,7 @@ function resolvePermissionsRuntime<TActor, TRecord>(
 }
 
 /**
- * Checks whether the actor in `context` may perform a resource-level CRUD operation. Resolves to `{ allowed: false }` if no rule was attached via `.can()` for that operation.
+ * Checks whether the actor in `context` may perform a resource-level operation. Resolves to `{ allowed: false }` if no rule was attached via `.can()` for that operation.
  */
 export async function checkResourceOperation<TActor, TRecord>(
   permissions: PermissionRuntimeSource<TActor, TRecord>,

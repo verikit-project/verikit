@@ -97,7 +97,7 @@ function cloneState<
 }
 
 /**
- * Immutable fluent builder describing CRUD-level operations,
+ * Immutable fluent builder describing resource-level operations,
  *  per-field read/write access, and named runtime actions. This builder only assembles rules;
  * it does not evaluate them. Evaluating a rule against a `PermissionContext` (and wiring that into `validateResource` or `runAction`) is left to a runtime helper.
  */
@@ -145,7 +145,7 @@ export class PermissionsBuilder<
     return new Builder({ ...this.state, ...patch }, this.constraints);
   }
 
-  /** Gates a resource-level CRUD operation. */
+  /** Gates a resource-level operation. */
   can(
     operation: ResourceOperation,
     rule: PermissionRuleInput<TActor, TRecord>,

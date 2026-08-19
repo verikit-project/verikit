@@ -1,12 +1,12 @@
 /**
- * CRUD operations that resource-level rules can gate.
+ * Resource-level operations that permission rules can gate.
  *
  * `"list"` gates collection queries without record context.
  * `"read"` gates single-record fetches with `context.record`; read rules are
  * never evaluated against list/search results.
  */
 export type ResourceOperation =
-  "create" | "list" | "read" | "update" | "delete";
+  "create" | "list" | "read" | "update" | "delete" | "upload";
 
 /** Access modes a field-level rule can gate. */
 export type FieldAccess = "read" | "write";
