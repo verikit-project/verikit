@@ -1,4 +1,4 @@
-import { ForbiddenError } from "@verikit/core";
+import { ForbiddenError, ValidationError } from "@verikit/core";
 import { parseFilters, parseListParams } from "../http/parse-request.js";
 import { dataResponse } from "../http/responses.js";
 import {
@@ -38,12 +38,19 @@ export async function handleList(
     entry.fields,
     entry.config.permissions,
   );
-  // Reject filters on unreadable fields to prevent inference through pagination totals.
-  const filters = Object.fromEntries(
-    Object.entries(parseFilters(url, entry.fields)).filter(
-      ([name]) => !queryHidden.has(name),
-    ),
+  const filters = parseFilters(url, entry.fields);
+  const unreadableFilterNames = Object.keys(filters).filter((name) =>
+    queryHidden.has(name),
   );
+  if (unreadableFilterNames.length > 0) {
+    throw new ValidationError(
+      "Invalid filters.",
+      unreadableFilterNames.map((name) => ({
+        path: ["filter", name],
+        message: "Field is not available for filtering.",
+      })),
+    );
+  }
   const searchFields = Object.entries(entry.fields)
     .filter(([name, field]) => field.searchable && !queryHidden.has(name))
     .map(([name]) => name);

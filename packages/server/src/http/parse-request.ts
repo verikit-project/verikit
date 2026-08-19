@@ -55,7 +55,8 @@ export function parseListParams(
 
 /**
  * Parses resource filters and range operators by field type.
- * Unknown or non-filterable fields are ignored.
+ * Invalid, unknown, or non-filterable filter parameters are rejected so a
+ * caller never receives a broader result set than it requested.
  */
 export function parseFilters(
   url: URL,
@@ -66,13 +67,36 @@ export function parseFilters(
 
   for (const [key, raw] of url.searchParams) {
     const match = pattern.exec(key);
-    if (!match) continue;
+    if (!match) {
+      if (key.startsWith("filter[")) {
+        throw new ValidationError("Invalid filters.", [
+          { path: [key], message: "Filter parameter is invalid." },
+        ]);
+      }
+      continue;
+    }
     const [, name, rawOperator] = match;
     const operator = (rawOperator ?? "eq") as keyof ResourceFilter;
     const field = fields[name!];
-    if (!field?.filterable) continue;
+    if (!field) {
+      throw new ValidationError("Invalid filters.", [
+        { path: ["filter", name!], message: "Unknown filter field." },
+      ]);
+    }
+    if (!field.filterable) {
+      throw new ValidationError("Invalid filters.", [
+        { path: ["filter", name!], message: "Field is not filterable." },
+      ]);
+    }
     const value = parseFilterValue(raw, field, operator);
-    if (value === undefined) continue;
+    if (value === undefined) {
+      throw new ValidationError("Invalid filters.", [
+        {
+          path: ["filter", name!, operator],
+          message: "Filter value is invalid.",
+        },
+      ]);
+    }
     const filter = (filters[name!] ??= {});
     filter[operator] = value as never;
   }

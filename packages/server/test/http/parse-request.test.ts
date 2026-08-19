@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { boolean, number, ValidationError, VerikitError } from "@verikit/core";
+import {
+  boolean,
+  number,
+  text,
+  ValidationError,
+  VerikitError,
+} from "@verikit/core";
 import {
   parseFilters,
   readRequestBytes,
@@ -58,19 +64,40 @@ test("parseListParams parses sort/order, defaulting direction to asc", () => {
   );
 });
 
-test("parseFilters permits null only for exact equality, never a range operator", () => {
+test("parseFilters permits null only for exact equality", () => {
   const fields = {
     age: number().filterable().toSchema("age"),
     published: boolean().filterable().toSchema("published"),
   };
-  const filters = parseFilters(
-    new URL(
-      "https://x/posts?filter[age]=null&filter[age][gte]=null&filter[age][lt]=null&filter[published][gt]=null",
-    ),
-    fields,
+  assert.deepEqual(
+    parseFilters(new URL("https://x/posts?filter[age]=null"), fields),
+    { age: { eq: null } },
   );
 
-  assert.deepEqual(filters, { age: { eq: null } });
+  assert.throws(
+    () =>
+      parseFilters(new URL("https://x/posts?filter[age][gte]=null"), fields),
+    /Invalid filters/,
+  );
+});
+
+test("parseFilters rejects unknown, non-filterable, malformed, and invalid filters", () => {
+  const fields = {
+    age: number().filterable().toSchema("age"),
+    title: text().toSchema("title"),
+  };
+
+  for (const query of [
+    "filter[missing]=1",
+    "filter[title]=Hello",
+    "filter[age]=not-a-number",
+    "filter[age][ne]=1",
+  ]) {
+    assert.throws(
+      () => parseFilters(new URL(`https://x/posts?${query}`), fields),
+      /Invalid filters/,
+    );
+  }
 });
 
 test("parseJsonObjectBody treats an empty body as {}", async () => {

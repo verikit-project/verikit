@@ -533,19 +533,17 @@ test("list supports opt-in exact field filters", async () => {
     ["no"],
   );
 
-  const byInvalidViews = await (
-    await handler(new Request("https://x/post?filter[views]=not-a-number"))
-  ).json();
-  assert.equal(byInvalidViews.meta.total, 2);
+  const invalidViews = await handler(
+    new Request("https://x/post?filter[views]=not-a-number"),
+  );
+  assert.equal(invalidViews.status, 400);
+  assert.equal((await invalidViews.json()).error.code, "VALIDATION_ERROR");
 
-  // `body` is a real field but not `.filterable()`, and `nope` isn't a field at all;
-  // both are silently ignored rather than filtering anything out.
-  const byIgnoredFields = await (
-    await handler(
-      new Request("https://x/post?filter[body]=anything&filter[nope]=x"),
-    )
-  ).json();
-  assert.equal(byIgnoredFields.meta.total, 2);
+  const invalidFields = await handler(
+    new Request("https://x/post?filter[body]=anything&filter[nope]=x"),
+  );
+  assert.equal(invalidFields.status, 400);
+  assert.equal((await invalidFields.json()).error.code, "VALIDATION_ERROR");
 
   const byNullTitle = await (
     await handler(new Request("https://x/post?filter[title]=null"))
@@ -560,10 +558,11 @@ test("list supports opt-in exact field filters", async () => {
     ["no"],
   );
 
-  const byPublishedInvalid = await (
-    await handler(new Request("https://x/post?filter[published]=maybe"))
-  ).json();
-  assert.equal(byPublishedInvalid.meta.total, 2);
+  const invalidPublished = await handler(
+    new Request("https://x/post?filter[published]=maybe"),
+  );
+  assert.equal(invalidPublished.status, 400);
+  assert.equal((await invalidPublished.json()).error.code, "VALIDATION_ERROR");
 });
 
 test("file fields upload through the configured storage backend", async () => {

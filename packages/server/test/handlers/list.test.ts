@@ -150,7 +150,7 @@ test("handleList evaluates record-aware read rules for every returned row", asyn
   assert.equal("body" in body.data[1], false);
 });
 
-test("handleList fails closed for query fields when a read rule requires a record", async () => {
+test("handleList rejects filters for query fields when a read rule requires a record", async () => {
   const permissions = definePermissions<Actor, Post>()
     .can("list", true)
     .field("title", { read: true })
@@ -162,12 +162,10 @@ test("handleList fails closed for query fields when a read rule requires a recor
     permissions,
   );
 
-  const body = await (await handleList(ctx)).json();
-  assert.equal(body.meta.total, 1);
-  assert.equal(body.data[0].body, "first");
+  await assert.rejects(handleList(ctx), verikitError(400, "VALIDATION_ERROR"));
 });
 
-test("handleList drops filters for fields the actor cannot read", async () => {
+test("handleList rejects filters for fields the actor cannot read", async () => {
   const resource = defineResource("post", {
     fields: {
       title: text().required(),
@@ -186,13 +184,7 @@ test("handleList drops filters for fields the actor cannot read", async () => {
     resource,
   );
 
-  const body = await (await handleList(ctx)).json();
-  assert.equal(body.meta.total, 2);
-  assert.deepEqual(
-    body.data.map((post: Post) => post.id),
-    ["1", "2"],
-  );
-  assert.equal("body" in body.data[0], false);
+  await assert.rejects(handleList(ctx), verikitError(400, "VALIDATION_ERROR"));
 });
 
 test("handleList prevents unreadable fields from affecting sort or free-text search", async () => {
