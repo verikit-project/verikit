@@ -113,7 +113,12 @@ export interface ResourceClient<TRecord = Record<string, unknown>> {
 }
 
 export interface VerikitClient {
+  /**
+   * Creates a client for a logical resource name. Pass `path` when the server
+   * mounts that resource at a different route segment via `path`.
+   */
   resource<TRecord = Record<string, unknown>>(
     name: string,
+    options?: { path?: string },
   ): ResourceClient<TRecord>;
 }

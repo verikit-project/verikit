@@ -86,6 +86,17 @@ test("search() hits the /search sub-route", async () => {
   assert.equal(calls[0]!.url, "https://x.test/posts/search?search=q");
 });
 
+test("resource path overrides keep the logical resource name separate from its route", async () => {
+  const { fetchImpl, calls } = fakeFetch(() =>
+    jsonResponse({ data: [], meta: { total: 0, page: 1, pageSize: 25 } }),
+  );
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+
+  await client.resource("post", { path: "posts" }).list();
+
+  assert.equal(calls[0]!.url, "https://x.test/posts");
+});
+
 test("relationship() hits the relationship picker route", async () => {
   const { fetchImpl, calls } = fakeFetch(() =>
     jsonResponse({ data: [], meta: { total: 0, page: 1, pageSize: 10 } }),
