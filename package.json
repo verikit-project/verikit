@@ -32,10 +32,11 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": ">=11 <12",
+      "version": "11.21.0",
       "onFail": "warn"
     }
   },
+  "packageManager": "pnpm@11.21.0",
   "type": "module",
   "engines": {
     "node": ">=24"
