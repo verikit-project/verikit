@@ -91,6 +91,7 @@ test("parseFilters rejects unknown, non-filterable, malformed, and invalid filte
     "filter[missing]=1",
     "filter[title]=Hello",
     "filter[age]=not-a-number",
+    "filter[age]=",
     "filter[age][ne]=1",
   ]) {
     assert.throws(
