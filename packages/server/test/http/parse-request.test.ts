@@ -100,6 +100,15 @@ test("parseFilters rejects unknown, non-filterable, malformed, and invalid filte
   }
 });
 
+test("parseFilters ignores query parameters that are not filters", () => {
+  const fields = { age: number().filterable().toSchema("age") };
+
+  assert.deepEqual(
+    parseFilters(new URL("https://x/posts?search=hello&page=2"), fields),
+    {},
+  );
+});
+
 test("parseJsonObjectBody treats an empty body as {}", async () => {
   const request = new Request("https://x/posts", { method: "POST" });
   assert.deepEqual(await parseJsonObjectBody(request), { ok: true, value: {} });
