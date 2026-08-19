@@ -642,6 +642,69 @@ test("list searches literal underscores and backslashes", async (t) => {
   assert.equal(backslash.records[0]?.title, "C:\\uploads");
 });
 
+test("literal search caps candidate reads instead of loading the whole scoped table", async () => {
+  let findManyArgs: Record<string, unknown> | undefined;
+  let countCalls = 0;
+  const model: PrismaModelDelegate = {
+    findMany: async (args) => {
+      findManyArgs = args as Record<string, unknown>;
+      return [
+        { id: "1", title: "one", body: "", published: false },
+        { id: "2", title: "two", body: "", published: false },
+        { id: "3", title: "three", body: "", published: false },
+      ];
+    },
+    count: async () => {
+      countCalls += 1;
+      return 3;
+    },
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model,
+    fields: { title: "title", body: "body", published: "published" },
+    id: { field: "id" },
+    literalSearchCandidateLimit: 2,
+    listTransaction: (operation) => operation(model),
+  });
+
+  await assert.rejects(
+    () => adapter.list({ page: 1, pageSize: 10, search: "%" }),
+    /exceeds the 2-row candidate limit/,
+  );
+  assert.equal(findManyArgs?.take, 3);
+  assert.equal("skip" in (findManyArgs ?? {}), false);
+  assert.equal(countCalls, 0);
+});
+
+test("literal search candidate limit must be a positive integer", () => {
+  const model: PrismaModelDelegate = {
+    findMany: async () => [],
+    count: async () => 0,
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+
+  for (const literalSearchCandidateLimit of [0, 1.5]) {
+    assert.throws(
+      () =>
+        createPrismaAdapter(createPostResource(), {
+          model,
+          fields: { title: "title", body: "body", published: "published" },
+          id: { field: "id" },
+          literalSearchCandidateLimit,
+          listTransaction: (operation) => operation(model),
+        }),
+      /literalSearchCandidateLimit must be a positive integer/,
+    );
+  }
+});
+
 test("list with a search term returns zero results for a resource with no searchable fields, without querying", async (t) => {
   const db = await createTestDb();
   t.after(() => db.$disconnect());

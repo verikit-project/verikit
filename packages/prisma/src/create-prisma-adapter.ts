@@ -83,6 +83,14 @@ export interface PrismaAdapterOptions<TFields extends FieldMap> {
   /** See `PrismaSearchProvider`. */
   provider?: PrismaSearchProvider;
   /**
+   * Maximum scoped rows examined when a search term contains `%`, `_`, or `\\`.
+   * Prisma cannot escape those LIKE metacharacters consistently across providers,
+   * so literal searches are filtered in memory only after a bounded read. A search
+   * exceeding this limit fails rather than loading an unbounded table or returning
+   * an incomplete page. Defaults to 1,000.
+   */
+  literalSearchCandidateLimit?: number;
+  /**
    * Runs `list()` records and count queries in the same transaction to keep
    * pagination consistent. Required because the adapter cannot open a transaction
    * from a model delegate alone.
@@ -144,6 +152,16 @@ export function createPrismaAdapter<
     });
 
   const select = buildSelect(fields, id.field);
+  const literalSearchCandidateLimit =
+    options.literalSearchCandidateLimit ?? 1_000;
+  if (
+    !Number.isInteger(literalSearchCandidateLimit) ||
+    literalSearchCandidateLimit < 1
+  ) {
+    throw new Error(
+      "@verikit/prisma: literalSearchCandidateLimit must be a positive integer.",
+    );
+  }
   const fromPath = id.fromPath ?? ((segment: string) => segment as unknown);
   const toPath = id.toPath ?? ((value: unknown) => String(value));
 
@@ -261,7 +279,8 @@ export function createPrismaAdapter<
       }
 
       // Prisma `contains` can't escape LIKE metacharacters across all providers.
-      // Apply literal matching locally so `%`, `_`, and `\` cannot widen results.
+      // Apply literal matching locally after a bounded candidate read so `%`, `_`,
+      // and `\` cannot widen results or load an entire scoped table into memory.
       const literalSearch =
         params.search !== undefined && /[\\%_]/.test(params.search);
 
@@ -283,7 +302,15 @@ export function createPrismaAdapter<
             where,
             select,
             ...(orderBy && { orderBy }),
+            // Fetch one extra row to distinguish an exact-limit result from an
+            // unsafe, incomplete subset without loading the whole table.
+            take: literalSearchCandidateLimit + 1,
           });
+          if (rows.length > literalSearchCandidateLimit) {
+            throw new Error(
+              `@verikit/prisma: literal search for resource "${resource.name}" exceeds the ${literalSearchCandidateLimit}-row candidate limit. Narrow the search or raise literalSearchCandidateLimit.`,
+            );
+          }
           const matchingRows = rows.filter((row) =>
             matchesLiteralSearch(row, params.search!, permittedSearchScalars),
           );
