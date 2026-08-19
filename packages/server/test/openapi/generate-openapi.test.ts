@@ -252,11 +252,20 @@ test("a picker for an unregistered relationship target has only generic query pa
   );
 });
 
-test('permissions !== "open" documents 403 on every operation; "open" does not', () => {
+test('permissions !== "open" document 403 only for non-record operations', () => {
   const document = generateOpenApiDocument(buildOptions(true), info);
 
   assert.ok(document.paths["/post"]!.get!.responses["403"]);
   assert.ok(document.paths["/post"]!.post!.responses["403"]);
+  assert.equal(document.paths["/post/{id}"]!.get!.responses["403"], undefined);
+  assert.equal(
+    document.paths["/post/{id}"]!.patch!.responses["403"],
+    undefined,
+  );
+  assert.equal(
+    document.paths["/post/{id}"]!.delete!.responses["403"],
+    undefined,
+  );
   assert.equal(document.paths["/author"]!.get!.responses["403"], undefined);
   assert.equal(document.paths["/author"]!.post!.responses["403"], undefined);
 });

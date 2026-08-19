@@ -47,6 +47,11 @@ function baseResponses(
   return responses;
 }
 
+/** Record routes return 404 for both missing and access-denied records. */
+function recordBaseResponses(): Record<string, ResponseObject> {
+  return { default: defaultResponse() };
+}
+
 function idParameter(): ParameterObject {
   return {
     name: "id",
@@ -195,7 +200,6 @@ function createOperation(
 
 function findOperation(
   operationId: string,
-  hasPermissions: boolean,
   responseRef: OpenApiSchema,
 ): OperationObject {
   return {
@@ -208,14 +212,13 @@ function findOperation(
         required: ["data"],
       }),
       "404": notFoundResponse(),
-      ...baseResponses(hasPermissions),
+      ...recordBaseResponses(),
     },
   };
 }
 
 function updateOperation(
   operationId: string,
-  hasPermissions: boolean,
   updateRef: OpenApiSchema,
   responseRef: OpenApiSchema,
 ): OperationObject {
@@ -233,22 +236,19 @@ function updateOperation(
         required: ["data"],
       }),
       "404": notFoundResponse(),
-      ...baseResponses(hasPermissions),
+      ...recordBaseResponses(),
     },
   };
 }
 
-function deleteOperation(
-  operationId: string,
-  hasPermissions: boolean,
-): OperationObject {
+function deleteOperation(operationId: string): OperationObject {
   return {
     operationId,
     parameters: [idParameter()],
     responses: {
       "204": { description: "The record was deleted." },
       "404": notFoundResponse(),
-      ...baseResponses(hasPermissions),
+      ...recordBaseResponses(),
     },
   };
 }
@@ -389,14 +389,9 @@ export function resourcePaths<TActor>(
       ),
     },
     [`${resourceBase}/{id}`]: {
-      get: findOperation(`find_${resourceName}`, hasPermissions, responseRef),
-      patch: updateOperation(
-        `update_${resourceName}`,
-        hasPermissions,
-        updateRef,
-        responseRef,
-      ),
-      delete: deleteOperation(`delete_${resourceName}`, hasPermissions),
+      get: findOperation(`find_${resourceName}`, responseRef),
+      patch: updateOperation(`update_${resourceName}`, updateRef, responseRef),
+      delete: deleteOperation(`delete_${resourceName}`),
     },
   };
 
