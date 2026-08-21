@@ -1,6 +1,6 @@
 {
   "name": "@verikit/vue",
-  "version": "0.24.0",
+  "version": "0.24.1",
   "description": "Vue UI bindings for Verikit resource workflows.",
   "type": "module",
   "main": "./dist/index.js",
