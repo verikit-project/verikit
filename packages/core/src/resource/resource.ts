@@ -43,7 +43,6 @@ export type RelationshipMap = Record<string, AnyRelationshipBuilder>;
 export interface ActionSchemaLike {
   type: "action";
   name: string;
-  [key: string]: unknown;
 }
 
 /**
