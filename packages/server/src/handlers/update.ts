@@ -44,9 +44,10 @@ export async function handleUpdate(
     maxBodyBytes: ctx.maxBodyBytes,
   });
 
-  // PATCH validates only submitted fields. Reapply server-owned scope fields
-  // to prevent updates from moving records outside their scope.
-  const values = { ...body, ...(scope ?? {}) };
+  // Existing siblings provide condition context; submittedFields below still
+  // limits validation and writes to the patch and server-owned scope fields.
+  // Scope wins over client input to prevent moving records outside their scope.
+  const values = { ...existing, ...body, ...(scope ?? {}) };
   const submittedFields = Object.fromEntries(
     Object.entries(entry.fields).filter(
       ([name]) => Object.hasOwn(body, name) || Object.hasOwn(scope ?? {}, name),

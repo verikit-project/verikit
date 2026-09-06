@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { definePermissions, type ValidationError } from "@verikit/core";
+import {
+  boolean,
+  defineResource,
+  text,
+  definePermissions,
+  type Resource,
+  type ValidationError,
+} from "@verikit/core";
 import { UniqueConstraintError } from "../../src/adapter.js";
 import { handleUpdate } from "../../src/handlers/update.js";
 import { buildRouteTable } from "../../src/routing/route-table.js";
@@ -19,11 +26,12 @@ function ctxFor(
   adapter: ReturnType<typeof createInMemoryAdapter>,
   body: unknown,
   permissions?: ReturnType<typeof definePermissions<Actor>>,
+  resource: Resource = createPostResource(),
 ) {
   const table = buildRouteTable(
     [
       {
-        resource: createPostResource(),
+        resource,
         adapter,
         permissions: permissions ?? "open",
       },
@@ -176,4 +184,136 @@ test("handleUpdate returns only fields readable by the actor", async () => {
 
   const body = await (await handleUpdate(ctx, table, "1")).json();
   assert.deepEqual(body.data, { id: "1", title: "Updated" });
+});
+
+function conditionalResource(scoped = false) {
+  return defineResource("post", {
+    fields: {
+      title: text().required(),
+      body: text().required().visibleWhen("published", true),
+      published: boolean().default(false),
+    },
+    ...(scoped ? { access: { scope: () => ({ published: true }) } } : {}),
+  });
+}
+
+for (const guarded of [false, true]) {
+  test(`PATCH uses stored sibling values without rewriting or validating omitted fields (permissions: ${guarded})`, async () => {
+    // The omitted required title is deliberately invalid; published is also
+    // unwritable under guarded permissions. Neither should be validated/written.
+    const adapter = createInMemoryAdapter([
+      { ...post, title: "", published: true },
+    ]);
+    const writes: Record<string, unknown>[] = [];
+    const update = adapter.update;
+    adapter.update = async (id, values, scope) => {
+      writes.push(values);
+      return update(id, values, scope);
+    };
+    const permissions = guarded
+      ? definePermissions<Actor>()
+          .can("update", true)
+          .field("body", { read: true, write: true })
+      : undefined;
+    const { ctx, table } = ctxFor(
+      adapter,
+      { body: "replacement" },
+      permissions,
+      conditionalResource(),
+    );
+    await handleUpdate(ctx, table, "1");
+    assert.deepEqual(writes, [{ body: "replacement" }]);
+    assert.deepEqual(adapter.records[0], {
+      ...post,
+      title: "",
+      published: true,
+      body: "replacement",
+    });
+  });
+}
+
+for (const [existingPublished, patch, expected] of [
+  [
+    false,
+    { published: true, body: "replacement" },
+    { published: true, body: "replacement" },
+  ],
+  [true, { published: false, body: "replacement" }, { published: false }],
+  [false, { body: "replacement" }, {}],
+  [true, {}, {}],
+] as const) {
+  test(`PATCH conditions use the new sibling value when supplied: ${existingPublished}, ${JSON.stringify(patch)}`, async () => {
+    const adapter = createInMemoryAdapter([
+      { ...post, published: existingPublished },
+    ]);
+    const writes: Record<string, unknown>[] = [];
+    const update = adapter.update;
+    adapter.update = async (id, values, scope) => {
+      writes.push(values);
+      return update(id, values, scope);
+    };
+    const { ctx, table } = ctxFor(
+      adapter,
+      patch,
+      undefined,
+      conditionalResource(),
+    );
+    await handleUpdate(ctx, table, "1");
+    assert.deepEqual(writes, [expected]);
+  });
+}
+
+test("PATCH validates an active conditional field against its constraints", async () => {
+  const adapter = createInMemoryAdapter([{ ...post, published: true }]);
+  const { ctx, table } = ctxFor(
+    adapter,
+    { body: null },
+    undefined,
+    conditionalResource(),
+  );
+  await assert.rejects(
+    handleUpdate(ctx, table, "1"),
+    verikitError<ValidationError>(400, "VALIDATION_ERROR", (error) => {
+      assert.deepEqual(
+        error.issues.map((issue) => issue.path),
+        [["body"]],
+      );
+    }),
+  );
+  assert.equal(adapter.records[0]?.body, "world");
+});
+
+test("PATCH still enforces write permissions on active conditional fields", async () => {
+  const adapter = createInMemoryAdapter([{ ...post, published: true }]);
+  const permissions = definePermissions<Actor>().can("update", true);
+  const { ctx, table } = ctxFor(
+    adapter,
+    { body: "replacement" },
+    permissions,
+    conditionalResource(),
+  );
+  await assert.rejects(
+    handleUpdate(ctx, table, "1"),
+    verikitError(400, "VALIDATION_ERROR"),
+  );
+  assert.equal(adapter.records[0]?.body, "world");
+});
+
+test("PATCH conditions honor trusted scope over a submitted sibling value", async () => {
+  const adapter = createInMemoryAdapter([{ ...post, published: true }]);
+  const permissions = definePermissions<Actor>()
+    .can("update", true)
+    .field("body", { read: true, write: true });
+  const { ctx, table } = ctxFor(
+    adapter,
+    { published: false, body: "replacement" },
+    permissions,
+    conditionalResource(true),
+  );
+  await handleUpdate(ctx, table, "1");
+  assert.deepEqual(adapter.records[0], {
+    ...post,
+    published: true,
+    body: "replacement",
+  });
 });
