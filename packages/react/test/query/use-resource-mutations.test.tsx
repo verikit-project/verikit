@@ -18,8 +18,8 @@ import {
   type FakeRecord,
 } from "./fixtures.js";
 
-const findKey = (id: string) => ["verikit", "posts", "find", id];
-const listKey = ["verikit", "posts", "list", {}];
+const findKey = (id: string) => ["verikit", "test", "posts", "find", id];
+const listKey = ["verikit", "test", "posts", "list", {}];
 
 let uninstallJsdom: () => void;
 
@@ -171,7 +171,7 @@ test("useUpdateResource merging into an uncached find(id) is a no-op (nothing to
   );
   assert.equal(updated.title, "Changed");
   assert.equal(
-    harness.queryClient.getQueryData(["verikit", "posts", "find", "1"]),
+    harness.queryClient.getQueryData(["verikit", "test", "posts", "find", "1"]),
     undefined,
   );
 
@@ -302,7 +302,7 @@ test("useDeleteResource deletes a record, invalidates lists, and removes (not ju
   await waitFor(() => list?.status === "success" && find?.status === "success");
   assert.equal(calls.list, 1);
   assert.deepEqual(
-    harness.queryClient.getQueryData(["verikit", "posts", "find", "1"]),
+    harness.queryClient.getQueryData(["verikit", "test", "posts", "find", "1"]),
     {
       id: "1",
       title: "Hello",
@@ -316,7 +316,7 @@ test("useDeleteResource deletes a record, invalidates lists, and removes (not ju
   // Removed outright, unlike invalidateQueries (which would leave the old
   // record momentarily readable via getQueryData while marked stale).
   assert.equal(
-    harness.queryClient.getQueryData(["verikit", "posts", "find", "1"]),
+    harness.queryClient.getQueryData(["verikit", "test", "posts", "find", "1"]),
     undefined,
   );
 

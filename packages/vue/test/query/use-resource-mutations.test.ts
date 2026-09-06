@@ -30,7 +30,7 @@ function mountCaptured<T>(
 test("useCreateResource creates a record, invalidates lists, and forwards a caller-supplied onSuccess", async () => {
   const { client, calls, records } = createFakeClient([]);
   const harness = setupHarness(client);
-  harness.queryClient.setQueryData(["verikit", "posts", "list", {}], {
+  harness.queryClient.setQueryData(["verikit", "test", "posts", "list", {}], {
     records: [],
     total: 0,
     page: 1,
@@ -50,7 +50,7 @@ test("useCreateResource creates a record, invalidates lists, and forwards a call
   assert.equal(records.length, 1);
   assert.equal(onSuccessCalls.length, 1);
   assert.equal(
-    harness.queryClient.getQueryState(["verikit", "posts", "list", {}])
+    harness.queryClient.getQueryState(["verikit", "test", "posts", "list", {}])
       ?.isInvalidated,
     true,
   );
@@ -98,14 +98,25 @@ test("useUpdateResource applies its optimistic merge to the cache before the net
   await waitFor(
     () =>
       (
-        harness.queryClient.getQueryData(["verikit", "posts", "find", "1"]) as
-          FakeRecord | undefined
+        harness.queryClient.getQueryData([
+          "verikit",
+          "test",
+          "posts",
+          "find",
+          "1",
+        ]) as FakeRecord | undefined
       )?.title === "New",
   );
   assert.deepEqual(onMutateCalls, ["1"]);
   assert.equal(
     (
-      harness.queryClient.getQueryData(["verikit", "posts", "list", {}]) as {
+      harness.queryClient.getQueryData([
+        "verikit",
+        "test",
+        "posts",
+        "list",
+        {},
+      ]) as {
         records: FakeRecord[];
       }
     ).records[0]?.title,
@@ -121,7 +132,7 @@ test("useUpdateResource applies its optimistic merge to the cache before the net
 test("useUpdateResource rolls back its optimistic merge when the mutation fails", async () => {
   const { client, failNext } = createFakeClient([{ id: "1", title: "Old" }]);
   const harness = setupHarness(client);
-  harness.queryClient.setQueryData(["verikit", "posts", "find", "1"], {
+  harness.queryClient.setQueryData(["verikit", "test", "posts", "find", "1"], {
     id: "1",
     title: "Old",
   });
@@ -145,6 +156,7 @@ test("useUpdateResource rolls back its optimistic merge when the mutation fails"
     (
       harness.queryClient.getQueryData([
         "verikit",
+        "test",
         "posts",
         "find",
         "1",
@@ -161,7 +173,7 @@ test("useUpdateResource rolls back its optimistic merge when the mutation fails"
 test("useDeleteResource deletes a record and evicts its find(id) cache entry", async () => {
   const { client, calls } = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(client);
-  harness.queryClient.setQueryData(["verikit", "posts", "find", "1"], {
+  harness.queryClient.setQueryData(["verikit", "test", "posts", "find", "1"], {
     id: "1",
     title: "Hello",
   });
@@ -181,7 +193,7 @@ test("useDeleteResource deletes a record and evicts its find(id) cache entry", a
 
   assert.equal(calls.delete, 1);
   assert.equal(
-    harness.queryClient.getQueryData(["verikit", "posts", "find", "1"]),
+    harness.queryClient.getQueryData(["verikit", "test", "posts", "find", "1"]),
     undefined,
   );
   assert.deepEqual(onMutateCalls, ["1"]);
@@ -194,7 +206,7 @@ test("useDeleteResource deletes a record and evicts its find(id) cache entry", a
 test("useDeleteResource rolls back its optimistic removal when the mutation fails", async () => {
   const { client, failNext } = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(client);
-  harness.queryClient.setQueryData(["verikit", "posts", "list", {}], {
+  harness.queryClient.setQueryData(["verikit", "test", "posts", "list", {}], {
     records: [{ id: "1", title: "Hello" }],
     total: 1,
     page: 1,
@@ -214,7 +226,13 @@ test("useDeleteResource rolls back its optimistic removal when the mutation fail
 
   assert.deepEqual(
     (
-      harness.queryClient.getQueryData(["verikit", "posts", "list", {}]) as {
+      harness.queryClient.getQueryData([
+        "verikit",
+        "test",
+        "posts",
+        "list",
+        {},
+      ]) as {
         records: FakeRecord[];
       }
     ).records,

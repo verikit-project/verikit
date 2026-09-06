@@ -18,7 +18,7 @@ export function useListResource<TRecord = Record<string, unknown>>(
   const client = useVerikitClient();
 
   return useQuery({
-    queryKey: resourceQueryKeys(name).list(params),
+    queryKey: resourceQueryKeys(name, client).list(params),
     queryFn: ({ signal }) =>
       client.resource<TRecord>(name).list(params, { signal }),
     ...options,
@@ -39,7 +39,7 @@ export function useResourceFind<TRecord = Record<string, unknown>>(
   const client = useVerikitClient();
 
   return useQuery({
-    queryKey: resourceQueryKeys(name).find(id),
+    queryKey: resourceQueryKeys(name, client).find(id),
     queryFn: ({ signal }) =>
       client.resource<TRecord>(name).find(id, { signal }),
     ...options,
@@ -64,7 +64,10 @@ export function useResourceRelationship<TTarget = Record<string, unknown>>(
   const client = useVerikitClient();
 
   return useQuery({
-    queryKey: resourceQueryKeys(name).relationship(relationshipName, params),
+    queryKey: resourceQueryKeys(name, client).relationship(
+      relationshipName,
+      params,
+    ),
     queryFn: ({ signal }) =>
       client
         .resource(name)

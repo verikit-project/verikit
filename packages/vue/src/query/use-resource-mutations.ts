@@ -30,7 +30,7 @@ export function useCreateResource<TRecord = Record<string, unknown>>(
 ): UseMutationReturnType<TRecord, Error, Record<string, unknown>, unknown> {
   const client = useVerikitClient();
   const queryClient = useQueryClient();
-  const keys = resourceQueryKeys(name);
+  const keys = resourceQueryKeys(name, client);
 
   return useMutation({
     ...options,
@@ -77,7 +77,7 @@ export function useUpdateResource<TRecord = Record<string, unknown>>(
 > {
   const client = useVerikitClient();
   const queryClient = useQueryClient();
-  const keys = resourceQueryKeys(name);
+  const keys = resourceQueryKeys(name, client);
 
   return useMutation({
     ...options,
@@ -160,7 +160,7 @@ export function useDeleteResource(
 ): UseMutationReturnType<void, Error, string, DeleteResourceContext> {
   const client = useVerikitClient();
   const queryClient = useQueryClient();
-  const keys = resourceQueryKeys(name);
+  const keys = resourceQueryKeys(name, client);
 
   return useMutation({
     ...options,
@@ -242,7 +242,7 @@ export function useActionResource<TResult = unknown>(
 > {
   const client = useVerikitClient();
   const queryClient = useQueryClient();
-  const keys = resourceQueryKeys(name);
+  const keys = resourceQueryKeys(name, client);
 
   return useMutation({
     ...options,

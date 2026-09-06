@@ -1,3 +1,4 @@
+import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 import type { VerikitClient } from "@verikit/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, useContext, useState, type ReactNode } from "react";
@@ -22,6 +23,7 @@ export interface VerikitProviderProps {
  *
  * If `queryClient` is omitted, the provider creates one automatically.
  * Apps with an existing `QueryClient` can pass it to share the same cache.
+ * Replace the client on account/tenant changes to reset descendant state.
  */
 export function VerikitProvider({
   client,
@@ -32,7 +34,10 @@ export function VerikitProvider({
 
   return (
     <QueryClientProvider client={queryClient ?? ownedQueryClient}>
-      <VerikitClientContext.Provider value={client}>
+      <VerikitClientContext.Provider
+        key={resourceQueryKeys("", client).all[1]}
+        value={client}
+      >
         {children}
       </VerikitClientContext.Provider>
     </QueryClientProvider>

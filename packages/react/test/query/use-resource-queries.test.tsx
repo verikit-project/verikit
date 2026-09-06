@@ -1,3 +1,7 @@
+import { createClient } from "@verikit/client";
+import { VerikitProvider } from "../../src/client/index.js";
+import { useState } from "react";
+import { useUpdateResource } from "../../src/query/index.js";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { installJsdom } from "../dom-setup.js";
@@ -155,4 +159,110 @@ test("useResourceRelationship caches separately per relationship name", async ()
   assert.equal(calls.list, 2);
 
   harness.cleanup();
+});
+
+test("shared QueryClient isolates list, find and relationship reads by client", async () => {
+  const clientFor = (title: string) =>
+    createClient({
+      baseUrl: "/api",
+      fetch: (async (url) =>
+        Response.json({
+          data: String(url).endsWith("/1")
+            ? { id: "1", title }
+            : [{ id: "1", title }],
+          meta: { total: 1, page: 1, pageSize: 25 },
+        })) as typeof fetch,
+    });
+  const a = clientFor("Alice");
+  const b = clientFor("Bob");
+  const harness = setupHarness(a);
+  function Probe() {
+    const list = useListResource<FakeRecord>(
+      "posts",
+      {},
+      { staleTime: Infinity },
+    );
+    const find = useResourceFind<FakeRecord>("posts", "1", {
+      staleTime: Infinity,
+    });
+    const relationship = useResourceRelationship<FakeRecord>(
+      "posts",
+      "author",
+      {},
+      { staleTime: Infinity },
+    );
+    return (
+      <span>
+        {[
+          list.data?.records[0]?.title,
+          find.data?.title,
+          relationship.data?.records[0]?.title,
+        ].join("/")}
+      </span>
+    );
+  }
+  try {
+    await harness.render(
+      <>
+        <Probe />
+        <VerikitProvider client={b} queryClient={harness.queryClient}>
+          <Probe />
+        </VerikitProvider>
+      </>,
+    );
+    await waitFor(
+      () => harness.container.textContent === "Alice/Alice/AliceBob/Bob/Bob",
+    );
+  } finally {
+    harness.cleanup();
+  }
+});
+
+test("identity replacement resets descendants and confines a late mutation rollback", async () => {
+  const a = createFakeClient([{ id: "1", title: "Alice" }]);
+  const b = createFakeClient([{ id: "1", title: "Bob" }]);
+  const clientA = { ...a.client, cacheNamespace: "session-a" };
+  const clientB = { ...b.client, cacheNamespace: "session-b" };
+  const harness = setupHarness(clientA);
+  let update: ReturnType<typeof useUpdateResource<FakeRecord>>;
+  let mounts = 0;
+  function Probe() {
+    const [mount] = useState(() => ++mounts);
+    const list = useListResource<FakeRecord>(
+      "posts",
+      {},
+      { staleTime: Infinity },
+    );
+    update = useUpdateResource<FakeRecord>("posts");
+    return (
+      <span>
+        {mount}:{list.data?.records[0]?.title}
+      </span>
+    );
+  }
+  const render = (client: typeof clientA) =>
+    harness.render(
+      <VerikitProvider client={client} queryClient={harness.queryClient}>
+        <Probe />
+      </VerikitProvider>,
+    );
+  const release = a.block("update");
+  try {
+    await render(clientA);
+    await waitFor(() => harness.container.textContent === "1:Alice");
+    a.failNext.update = true;
+    const pending = update!
+      .mutateAsync({ id: "1", input: { title: "pending" } })
+      .catch(() => {});
+    await waitFor(() => a.calls.update === 1);
+    await render(clientB);
+    await waitFor(() => harness.container.textContent === "2:Bob");
+    release();
+    await pending;
+    assert.equal(harness.container.textContent, "2:Bob");
+    assert.equal(b.calls.list, 1);
+  } finally {
+    release();
+    harness.cleanup();
+  }
 });

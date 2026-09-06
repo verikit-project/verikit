@@ -29,7 +29,7 @@ export function useCreateResource<TRecord = Record<string, unknown>>(
 ): UseMutationResult<TRecord, Error, Record<string, unknown>> {
   const client = useVerikitClient();
   const queryClient = useQueryClient();
-  const keys = resourceQueryKeys(name);
+  const keys = resourceQueryKeys(name, client);
 
   return useMutation({
     ...options,
@@ -65,7 +65,7 @@ export function useUpdateResource<TRecord = Record<string, unknown>>(
 ): UseMutationResult<TRecord, Error, UpdateResourceVariables> {
   const client = useVerikitClient();
   const queryClient = useQueryClient();
-  const keys = resourceQueryKeys(name);
+  const keys = resourceQueryKeys(name, client);
 
   return useMutation({
     ...options,
@@ -140,7 +140,7 @@ export function useDeleteResource(
 ): UseMutationResult<void, Error, string> {
   const client = useVerikitClient();
   const queryClient = useQueryClient();
-  const keys = resourceQueryKeys(name);
+  const keys = resourceQueryKeys(name, client);
 
   return useMutation({
     ...options,
@@ -203,7 +203,7 @@ export function useActionResource<TResult = unknown>(
 ): UseMutationResult<ActionResult<TResult>, Error, ActionResourceVariables> {
   const client = useVerikitClient();
   const queryClient = useQueryClient();
-  const keys = resourceQueryKeys(name);
+  const keys = resourceQueryKeys(name, client);
 
   return useMutation({
     ...options,

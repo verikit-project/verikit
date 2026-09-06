@@ -133,7 +133,7 @@ export function useResourceTable<
 
   const list = useQuery({
     queryKey: computed(() =>
-      resourceQueryKeys(resource.name).list(listParams.value),
+      resourceQueryKeys(resource.name, client).list(listParams.value),
     ),
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       client

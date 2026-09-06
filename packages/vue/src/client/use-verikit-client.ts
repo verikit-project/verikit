@@ -2,6 +2,9 @@ import type { VerikitClient } from "@verikit/client";
 import { QueryClient, VUE_QUERY_CLIENT } from "@tanstack/vue-query";
 import {
   defineComponent,
+  h,
+  ref,
+  watch,
   inject,
   onMounted,
   onUnmounted,
@@ -23,24 +26,20 @@ export interface VerikitProviderProps {
   queryClient?: QueryClient;
 }
 
-/**
- * Provides a `VerikitClient` and TanStack Query `QueryClient` to its subtree.
- *
- * If `queryClient` is omitted, the provider creates one automatically.
- * Apps with an existing `QueryClient` can pass it to share the same cache.
- */
-export const VerikitProvider = defineComponent({
-  name: "VerikitProvider",
-  props: {
-    client: {
-      type: Object as PropType<VerikitClient>,
-      required: true,
-    },
-    queryClient: {
-      type: Object as PropType<QueryClient>,
-      required: false,
-    },
+const providerProps = {
+  client: {
+    type: Object as PropType<VerikitClient>,
+    required: true,
   },
+  queryClient: {
+    type: Object as PropType<QueryClient>,
+    required: false,
+  },
+} as const;
+
+const ScopedVerikitProvider = defineComponent({
+  name: "ScopedVerikitProvider",
+  props: providerProps,
   setup(props, { slots }: { slots: Slots }) {
     const ownedQueryClient = new QueryClient();
     const activeQueryClient = props.queryClient ?? ownedQueryClient;
@@ -65,3 +64,34 @@ export function useVerikitClient(): VerikitClient {
 
   return client;
 }
+
+/**
+ * Provides a `VerikitClient` and TanStack Query `QueryClient` to its subtree.
+ *
+ * If `queryClient` is omitted, the provider creates one automatically.
+ * Apps with an existing `QueryClient` can pass it to share the same cache.
+ * Replace the client on account/tenant changes to reset descendant state.
+ */
+export const VerikitProvider = defineComponent({
+  name: "VerikitProvider",
+  props: providerProps,
+  setup(props, { slots }) {
+    const generation = ref(0);
+    watch(
+      () => props.client,
+      () => {
+        generation.value += 1;
+      },
+      { flush: "sync" },
+    );
+    return () =>
+      h(
+        ScopedVerikitProvider,
+        {
+          ...props,
+          key: generation.value,
+        },
+        slots,
+      );
+  },
+});
