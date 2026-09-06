@@ -27,13 +27,13 @@ test("update schema has the same field set as create but nothing required", () =
   assert.equal(schema.additionalProperties, false);
 });
 
-test("response schema includes every non-hidden field, all required", () => {
+test("response schema leaves declared fields optional for permission redaction", () => {
   const schema = fieldsToJsonSchema(productFields(), {
     operation: "response",
   });
 
   assert.deepEqual(Object.keys(schema.properties), ["id", "name", "createdAt"]);
-  assert.deepEqual(schema.required, ["id", "name", "createdAt"]);
+  assert.equal(schema.required, undefined);
 });
 
 test("a hidden field is excluded from response but present in create/update", () => {

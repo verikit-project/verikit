@@ -74,13 +74,24 @@ export function resourceToJsonSchema(
     }
   }
 
+  // Adapters expose their canonical ID as a string, even for numeric storage
+  // keys. An explicitly declared id remains optional because field permissions
+  // can redact it; the implicit adapter ID is always present.
+  const responseRequired = Object.hasOwn(resourceSchema.fields, "id")
+    ? undefined
+    : ["id"];
+  if (operation === "response") {
+    mergedProperties.id = { type: "string" };
+  }
+  const requiredFields = operation === "response" ? responseRequired : required;
+
   return {
     ...rest,
     $schema: JSON_SCHEMA_DIALECT,
     title: resourceSchema.name,
     type: "object",
     properties: mergedProperties,
-    ...(required && { required }),
+    ...(requiredFields && { required: requiredFields }),
     additionalProperties: false,
   };
 }

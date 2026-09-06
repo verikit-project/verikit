@@ -11,6 +11,7 @@ import {
 } from "@verikit/core";
 import { action } from "@verikit/runtime";
 import { generateOpenApiDocument } from "../../src/openapi/generate-openapi.js";
+import { createServer } from "../../src/create-server.js";
 import type { CreateServerOptions } from "../../src/create-server.js";
 import { createInMemoryAdapter } from "../../src/testing/in-memory-adapter.js";
 
@@ -302,4 +303,91 @@ test("every operation carries a default error response", () => {
       });
     }
   }
+});
+
+for (const redactTitle of [false, true]) {
+  test(`generated response contract matches CRUD records with an implicit ID (redaction: ${redactTitle})`, async () => {
+    const resource = defineResource("post", {
+      fields: { title: text().required() },
+    });
+    const permissions = definePermissions()
+      .can("create", true)
+      .can("update", true)
+      .can("read", true)
+      .can("list", true)
+      .field("title", { read: !redactTitle, write: true });
+    const options: CreateServerOptions = {
+      resources: [
+        {
+          resource,
+          permissions,
+          adapter: createInMemoryAdapter([{ id: "1", title: "Original" }]),
+        },
+      ],
+    };
+    const schema = generateOpenApiDocument(options, info).components.schemas
+      .post!;
+    assert.deepEqual(schema.properties, {
+      title: { type: "string" },
+      id: { type: "string" },
+    });
+    assert.deepEqual(schema.required, ["id"]);
+    assert.equal(schema.additionalProperties, false);
+    const server = createServer(options);
+    for (const [method, path, input] of [
+      ["GET", "/post/1", undefined],
+      ["GET", "/post", undefined],
+      ["POST", "/post", { title: "Created" }],
+      ["PATCH", "/post/1", { title: "Updated" }],
+    ] as const) {
+      const response = await server(
+        new Request(`https://example.com${path}`, {
+          method,
+          body: JSON.stringify(input),
+        }),
+      );
+      assert.ok(response.ok);
+      const { data } = await response.json();
+      const records = Array.isArray(data) ? data : [data];
+      for (const record of records) {
+        assert.equal(typeof record.id, "string");
+        assert.equal(Object.hasOwn(record, "title"), !redactTitle);
+        for (const required of schema.required!)
+          assert.ok(Object.hasOwn(record, required));
+        for (const [name, value] of Object.entries(record)) {
+          assert.ok(
+            Object.hasOwn(schema.properties!, name),
+            `Unexpected response field: ${name}`,
+          );
+          assert.equal(typeof value, schema.properties![name]!.type);
+        }
+      }
+    }
+  });
+}
+
+test("declared ID permissions may redact the ID from the generated response contract", async () => {
+  const resource = defineResource("post", {
+    fields: { id: text().readOnly(), title: text().required() },
+  });
+  const options: CreateServerOptions = {
+    resources: [
+      {
+        resource,
+        adapter: createInMemoryAdapter([{ id: "1", title: "Visible" }]),
+        permissions: definePermissions()
+          .can("read", true)
+          .field("title", { read: true }),
+      },
+    ],
+  };
+  const schema = generateOpenApiDocument(options, info).components.schemas
+    .post!;
+  assert.equal(schema.required, undefined);
+  assert.deepEqual(schema.properties!.id, { type: "string" });
+  const response = await createServer(options)(
+    new Request("https://example.com/post/1"),
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { data: { title: "Visible" } });
 });

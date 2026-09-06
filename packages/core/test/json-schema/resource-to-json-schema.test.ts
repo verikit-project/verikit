@@ -50,7 +50,8 @@ test("the Product example matches create/update/response shapes from the spec", 
   assert.deepEqual(Object.keys(update.properties), ["name", "price", "active"]);
 
   const response = resourceToJsonSchema(product, { operation: "response" });
-  assert.deepEqual(response.required, ["name", "price", "active"]);
+  assert.deepEqual(response.required, ["id"]);
+  assert.deepEqual(response.properties.id, { type: "string" });
 });
 
 test("a belongsTo relationship appears as an optional string id reference on every surface", () => {
@@ -100,4 +101,39 @@ test("a hasMany relationship is omitted from create/update and present as an arr
         'Array of id references to related "comment" resources. Not populated by default; requires an explicit include mechanism.',
     },
   );
+});
+
+test("response adds the implicit string ID without adding it to request schemas", () => {
+  const resource = defineResource("post", {
+    fields: { title: text().required() },
+  });
+  const schema = resourceToJsonSchema(resource, { operation: "response" });
+  assert.deepEqual(schema.properties, {
+    title: { type: "string" },
+    id: { type: "string" },
+  });
+  assert.deepEqual(schema.required, ["id"]);
+  assert.equal(schema.additionalProperties, false);
+  assert.deepEqual(
+    schema,
+    resourceToJsonSchema(resource.toSchema(), { operation: "response" }),
+  );
+  for (const operation of ["create", "update"] as const) {
+    assert.equal(
+      resourceToJsonSchema(resource, { operation }).properties.id,
+      undefined,
+    );
+  }
+});
+
+test("declared storage IDs are string-typed and redactable only in responses", () => {
+  const resource = defineResource("post", {
+    fields: { id: number().required(), title: text() },
+  });
+  const response = resourceToJsonSchema(resource, { operation: "response" });
+  assert.deepEqual(response.properties.id, { type: "string" });
+  assert.equal(response.required, undefined);
+  const create = resourceToJsonSchema(resource, { operation: "create" });
+  assert.deepEqual(create.properties.id, { type: "number" });
+  assert.deepEqual(create.required, ["id"]);
 });

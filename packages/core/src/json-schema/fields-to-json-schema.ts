@@ -21,7 +21,8 @@ export interface JsonSchemaObject extends JsonSchemaValue {
 /**
  * Derives operation-scoped JSON Schema from a field map using `fieldApplicability()`
  * to filter by surface. Works on any `FieldSchema` map, so it covers both resources
- * and action `.form()` fields with a single helper.
+ * and action `.form()` fields with a single helper. Response fields are optional
+ * because permissions may redact them, regardless of input requiredness.
  */
 export function fieldsToJsonSchema(
   fields: Record<string, FieldSchema>,
@@ -40,9 +41,6 @@ export function fieldsToJsonSchema(
     properties[name] = fieldToJsonSchema(field);
 
     if (operation === "create" && field.required) {
-      required.push(name);
-    }
-    if (operation === "response") {
       required.push(name);
     }
   }
