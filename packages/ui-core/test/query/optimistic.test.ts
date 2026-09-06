@@ -23,7 +23,7 @@ function createClient(): QueryClient {
 
 test("snapshotResourceQueries/restoreResourceQueries round-trip every cached query under a resource's prefix", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
 
   queryClient.setQueryData(keys.list(), {
     records: [{ id: "1", title: "Hello" }],
@@ -55,7 +55,7 @@ test("snapshotResourceQueries/restoreResourceQueries round-trip every cached que
 
 test("restoreDeletedRecord rolls back only the failed row without resurrecting a concurrently deleted sibling", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
   const original = {
     records: [
       { id: "1", title: "One" },
@@ -99,7 +99,7 @@ test("restoreDeletedRecord rolls back only the failed row without resurrecting a
 
 test("restoreDeletedRecord ignores non-list snapshots, missing rows, and missing live list data", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
   const list = {
     records: [{ id: "2", title: "Two" }],
     total: 1,
@@ -144,7 +144,7 @@ test("restoreDeletedRecord ignores non-list snapshots, missing rows, and missing
 
 test("patchCachedListRecord patches only the matching record, leaving others untouched", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
 
   queryClient.setQueryData(keys.list(), {
     records: [
@@ -174,7 +174,7 @@ test("patchCachedListRecord patches only the matching record, leaving others unt
 
 test("patchCachedListRecord matches a numeric record id against the string mutation id (e.g. a Prisma autoincrement key)", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
 
   queryClient.setQueryData(keys.list(), {
     records: [
@@ -204,7 +204,7 @@ test("patchCachedListRecord matches a numeric record id against the string mutat
 
 test("removeCachedListRecord matches a numeric record id against the string mutation id (e.g. a Prisma autoincrement key)", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
 
   queryClient.setQueryData(keys.list(), {
     records: [
@@ -228,7 +228,7 @@ test("removeCachedListRecord matches a numeric record id against the string muta
 
 test("patchCachedListRecord leaves a record with no matching/string id untouched", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
   const withoutId = { title: "No id" } as unknown as Row;
 
   queryClient.setQueryData(keys.list(), {
@@ -251,7 +251,7 @@ test("patchCachedListRecord leaves a record with no matching/string id untouched
 
 test("patchCachedListRecord and removeCachedListRecord no-op on a matched query with no data yet", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
 
   // A list query that's been started (matches the predicate) but hasn't
   // resolved yet, so its cached data is still `undefined`.
@@ -270,7 +270,7 @@ test("patchCachedListRecord and removeCachedListRecord no-op on a matched query 
 
 test("removeCachedListRecord removes the matching record and decrements total", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
 
   queryClient.setQueryData(keys.list(), {
     records: [
@@ -294,7 +294,7 @@ test("removeCachedListRecord removes the matching record and decrements total", 
 
 test("removeCachedListRecord returns the same data reference when nothing matches", () => {
   const queryClient = createClient();
-  const keys = resourceQueryKeys("posts");
+  const keys = resourceQueryKeys("posts", "test");
   const data = {
     records: [{ id: "1", title: "Hello" }],
     total: 1,
@@ -306,4 +306,37 @@ test("removeCachedListRecord returns the same data reference when nothing matche
   removeCachedListRecord<Row>(queryClient, keys, "missing");
 
   assert.equal(queryClient.getQueryData(keys.list()), data);
+});
+
+test("optimistic changes, rollback and invalidation stay within their namespace", async () => {
+  const queryClient = new QueryClient();
+  const a = resourceQueryKeys("posts", "a");
+  const b = resourceQueryKeys("posts", "b");
+  const original = {
+    records: [{ id: "1", title: "original" }],
+    total: 1,
+    page: 1,
+    pageSize: 25,
+  };
+  queryClient.setQueryData(a.list(), original);
+  queryClient.setQueryData(b.list(), original);
+  queryClient.setQueryData(b.find("1"), original.records[0]);
+  const snapshot = snapshotResourceQueries(queryClient, a);
+  patchCachedListRecord<{ id: string; title: string }>(
+    queryClient,
+    a,
+    "1",
+    (record) => ({ ...record, title: "changed" }),
+  );
+  assert.deepEqual(queryClient.getQueryData(b.list()), original);
+  removeCachedListRecord(queryClient, a, "1");
+  assert.deepEqual(queryClient.getQueryData(b.list()), original);
+  queryClient.setQueryData(b.list(), { ...original, total: 7 });
+  restoreResourceQueries(queryClient, snapshot);
+  assert.equal(queryClient.getQueryData<{ total: number }>(b.list())?.total, 7);
+  await queryClient.invalidateQueries({ queryKey: a.all });
+  assert.equal(queryClient.getQueryState(a.list())?.isInvalidated, true);
+  assert.equal(queryClient.getQueryState(b.list())?.isInvalidated, false);
+  assert.equal(queryClient.getQueryState(b.find("1"))?.isInvalidated, false);
+  queryClient.clear();
 });

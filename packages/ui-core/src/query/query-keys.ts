@@ -1,25 +1,51 @@
-import type { ListParams } from "@verikit/client";
+import type { ListParams, VerikitClient } from "@verikit/client";
 
 export interface ResourceQueryKeys {
-  all: readonly [string, string];
-  list: (params?: ListParams) => readonly [string, string, "list", ListParams];
-  find: (id: string) => readonly [string, string, "find", string];
+  all: readonly [string, string, string];
+  list: (
+    params?: ListParams,
+  ) => readonly [string, string, string, "list", ListParams];
+  find: (id: string) => readonly [string, string, string, "find", string];
   relationship: (
     relationshipName: string,
     params?: ListParams,
-  ) => readonly [string, string, "relationship", string, ListParams];
+  ) => readonly [string, string, string, "relationship", string, ListParams];
 }
 
+const clientNamespaces = new WeakMap<VerikitClient, string>();
+
 /**
- * Builds the query keys the resource hooks use, so query hooks and mutation hooks' invalidation calls always agree on the same shape. Exported so consumers can invalidate/read the same cache entries themselves (e.g. reacting to a websocket event) without guessing at the internal shape.
+ * Builds keys scoped to a client or explicit cache namespace. Pass the same
+ * client used by VerikitProvider when reading or invalidating queries manually.
+ * A namespace must never be shared across different APIs or access identities.
  */
-export function resourceQueryKeys(name: string): ResourceQueryKeys {
+export function resourceQueryKeys(
+  name: string,
+  client: VerikitClient | string,
+): ResourceQueryKeys {
+  let namespace: string;
+  if (typeof client === "string") {
+    namespace = client;
+  } else {
+    namespace =
+      client.cacheNamespace ??
+      clientNamespaces.get(client) ??
+      crypto.randomUUID();
+    clientNamespaces.set(client, namespace);
+  }
   return {
-    all: ["verikit", name] as const,
+    all: ["verikit", namespace, name] as const,
     list: (params: ListParams = {}) =>
-      ["verikit", name, "list", params] as const,
-    find: (id: string) => ["verikit", name, "find", id] as const,
+      ["verikit", namespace, name, "list", params] as const,
+    find: (id: string) => ["verikit", namespace, name, "find", id] as const,
     relationship: (relationshipName: string, params: ListParams = {}) =>
-      ["verikit", name, "relationship", relationshipName, params] as const,
+      [
+        "verikit",
+        namespace,
+        name,
+        "relationship",
+        relationshipName,
+        params,
+      ] as const,
   };
 }

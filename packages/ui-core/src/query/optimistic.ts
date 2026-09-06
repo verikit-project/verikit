@@ -55,7 +55,7 @@ export function recordId(record: unknown): string | undefined {
 }
 
 const isListQuery = (query: { queryKey: QueryKey }): boolean =>
-  query.queryKey[2] === "list";
+  query.queryKey[3] === "list";
 
 /**
  * Restores only the failed optimistic delete to avoid reviving records
@@ -91,7 +91,7 @@ export function restoreDeletedRecord<TRecord>(
       continue;
     }
 
-    if (queryKey[2] === "find" && queryKey[3] === id) {
+    if (queryKey[3] === "find" && queryKey[4] === id) {
       queryClient.setQueryData(queryKey, previous);
     }
   }
