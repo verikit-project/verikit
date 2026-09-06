@@ -14,6 +14,13 @@ export type HeadersSource =
 
 export interface ClientOptions {
   /**
+   * Cache identity shared by UI bindings. Defaults to a unique client identity.
+   * Use a distinct namespace per API, account, tenant, and session. Recreate the
+   * client when identity changes; never reuse a namespace for different access.
+   * Explicit namespaces allow intentional sharing and SSR hydration.
+   */
+  cacheNamespace?: string;
+  /**
    * Prefix every resource path is built under, e.g. `"/api"` or `"https://api.example.com"`.
    */
   baseUrl: string;
@@ -113,6 +120,8 @@ export interface ResourceClient<TRecord = Record<string, unknown>> {
 }
 
 export interface VerikitClient {
+  /** Immutable cache identity. Custom clients without one are isolated by object identity. */
+  readonly cacheNamespace?: string;
   /**
    * Creates a client for a logical resource name. Pass `path` when the server
    * mounts that resource at a different route segment via `path`.

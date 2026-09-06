@@ -7,7 +7,12 @@ export function createClient(options: ClientOptions): VerikitClient {
   // to preserve its required receiver in browsers.
   const fetchImpl = options.fetch ?? fetch.bind(globalThis);
 
+  const cacheNamespace = options.cacheNamespace ?? crypto.randomUUID();
+
   return {
+    get cacheNamespace() {
+      return cacheNamespace;
+    },
     resource<TRecord = Record<string, unknown>>(
       name: string,
       resourceOptions: { path?: string } = {},

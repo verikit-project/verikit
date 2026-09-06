@@ -442,3 +442,18 @@ test("createClient's default fetch survives being called as params.fetchImpl(...
 
   assert.deepEqual(record, { id: "1" });
 });
+
+test("cache namespaces are unique by default, explicit when supplied, and immutable", () => {
+  const a = createClient({ baseUrl: "/api" });
+  const b = createClient({ baseUrl: "/api" });
+  assert.equal(typeof a.cacheNamespace, "string");
+  assert.notEqual(a.cacheNamespace, b.cacheNamespace);
+  const options = { baseUrl: "/api", cacheNamespace: "session-a" };
+  const explicit = createClient(options);
+  options.cacheNamespace = "session-b";
+  assert.equal(explicit.cacheNamespace, "session-a");
+  assert.throws(
+    () => Object.assign(explicit, { cacheNamespace: "session-b" }),
+    TypeError,
+  );
+});
