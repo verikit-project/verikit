@@ -16,7 +16,7 @@ import {
 } from "@verikit/ui-core/query/optimistic";
 import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 
-export type UseCreateResourceOptions<TRecord> = Omit<
+export type UseCreateResourceOptions<TRecord extends object> = Omit<
   MutationOptions<TRecord, Error, Record<string, unknown>>,
   "mutationFn"
 >;
@@ -24,7 +24,9 @@ export type UseCreateResourceOptions<TRecord> = Omit<
 /**
  * Creates a resource record, invalidating that resource's list/search queries on success.
  */
-export function useCreateResource<TRecord = Record<string, unknown>>(
+export function useCreateResource<
+  TRecord extends object = Record<string, unknown>,
+>(
   name: string,
   options?: UseCreateResourceOptions<TRecord>,
 ): UseMutationReturnType<TRecord, Error, Record<string, unknown>, unknown> {
@@ -35,7 +37,7 @@ export function useCreateResource<TRecord = Record<string, unknown>>(
   return useMutation({
     ...options,
     mutationFn: (input: Record<string, unknown>) =>
-      client.resource<TRecord>(name).create(input),
+      client.resource(name).create(input) as Promise<TRecord>,
     onSuccess: (
       data: TRecord,
       variables: Record<string, unknown>,
@@ -53,7 +55,7 @@ export interface UpdateResourceVariables {
   input: Record<string, unknown>;
 }
 
-export type UseUpdateResourceOptions<TRecord> = Omit<
+export type UseUpdateResourceOptions<TRecord extends object> = Omit<
   MutationOptions<TRecord, Error, UpdateResourceVariables>,
   "mutationFn"
 >;
@@ -66,7 +68,9 @@ interface UpdateResourceContext {
 /**
  * Updates a resource record. Optimistically merges `input` into the cached `find(id)` record and any matching row in a cached list, rolling back to the pre-mutation snapshot on error; invalidates its list/search and find(id) queries on success (so any field the server computed, not just what was sent, ends up correct).
  */
-export function useUpdateResource<TRecord = Record<string, unknown>>(
+export function useUpdateResource<
+  TRecord extends object = Record<string, unknown>,
+>(
   name: string,
   options?: UseUpdateResourceOptions<TRecord>,
 ): UseMutationReturnType<
@@ -82,7 +86,7 @@ export function useUpdateResource<TRecord = Record<string, unknown>>(
   return useMutation({
     ...options,
     mutationFn: ({ id, input }: UpdateResourceVariables) =>
-      client.resource<TRecord>(name).update(id, input),
+      client.resource(name).update(id, input) as Promise<TRecord>,
     onMutate: async (
       variables: UpdateResourceVariables,
       context: MutationFunctionContext,

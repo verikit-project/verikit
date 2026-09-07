@@ -116,7 +116,7 @@ export function useResourceTable<
     resetToFirstPage();
   }
 
-  const listParams = computed<ListParams>(() => {
+  const listParams = computed<ListParams<TRecord>>(() => {
     const activeSort = sorting.value[0];
     const hasFilters = Object.keys(filters.value).length > 0;
 
@@ -128,7 +128,7 @@ export function useResourceTable<
         ? { field: activeSort.id, direction: activeSort.desc ? "desc" : "asc" }
         : undefined,
       ...(hasFilters ? { filters: filters.value } : {}),
-    };
+    } as ListParams<TRecord>;
   });
 
   const list = useQuery({

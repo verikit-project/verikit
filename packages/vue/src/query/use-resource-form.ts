@@ -12,7 +12,7 @@ import {
 export type UseResourceFormSource = Resource | ResourceSchema;
 
 /** Options for creating a resource-backed form that submits over `@verikit/client`. */
-export interface UseResourceFormOptions<TRecord> {
+export interface UseResourceFormOptions<TRecord extends object> {
   /** Updates the record with this id instead of creating a new one. */
   id?: string;
   /** Initial values passed to TanStack Form. */
@@ -28,7 +28,7 @@ export interface UseResourceFormOptions<TRecord> {
 
 /** State and helpers returned by {@link useResourceForm}. */
 export interface UseResourceFormResult<
-  TRecord = Record<string, unknown>,
+  TRecord extends object = Record<string, unknown>,
 > extends UseVerikitFormResult<TRecord> {
   /** Whether the create/update mutation is currently in flight. */
   isSubmitting: ComputedRef<boolean>;
@@ -41,7 +41,7 @@ export interface UseResourceFormResult<
  * truth for fields, validation, and create/update mutations. Creates when no
  * `id` is provided; otherwise updates the specified record.
  */
-export function useResourceForm<TRecord = Record<string, unknown>>(
+export function useResourceForm<TRecord extends object = Record<string, unknown>>(
   resource: UseResourceFormSource,
   {
     id,

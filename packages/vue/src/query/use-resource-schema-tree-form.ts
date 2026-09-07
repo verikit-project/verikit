@@ -16,7 +16,7 @@ import {
 } from "./use-resource-mutations.js";
 
 /** Options for creating a schema-tree resource form that submits over `@verikit/client`. */
-export interface UseResourceSchemaTreeFormOptions<TRecord> {
+export interface UseResourceSchemaTreeFormOptions<TRecord extends object> {
   /** Updates the record with this id instead of creating a new one. */
   id?: string;
   /** Runtime actions whose forms should render for matching action nodes. */
@@ -34,7 +34,7 @@ export interface UseResourceSchemaTreeFormOptions<TRecord> {
 
 /** State and helpers returned by {@link useResourceSchemaTreeForm}. */
 export interface UseResourceSchemaTreeFormResult<
-  TRecord = Record<string, unknown>,
+  TRecord extends object = Record<string, unknown>,
 > extends UseVerikitSchemaTreeFormResult<TRecord> {
   /** Whether the create/update mutation is currently in flight. */
   isSubmitting: ComputedRef<boolean>;
@@ -49,7 +49,9 @@ export interface UseResourceSchemaTreeFormResult<
  * available to a tree-aware renderer like `ResourceForm`, instead of the
  * flat field list `useResourceForm` exposes.
  */
-export function useResourceSchemaTreeForm<TRecord = Record<string, unknown>>(
+export function useResourceSchemaTreeForm<
+  TRecord extends object = Record<string, unknown>,
+>(
   resource: VerikitSchemaTreeSource,
   {
     id,

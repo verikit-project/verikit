@@ -4,15 +4,15 @@ import type { ListParams, ListResponse } from "@verikit/client";
 import { useVerikitClient } from "../client/use-verikit-client.js";
 import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 
-export type UseListResourceOptions<TRecord> = Omit<
+export type UseListResourceOptions<TRecord extends object> = Omit<
   UseQueryOptions<ListResponse<TRecord>, Error>,
   "queryKey" | "queryFn"
 >;
 
 /** Lists a resource's records, cached per resource name + params. */
-export function useListResource<TRecord = Record<string, unknown>>(
+export function useListResource<TRecord extends object = Record<string, unknown>>(
   name: string,
-  params: ListParams = {},
+  params: ListParams<TRecord> = {},
   options?: UseListResourceOptions<TRecord>,
 ): UseQueryReturnType<ListResponse<TRecord>, Error> {
   const client = useVerikitClient();
@@ -25,13 +25,13 @@ export function useListResource<TRecord = Record<string, unknown>>(
   });
 }
 
-export type UseFindResourceOptions<TRecord> = Omit<
+export type UseFindResourceOptions<TRecord extends object> = Omit<
   UseQueryOptions<TRecord, Error>,
   "queryKey" | "queryFn"
 >;
 
 /** Fetches a single resource record by id, cached per resource name + id. */
-export function useResourceFind<TRecord = Record<string, unknown>>(
+export function useResourceFind<TRecord extends object = Record<string, unknown>>(
   name: string,
   id: string,
   options?: UseFindResourceOptions<TRecord>,
@@ -46,7 +46,7 @@ export function useResourceFind<TRecord = Record<string, unknown>>(
   });
 }
 
-export type UseResourceRelationshipOptions<TTarget> = Omit<
+export type UseResourceRelationshipOptions<TTarget extends object> = Omit<
   UseQueryOptions<ListResponse<TTarget>, Error>,
   "queryKey" | "queryFn"
 >;
@@ -55,10 +55,12 @@ export type UseResourceRelationshipOptions<TTarget> = Omit<
  * Lists selectable records for a `belongsTo` relationship, cached by
  * resource, relationship, and params. Server-side permissions and scopes apply.
  */
-export function useResourceRelationship<TTarget = Record<string, unknown>>(
+export function useResourceRelationship<
+  TTarget extends object = Record<string, unknown>,
+>(
   name: string,
   relationshipName: string,
-  params: ListParams = {},
+  params: ListParams<TTarget> = {},
   options?: UseResourceRelationshipOptions<TTarget>,
 ): UseQueryReturnType<ListResponse<TTarget>, Error> {
   const client = useVerikitClient();
