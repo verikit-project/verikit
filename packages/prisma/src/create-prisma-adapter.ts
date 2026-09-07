@@ -1,3 +1,4 @@
+import { ConflictError } from "@verikit/core";
 import type { FieldMap, RelationshipMap, Resource } from "@verikit/core";
 import {
   UniqueConstraintError,
@@ -70,6 +71,8 @@ export interface PrismaIdConfig<TId = unknown> {
 export type PrismaSearchProvider = "postgresql" | "sqlite" | "mysql";
 
 export interface PrismaAdapterOptions<TFields extends FieldMap> {
+  /** Dedicated non-null Int revision scalar, excluded from resource fields. All external writers must increment it. */
+  versionField?: string;
   /** The generated Prisma model delegate this adapter reads/writes, e.g. `prisma.post`. */
   model: PrismaModelDelegate;
   /**
@@ -124,6 +127,32 @@ export function createPrismaAdapter<
   const { model, id } = options;
   const fields = options.fields as PrismaFieldMap;
   const schema = resource.toSchema();
+  const versionField = options.versionField;
+  if (
+    versionField !== undefined &&
+    (!versionField ||
+      versionField === id.field ||
+      Object.values(fields).includes(versionField))
+  ) {
+    throw new Error(
+      "versionField must be a dedicated revision scalar, not an ID or resource field.",
+    );
+  }
+  function revisionWhere(expectedRevision: number) {
+    if (
+      !versionField ||
+      !Number.isSafeInteger(expectedRevision) ||
+      expectedRevision < 0 ||
+      expectedRevision >= Number.MAX_SAFE_INTEGER
+    ) {
+      throw new Error(
+        "Conditional writes require a configured versionField and a valid revision.",
+      );
+    }
+    return { [versionField]: expectedRevision };
+  }
+  const conflict = () =>
+    new ConflictError("Record changed since authorization. Retry the request.");
 
   const unmapped = Object.keys(schema.fields).filter(
     (name) => !Object.hasOwn(fields, name),
@@ -267,6 +296,20 @@ export function createPrismaAdapter<
   }
 
   return {
+    ...(versionField && {
+      async findForMutation(pathId: string, scope?: Record<string, unknown>) {
+        const value = fromPath(pathId);
+        if (value === undefined) return undefined;
+        // Prisma 6/7 extended unique filters retain the unique ID at the top level.
+        const row = await model.findUnique({
+          where: { [id.field]: value, AND: scopeWhere(scope) ?? {} },
+          select: { ...select, [versionField]: true },
+        });
+        if (!row) return undefined;
+        revisionWhere(row[versionField]);
+        return { record: present(row)!, revision: row[versionField] as number };
+      },
+    }),
     async list(params: ResourceListParams) {
       // Search with no searchable fields can never match; return zero results.
       const permittedSearchScalars = params.searchFields
@@ -365,14 +408,38 @@ export function createPrismaAdapter<
       pathId: string,
       values: Record<string, unknown>,
       scope?: Record<string, unknown>,
+      expectedRevision?: number,
     ) {
       const value = fromPath(pathId);
 
       if (value === undefined) {
+        if (expectedRevision !== undefined) throw conflict();
         return undefined;
       }
 
       const data = mapValuesToData(values, fields);
+      if (versionField) data[versionField] = { increment: 1 };
+      if (expectedRevision !== undefined) {
+        const revision = revisionWhere(expectedRevision);
+        try {
+          const row = await model.update({
+            where: {
+              [id.field]: value,
+              AND: [scopeWhere(scope) ?? {}, revision],
+            },
+            data,
+            select,
+          });
+          return present(row);
+        } catch (error) {
+          if (isRecordNotFoundError(error)) throw conflict();
+          if (isUniqueConstraintError(error))
+            throw new UniqueConstraintError(
+              uniqueConstraintFields(error, fields),
+            );
+          throw error;
+        }
+      }
 
       // Prisma's update() only accepts a unique selector, so it cannot express
       // `{ id, organizationId }`. updateMany/updateManyAndReturn make the tenant
@@ -433,13 +500,33 @@ export function createPrismaAdapter<
       }
     },
 
-    async delete(pathId: string, scope?: Record<string, unknown>) {
+    async delete(
+      pathId: string,
+      scope?: Record<string, unknown>,
+      expectedRevision?: number,
+    ) {
       const value = fromPath(pathId);
 
       if (value === undefined) {
+        if (expectedRevision !== undefined) throw conflict();
         return;
       }
 
+      if (expectedRevision !== undefined) {
+        const revision = revisionWhere(expectedRevision);
+        try {
+          await model.delete({
+            where: {
+              [id.field]: value,
+              AND: [scopeWhere(scope) ?? {}, revision],
+            },
+          });
+          return;
+        } catch (error) {
+          if (isRecordNotFoundError(error)) throw conflict();
+          throw error;
+        }
+      }
       if (scope) {
         if (!model.deleteMany) {
           throw new Error(

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { boolean, defineResource, text } from "@verikit/core";
+import { ConflictError, boolean, defineResource, text } from "@verikit/core";
 import { UniqueConstraintError } from "@verikit/server";
 import {
   createPrismaAdapter,
@@ -960,4 +960,168 @@ test('provider: "postgresql" adds mode: "insensitive" to the search filter; the 
       { body: { contains: "hi", mode: "insensitive" } },
     ],
   });
+});
+
+async function versionedAdapter() {
+  const db = await createTestDb();
+  await db.$executeRawUnsafe(
+    "CREATE TABLE versioned_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL UNIQUE, published BOOLEAN NOT NULL DEFAULT false, tenant TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 0)",
+  );
+  const resource = defineResource("versioned", {
+    fields: { title: text(), published: boolean(), tenant: text() },
+  });
+  const options = {
+    model: db.versionedPost,
+    fields: { title: "title", published: "published", tenant: "tenant" },
+    id: {
+      field: "id",
+      fromPath: (id: string) => (/^\d+$/.test(id) ? Number(id) : undefined),
+    },
+    versionField: "revision",
+    listTransaction: async <T>(
+      operation: (model: PrismaModelDelegate) => Promise<T>,
+    ) => operation(db.versionedPost),
+  };
+  return {
+    db,
+    resource,
+    options,
+    adapter: createPrismaAdapter(resource, options),
+  };
+}
+
+test("Prisma conditional writes enforce revisions and scope in real SQL", async () => {
+  const { db, adapter } = await versionedAdapter();
+  try {
+    const created = await adapter.create({ title: "Draft", tenant: "a" });
+    assert.equal(Object.hasOwn(created, "revision"), false);
+    assert.equal(await adapter.findForMutation!("bad-id"), undefined);
+    assert.equal(await adapter.findForMutation!("999"), undefined);
+    assert.equal(
+      await adapter.findForMutation!(created.id, { tenant: "b" }),
+      undefined,
+    );
+    const first = (await adapter.findForMutation!(created.id, {
+      tenant: "a",
+    }))!;
+    await adapter.update(created.id, { published: true });
+    await assert.rejects(
+      adapter.update(
+        created.id,
+        { title: "stale" },
+        { tenant: "a" },
+        first.revision,
+      ),
+      ConflictError,
+    );
+    await assert.rejects(
+      adapter.delete(created.id, { tenant: "a" }, first.revision),
+      ConflictError,
+    );
+    assert.equal((await adapter.find(created.id))?.title, "Draft");
+    const next = (await adapter.findForMutation!(created.id))!;
+    await assert.rejects(
+      adapter.update(created.id, {}, { tenant: "b" }, next.revision),
+      ConflictError,
+    );
+    await assert.rejects(
+      adapter.delete(created.id, { tenant: "b" }, next.revision),
+      ConflictError,
+    );
+    await adapter.update(created.id, {}, undefined, next.revision);
+    const final = (await adapter.findForMutation!(created.id))!;
+    assert.equal(final.revision, next.revision + 1);
+    await adapter.delete(created.id, { tenant: "a" }, final.revision);
+    await assert.rejects(
+      adapter.delete(created.id, undefined, final.revision),
+      ConflictError,
+    );
+    await assert.rejects(
+      adapter.update("bad-id", {}, undefined, final.revision),
+      ConflictError,
+    );
+    await assert.rejects(
+      adapter.delete("bad-id", undefined, final.revision),
+      ConflictError,
+    );
+  } finally {
+    await db.$disconnect();
+  }
+});
+
+test("Prisma rejects invalid revision configuration and tokens", async () => {
+  const { db, resource, options, adapter } = await versionedAdapter();
+  try {
+    assert.throws(
+      () =>
+        createPrismaAdapter(resource, { ...options, versionField: "title" }),
+      /versionField/,
+    );
+    await assert.rejects(
+      adapter.update("1", {}, undefined, -1),
+      /valid revision/,
+    );
+    const unversioned = createPrismaAdapter(resource, {
+      ...options,
+      versionField: undefined,
+    });
+    assert.equal(unversioned.findForMutation, undefined);
+    await assert.rejects(unversioned.delete("1", undefined, 0), /versionField/);
+  } finally {
+    await db.$disconnect();
+  }
+});
+
+test("Prisma conditional writes retain unique-constraint and unexpected errors", async () => {
+  const { db, options, adapter } = await versionedAdapter();
+  try {
+    const first = await adapter.create({ title: "First", tenant: "a" });
+    await adapter.create({ title: "Taken", tenant: "a" });
+    const snapshot = (await adapter.findForMutation!(first.id))!;
+    await assert.rejects(
+      adapter.update(
+        first.id,
+        { title: "Taken" },
+        undefined,
+        snapshot.revision,
+      ),
+      UniqueConstraintError,
+    );
+    assert.equal(
+      (await adapter.findForMutation!(first.id))?.revision,
+      snapshot.revision,
+    );
+    const failure = new Error("connection lost");
+    const delegate: PrismaModelDelegate = options.model;
+    delegate.update = async () => {
+      throw failure;
+    };
+    await assert.rejects(
+      adapter.update(first.id, {}, undefined, snapshot.revision),
+      (error) => error === failure,
+    );
+    delegate.delete = async () => {
+      throw failure;
+    };
+    await assert.rejects(
+      adapter.delete(first.id, undefined, snapshot.revision),
+      (error) => error === failure,
+    );
+  } finally {
+    await db.$disconnect();
+  }
+});
+
+test("Prisma rejects an invalid stored revision", async () => {
+  const { db, adapter } = await versionedAdapter();
+  try {
+    const record = await adapter.create({ title: "Draft", tenant: "a" });
+    await db.versionedPost.update({
+      where: { id: Number(record.id) },
+      data: { revision: -1 },
+    });
+    await assert.rejects(adapter.findForMutation!(record.id), /valid revision/);
+  } finally {
+    await db.$disconnect();
+  }
 });
