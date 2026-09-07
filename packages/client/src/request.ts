@@ -29,6 +29,8 @@ export function buildListQuery(params: ListParams): URLSearchParams {
   }
 
   for (const [field, filter] of Object.entries(params.filters ?? {})) {
+    if (!filter) continue;
+
     for (const [operator, value] of Object.entries(filter)) {
       if (value !== undefined) {
         const key =

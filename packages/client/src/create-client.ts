@@ -1,23 +1,31 @@
 import { createResourceClient } from "./resource-client.js";
-import type { ClientOptions, ResourceClient, VerikitClient } from "./types.js";
+import type {
+  ClientOptions,
+  ResourceDefinition,
+  VerikitClient,
+} from "./types.js";
 
 /** Builds a `VerikitClient` bound to `options.baseUrl`. */
-export function createClient(options: ClientOptions): VerikitClient {
+export function createClient<
+  TResources extends {
+    [Name in keyof TResources]: ResourceDefinition;
+  } = Record<string, ResourceDefinition>,
+>(options: ClientOptions): VerikitClient<TResources> {
   // `fetchImpl` is invoked as an object method, so bind the global `fetch`
   // to preserve its required receiver in browsers.
   const fetchImpl = options.fetch ?? fetch.bind(globalThis);
 
   const cacheNamespace = options.cacheNamespace ?? crypto.randomUUID();
 
-  return {
+  const client: VerikitClient<Record<string, ResourceDefinition>> = {
     get cacheNamespace() {
       return cacheNamespace;
     },
-    resource<TRecord = Record<string, unknown>>(
+    resource(
       name: string,
       resourceOptions: { path?: string } = {},
-    ): ResourceClient<TRecord> {
-      return createResourceClient<TRecord>({
+    ) {
+      return createResourceClient({
         fetchImpl,
         baseUrl: options.baseUrl,
         headers: options.headers,
@@ -25,4 +33,6 @@ export function createClient(options: ClientOptions): VerikitClient {
       });
     },
   };
+
+  return client as unknown as VerikitClient<TResources>;
 }

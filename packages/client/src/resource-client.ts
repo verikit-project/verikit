@@ -1,7 +1,6 @@
 import { buildListQuery, sendRequest } from "./request.js";
 import type {
   ActionOptions,
-  ActionResult,
   HeadersSource,
   ListParams,
   ListResponse,
@@ -29,7 +28,9 @@ interface ListEnvelope<T> {
 /**
  * Implements the routes `@verikit/server`'s `createServer()` exposes per resource.
  */
-export function createResourceClient<TRecord = Record<string, unknown>>(
+export function createResourceClient<
+  TRecord extends Record<string, unknown> = Record<string, unknown>,
+>(
   deps: ResourceClientDeps,
 ): ResourceClient<TRecord> {
   const { fetchImpl, baseUrl, headers, name } = deps;
@@ -57,7 +58,7 @@ export function createResourceClient<TRecord = Record<string, unknown>>(
 
   async function list<T>(
     endpoint: readonly string[],
-    params: ListParams,
+    params: ListParams<Record<string, unknown>>,
     options: RequestOptions,
   ): Promise<ListResponse<T>> {
     const envelope = (await run("GET", endpoint, {
@@ -77,8 +78,11 @@ export function createResourceClient<TRecord = Record<string, unknown>>(
     list: (params = {}, options = {}) => list<TRecord>([], params, options),
     search: (params = {}, options = {}) =>
       list<TRecord>(["search"], params, options),
-    relationship: (relationship, params = {}, options = {}) =>
-      list(["relationships", relationship], params, options),
+    relationship: (
+      relationship: string,
+      params: ListParams<Record<string, unknown>> = {},
+      options: RequestOptions = {},
+    ) => list<Record<string, unknown>>(["relationships", relationship], params, options),
 
     async find(id, options = {}) {
       const envelope = (await run("GET", [id], {
@@ -123,11 +127,11 @@ export function createResourceClient<TRecord = Record<string, unknown>>(
       return envelope.data;
     },
 
-    async action<TResult = unknown>(
+    async action(
       actionName: string,
       input?: Record<string, unknown>,
       options: ActionOptions = {},
-    ): Promise<ActionResult<TResult>> {
+    ) {
       const body: Record<string, unknown> = {};
 
       if (input !== undefined) {
@@ -145,7 +149,7 @@ export function createResourceClient<TRecord = Record<string, unknown>>(
       const envelope = (await run("POST", ["actions", actionName], {
         body,
         signal: options.signal,
-      })) as RecordEnvelope<TResult>;
+      })) as RecordEnvelope<unknown>;
 
       return { result: envelope.data, message: envelope.message };
     },
