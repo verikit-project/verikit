@@ -13,7 +13,7 @@ import type { VerikitSchemaTreeSource } from "../form/use-verikit-schema-tree-fo
 
 /** Props for {@link ResourceForm}. */
 export interface ResourceFormProps<
-  TRecord = Record<string, unknown>,
+  TRecord extends object = Record<string, unknown>,
 > extends UseResourceSchemaTreeFormOptions<TRecord> {
   /** The resource (or its schema) whose tree drives the form and submission. */
   resource: VerikitSchemaTreeSource;
@@ -34,7 +34,7 @@ export interface ResourceFormProps<
  * Renders a responsive resource form powered by `useResourceSchemaTreeForm`,
  * with layouts, relationships, conditional fields, and submission state.
  */
-export function ResourceForm<TRecord = Record<string, unknown>>({
+export function ResourceForm<TRecord extends object = Record<string, unknown>>({
   resource,
   id,
   actions,
