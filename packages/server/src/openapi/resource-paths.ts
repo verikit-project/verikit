@@ -236,6 +236,10 @@ function updateOperation(
         required: ["data"],
       }),
       "404": notFoundResponse(),
+      "409": jsonResponse(
+        "The record changed since authorization. Retry the request.",
+        { $ref: "#/components/schemas/ConflictError" },
+      ),
       ...recordBaseResponses(),
     },
   };
@@ -248,6 +252,10 @@ function deleteOperation(operationId: string): OperationObject {
     responses: {
       "204": { description: "The record was deleted." },
       "404": notFoundResponse(),
+      "409": jsonResponse(
+        "The record changed since authorization. Retry the request.",
+        { $ref: "#/components/schemas/ConflictError" },
+      ),
       ...recordBaseResponses(),
     },
   };

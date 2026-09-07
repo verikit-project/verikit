@@ -79,6 +79,12 @@ export interface ResourceListResult<TRecord = Record<string, unknown>> {
   total: number;
 }
 
+/** A detached record and its opaque, storage-authored concurrency token. */
+export interface MutationSnapshot<TRecord> {
+  record: TRecord;
+  revision: number;
+}
+
 /**
  * Storage abstraction for resources registered with `createServer()`.
  *
@@ -87,6 +93,16 @@ export interface ResourceListResult<TRecord = Record<string, unknown>> {
  * implicitly populated.
  */
 export interface ResourceAdapter<TRecord = Record<string, unknown>> {
+  /**
+   * Reads a detached record and revision in one storage operation. Required for
+   * permission-protected update/delete. Advertising this method promises that
+   * update/delete atomically enforce expectedRevision, throwing ConflictError on
+   * any mismatch, including a missing record. Every writer must advance revisions.
+   */
+  findForMutation?(
+    id: string,
+    scope?: Record<string, unknown>,
+  ): Promise<MutationSnapshot<TRecord> | undefined>;
   list(params: ResourceListParams): Promise<ResourceListResult<TRecord>>;
   find(
     id: string,
@@ -100,16 +116,24 @@ export interface ResourceAdapter<TRecord = Record<string, unknown>> {
   create(values: Record<string, unknown>): Promise<TRecord>;
   /**
    * Updates and returns a record, or `undefined` if it no longer exists.
+   * When expectedRevision is supplied, stale or missing records must throw
+   * ConflictError instead.
    * Unique-constraint violations must be mapped to `UniqueConstraintError`.
    */
   update(
     id: string,
     values: Record<string, unknown>,
     scope?: Record<string, unknown>,
+    expectedRevision?: number,
   ): Promise<TRecord | undefined>;
   /**
-   * Deletes a record.
-   * Missing records are treated as a successful no-op.
+   * Deletes a record. Missing records are treated as a successful no-op unless
+   * expectedRevision is supplied, in which case stale or missing records must
+   * throw ConflictError.
    */
-  delete(id: string, scope?: Record<string, unknown>): Promise<void>;
+  delete(
+    id: string,
+    scope?: Record<string, unknown>,
+    expectedRevision?: number,
+  ): Promise<void>;
 }

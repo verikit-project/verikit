@@ -391,3 +391,16 @@ test("declared ID permissions may redact the ID from the generated response cont
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { data: { title: "Visible" } });
 });
+
+test("update and delete document conditional-write conflicts", () => {
+  const document = generateOpenApiDocument(buildOptions(true), info);
+  for (const operation of [
+    document.paths["/post/{id}"]!.patch!,
+    document.paths["/post/{id}"]!.delete!,
+  ]) {
+    assert.deepEqual(
+      operation.responses["409"]!.content!["application/json"]!.schema,
+      { $ref: "#/components/schemas/ConflictError" },
+    );
+  }
+});

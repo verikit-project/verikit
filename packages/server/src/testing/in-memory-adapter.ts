@@ -1,3 +1,4 @@
+import { ConflictError } from "@verikit/core";
 import type {
   ResourceAdapter,
   ResourceFilter,
@@ -78,8 +79,19 @@ export function createInMemoryAdapter<
   const { searchableFields = [], createDefaults } = options;
   const records: TRecord[] = initial.map((record) => ({ ...record }));
 
+  let revision = 0;
+  const revisions = new Map(records.map((record) => [record.id, revision]));
+
   return {
     records,
+    async findForMutation(id, scope) {
+      const record = records.find(
+        (record) => record.id === id && matchesScope(record, scope),
+      );
+      return record
+        ? { record: structuredClone(record), revision: revisions.get(id)! }
+        : undefined;
+    },
 
     async list(
       params: ResourceListParams,
@@ -127,6 +139,7 @@ export function createInMemoryAdapter<
         ...values,
       } as TRecord;
       records.push(record);
+      revisions.set(record.id, ++revision);
       return record;
     },
 
@@ -134,21 +147,43 @@ export function createInMemoryAdapter<
       id: string,
       values: Record<string, unknown>,
       scope?: Record<string, unknown>,
+      expectedRevision?: number,
     ): Promise<TRecord | undefined> {
       const index = records.findIndex(
         (record) => record.id === id && matchesScope(record, scope),
       );
+      if (
+        expectedRevision !== undefined &&
+        (index === -1 || revisions.get(id) !== expectedRevision)
+      ) {
+        throw new ConflictError(
+          "Record changed since authorization. Retry the request.",
+        );
+      }
       if (index === -1) {
         return undefined;
       }
       records[index] = { ...records[index], ...values } as TRecord;
+      revisions.set(id, ++revision);
       return records[index];
     },
 
-    async delete(id: string, scope?: Record<string, unknown>): Promise<void> {
+    async delete(
+      id: string,
+      scope?: Record<string, unknown>,
+      expectedRevision?: number,
+    ): Promise<void> {
       const index = records.findIndex(
         (record) => record.id === id && matchesScope(record, scope),
       );
+      if (
+        expectedRevision !== undefined &&
+        (index === -1 || revisions.get(id) !== expectedRevision)
+      ) {
+        throw new ConflictError(
+          "Record changed since authorization. Retry the request.",
+        );
+      }
       if (index !== -1) {
         records.splice(index, 1);
       }

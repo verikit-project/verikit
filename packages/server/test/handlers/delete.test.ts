@@ -67,3 +67,20 @@ test("handleDelete throws a 404 NotFoundError (not 403) when the actor lacks del
   );
   assert.equal(adapter.records.length, 1);
 });
+
+test("delete rejects a revision changed during an asynchronous permission check", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const permissions = definePermissions<Actor>().can(
+    "delete",
+    async ({ record }) => {
+      const allowed = !(record as Post).published;
+      await adapter.update("1", { published: true });
+      return allowed;
+    },
+  );
+  await assert.rejects(
+    handleDelete(ctxFor(adapter, permissions), "1"),
+    verikitError(409, "CONFLICT"),
+  );
+  assert.deepEqual(adapter.records[0], { ...post, published: true });
+});

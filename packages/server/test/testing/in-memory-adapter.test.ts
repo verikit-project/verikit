@@ -1,3 +1,4 @@
+import { ConflictError } from "@verikit/core";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createInMemoryAdapter } from "../../src/testing/in-memory-adapter.js";
@@ -222,4 +223,31 @@ test("createInMemoryAdapter's find/update/delete honor scope and report a mismat
 
   await adapter.delete("1", { tag: "mine" });
   assert.equal(adapter.records.length, 0);
+});
+
+test("conditional writes compare revisions atomically, including missing records and empty patches", async () => {
+  const adapter = createInMemoryAdapter<Widget>([{ id: "1", name: "Before" }]);
+  assert.equal(await adapter.findForMutation!("missing"), undefined);
+  const first = (await adapter.findForMutation!("1"))!;
+  first.record.name = "Local mutation";
+  assert.equal(adapter.records[0]?.name, "Before");
+  await adapter.update("1", {}, undefined, first.revision);
+  await assert.rejects(
+    adapter.update("1", { name: "stale" }, undefined, first.revision),
+    ConflictError,
+  );
+  await assert.rejects(
+    adapter.delete("1", undefined, first.revision),
+    ConflictError,
+  );
+  const next = (await adapter.findForMutation!("1"))!;
+  await adapter.delete("1", undefined, next.revision);
+  await assert.rejects(
+    adapter.update("1", {}, undefined, next.revision),
+    ConflictError,
+  );
+  await assert.rejects(
+    adapter.delete("1", undefined, next.revision),
+    ConflictError,
+  );
 });

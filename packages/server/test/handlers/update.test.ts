@@ -317,3 +317,65 @@ test("PATCH conditions honor trusted scope over a submitted sibling value", asyn
     body: "replacement",
   });
 });
+
+test("update rejects a revision changed during an asynchronous permission check", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const permissions = definePermissions<Actor>()
+    .can("update", async ({ record }) => {
+      const allowed = !(record as Post).published;
+      await adapter.update("1", { published: true });
+      return allowed;
+    })
+    .field("title", { write: true, read: true });
+  const { ctx, table } = ctxFor(
+    adapter,
+    { title: "Unauthorized edit" },
+    permissions,
+  );
+  await assert.rejects(
+    handleUpdate(ctx, table, "1"),
+    verikitError(409, "CONFLICT"),
+  );
+  assert.deepEqual(adapter.records[0], { ...post, published: true });
+});
+
+test("protected update fails closed without conditional-write support", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  adapter.findForMutation = undefined;
+  const permissions = definePermissions<Actor>()
+    .can("update", true)
+    .field("title", { write: true });
+  const { ctx, table } = ctxFor(
+    adapter,
+    { title: "Never written" },
+    permissions,
+  );
+  await assert.rejects(
+    handleUpdate(ctx, table, "1"),
+    verikitError(501, "NOT_IMPLEMENTED"),
+  );
+  assert.deepEqual(adapter.records[0], post);
+});
+
+test("update rejects changes during field authorization after the resource check", async () => {
+  const adapter = createInMemoryAdapter([{ ...post }]);
+  const permissions = definePermissions<Actor>()
+    .can("update", true)
+    .field("title", {
+      write: async ({ record }) => {
+        const allowed = !(record as Post).published;
+        await adapter.update("1", { published: true });
+        return allowed;
+      },
+    });
+  const { ctx, table } = ctxFor(
+    adapter,
+    { title: "Unauthorized edit" },
+    permissions,
+  );
+  await assert.rejects(
+    handleUpdate(ctx, table, "1"),
+    verikitError(409, "CONFLICT"),
+  );
+  assert.deepEqual(adapter.records[0], { ...post, published: true });
+});

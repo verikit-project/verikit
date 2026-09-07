@@ -11,6 +11,7 @@ import { UniqueConstraintError, uniqueConstraintIssues } from "../adapter.js";
 import { validateRelationshipReferences } from "../relationship-validation.js";
 import type { RouteTableEntry } from "../routing/route-table.js";
 import type { HandlerContext } from "./context.js";
+import { mutationSnapshot } from "./mutation-snapshot.js";
 import { resolveScope } from "../access.js";
 
 /** Handles `PATCH {base}/:id`. */
@@ -22,12 +23,11 @@ export async function handleUpdate(
 ): Promise<Response> {
   const { entry, actor, request } = ctx;
   const scope = await resolveScope(entry, actor);
-  const existing = (await entry.config.adapter.find(id, scope)) as
-    Record<string, unknown> | undefined;
-
-  if (!existing) {
+  const snapshot = await mutationSnapshot(ctx, id, scope);
+  if (!snapshot) {
     throw new NotFoundError();
   }
+  const existing = snapshot.record;
 
   const permission = await maybeCheckResourceOperation(
     entry.config.permissions,
@@ -83,7 +83,12 @@ export async function handleUpdate(
 
   let record: Record<string, unknown> | undefined;
   try {
-    record = await entry.config.adapter.update(id, validated.value, scope);
+    record = await entry.config.adapter.update(
+      id,
+      validated.value,
+      scope,
+      snapshot.revision,
+    );
   } catch (error) {
     if (error instanceof UniqueConstraintError) {
       throw new ValidationError(
