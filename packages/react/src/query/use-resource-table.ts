@@ -120,18 +120,15 @@ export function useResourceTable<
   const activeSort = sorting[0];
   const hasFilters = Object.keys(filters).length > 0;
 
-  const list = useListResource<TRecord>(
-    resource.name,
-    {
-      page: pagination.pageIndex + 1,
-      pageSize: pagination.pageSize,
-      search: globalFilter || undefined,
-      sort: activeSort
-        ? { field: activeSort.id, direction: activeSort.desc ? "desc" : "asc" }
-        : undefined,
-      ...(hasFilters ? { filters } : {}),
-    } as ListParams<TRecord>,
-  );
+  const list = useListResource<TRecord>(resource.name, {
+    page: pagination.pageIndex + 1,
+    pageSize: pagination.pageSize,
+    search: globalFilter || undefined,
+    sort: activeSort
+      ? { field: activeSort.id, direction: activeSort.desc ? "desc" : "asc" }
+      : undefined,
+    ...(hasFilters ? { filters } : {}),
+  } as ListParams<TRecord>);
 
   const table = useTable({
     features: resourceTableFeatures,

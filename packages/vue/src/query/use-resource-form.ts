@@ -41,7 +41,9 @@ export interface UseResourceFormResult<
  * truth for fields, validation, and create/update mutations. Creates when no
  * `id` is provided; otherwise updates the specified record.
  */
-export function useResourceForm<TRecord extends object = Record<string, unknown>>(
+export function useResourceForm<
+  TRecord extends object = Record<string, unknown>,
+>(
   resource: UseResourceFormSource,
   {
     id,

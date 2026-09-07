@@ -10,7 +10,9 @@ export type UseListResourceOptions<TRecord extends object> = Omit<
 >;
 
 /** Lists a resource's records, cached per resource name + params. */
-export function useListResource<TRecord extends object = Record<string, unknown>>(
+export function useListResource<
+  TRecord extends object = Record<string, unknown>,
+>(
   name: string,
   params: ListParams<TRecord> = {},
   options?: UseListResourceOptions<TRecord>,
@@ -31,7 +33,9 @@ export type UseFindResourceOptions<TRecord extends object> = Omit<
 >;
 
 /** Fetches a single resource record by id, cached per resource name + id. */
-export function useResourceFind<TRecord extends object = Record<string, unknown>>(
+export function useResourceFind<
+  TRecord extends object = Record<string, unknown>,
+>(
   name: string,
   id: string,
   options?: UseFindResourceOptions<TRecord>,

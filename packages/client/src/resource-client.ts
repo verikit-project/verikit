@@ -30,9 +30,7 @@ interface ListEnvelope<T> {
  */
 export function createResourceClient<
   TRecord extends Record<string, unknown> = Record<string, unknown>,
->(
-  deps: ResourceClientDeps,
-): ResourceClient<TRecord> {
+>(deps: ResourceClientDeps): ResourceClient<TRecord> {
   const { fetchImpl, baseUrl, headers, name } = deps;
 
   function run(
@@ -82,7 +80,12 @@ export function createResourceClient<
       relationship: string,
       params: ListParams<Record<string, unknown>> = {},
       options: RequestOptions = {},
-    ) => list<Record<string, unknown>>(["relationships", relationship], params, options),
+    ) =>
+      list<Record<string, unknown>>(
+        ["relationships", relationship],
+        params,
+        options,
+      ),
 
     async find(id, options = {}) {
       const envelope = (await run("GET", [id], {

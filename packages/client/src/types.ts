@@ -76,33 +76,41 @@ type ResourceDefinitions<TResources> = {
   >;
 };
 
-type ResourceRecord<TResource> =
-  TResource extends { record: infer TRecord extends object } ? TRecord : never;
+type ResourceRecord<TResource> = TResource extends {
+  record: infer TRecord extends object;
+}
+  ? TRecord
+  : never;
 
-type ResourceCreateInput<TResource> =
-  TResource extends { create?: infer TCreate extends object }
-    ? TCreate
-    : Partial<Omit<ResourceRecord<TResource>, "id">>;
+type ResourceCreateInput<TResource> = TResource extends {
+  create?: infer TCreate extends object;
+}
+  ? TCreate
+  : Partial<Omit<ResourceRecord<TResource>, "id">>;
 
-type ResourceUpdateInput<TResource> =
-  TResource extends { update?: infer TUpdate extends object }
-    ? TUpdate
-    : Partial<ResourceCreateInput<TResource>>;
+type ResourceUpdateInput<TResource> = TResource extends {
+  update?: infer TUpdate extends object;
+}
+  ? TUpdate
+  : Partial<ResourceCreateInput<TResource>>;
 
-type ResourceActions<TResource> =
-  TResource extends { actions?: infer TActions extends object }
-    ? TActions
-    : Record<string, ActionDefinition>;
+type ResourceActions<TResource> = TResource extends {
+  actions?: infer TActions extends object;
+}
+  ? TActions
+  : Record<string, ActionDefinition>;
 
-type ResourceRelationships<TResource> =
-  TResource extends { relationships?: infer TRelationships extends object }
-    ? TRelationships
-    : Record<string, RelationshipDefinition>;
+type ResourceRelationships<TResource> = TResource extends {
+  relationships?: infer TRelationships extends object;
+}
+  ? TRelationships
+  : Record<string, RelationshipDefinition>;
 
-type ResourceUploadFields<TResource> =
-  TResource extends { uploads?: infer TUploadFields extends string }
-    ? TUploadFields
-    : string;
+type ResourceUploadFields<TResource> = TResource extends {
+  uploads?: infer TUploadFields extends string;
+}
+  ? TUploadFields
+  : string;
 
 type RelationshipRecord<TRelationship> =
   TRelationship extends RelationshipDefinition<infer TRecord> ? TRecord : never;

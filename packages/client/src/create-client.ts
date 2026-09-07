@@ -21,10 +21,7 @@ export function createClient<
     get cacheNamespace() {
       return cacheNamespace;
     },
-    resource(
-      name: string,
-      resourceOptions: { path?: string } = {},
-    ) {
+    resource(name: string, resourceOptions: { path?: string } = {}) {
       return createResourceClient({
         fetchImpl,
         baseUrl: options.baseUrl,

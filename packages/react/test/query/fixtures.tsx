@@ -254,7 +254,9 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
 
   const client: VerikitClient = {
     cacheNamespace: "test",
-    resource<TRecord extends object = Record<string, unknown>>(): ResourceClient<TRecord> {
+    resource<
+      TRecord extends object = Record<string, unknown>,
+    >(): ResourceClient<TRecord> {
       return resourceClient as unknown as ResourceClient<TRecord>;
     },
   };
