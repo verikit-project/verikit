@@ -1,10 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { boolean, defineResource, from, text } from "@verikit/core";
+import {
+  ConflictError,
+  boolean,
+  defineResource,
+  from,
+  text,
+} from "@verikit/core";
 import { UniqueConstraintError } from "@verikit/server";
 import { sql } from "drizzle-orm";
 import { int as mysqlInt, mysqlTable } from "drizzle-orm/mysql-core";
-import { sqliteTable, text as sqliteText } from "drizzle-orm/sqlite-core";
+import {
+  integer,
+  sqliteTable,
+  text as sqliteText,
+} from "drizzle-orm/sqlite-core";
 import {
   createDrizzleAdapter,
   type AnyDrizzleDatabase,
@@ -711,4 +721,119 @@ test("list uses an async transaction on a non-sync drizzle client", async () => 
 
   assert.equal(transactionCalled, true);
   assert.deepEqual(result, { records: rows, total: 1 });
+});
+
+const versionedPosts = sqliteTable("versioned_posts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: sqliteText("title").notNull().unique(),
+  published: integer("published", { mode: "boolean" }).notNull().default(false),
+  tenant: sqliteText("tenant").notNull(),
+  revision: integer("revision").notNull().default(0),
+});
+
+function versionedAdapter() {
+  const db = createTestDb();
+  db.run(
+    sql`CREATE TABLE versioned_posts (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL UNIQUE, published INTEGER NOT NULL DEFAULT 0, tenant TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 0)`,
+  );
+  const resource = defineResource("versioned", {
+    table: versionedPosts,
+    fields: { title: text(), published: boolean(), tenant: text() },
+  });
+  return {
+    db,
+    resource,
+    adapter: createDrizzleAdapter(db, resource, {
+      versionColumn: versionedPosts.revision,
+    }),
+  };
+}
+
+test("Drizzle conditional writes enforce revisions and scope in real SQL", async () => {
+  const { adapter } = versionedAdapter();
+  const created = await adapter.create({ title: "Draft", tenant: "a" });
+  assert.equal(Object.hasOwn(created, "revision"), false);
+  assert.equal(await adapter.findForMutation!("bad-id"), undefined);
+  assert.equal(await adapter.findForMutation!("999"), undefined);
+  assert.equal(
+    await adapter.findForMutation!(created.id, { tenant: "b" }),
+    undefined,
+  );
+  const first = (await adapter.findForMutation!(created.id, { tenant: "a" }))!;
+  await adapter.update(created.id, { published: true });
+  await assert.rejects(
+    adapter.update(
+      created.id,
+      { title: "stale" },
+      { tenant: "a" },
+      first.revision,
+    ),
+    ConflictError,
+  );
+  await assert.rejects(
+    adapter.delete(created.id, { tenant: "a" }, first.revision),
+    ConflictError,
+  );
+  assert.equal((await adapter.find(created.id))?.title, "Draft");
+  const next = (await adapter.findForMutation!(created.id))!;
+  await assert.rejects(
+    adapter.update(created.id, {}, { tenant: "b" }, next.revision),
+    ConflictError,
+  );
+  await assert.rejects(
+    adapter.delete(created.id, { tenant: "b" }, next.revision),
+    ConflictError,
+  );
+  const updated = await adapter.update(
+    created.id,
+    {},
+    undefined,
+    next.revision,
+  );
+  assert.ok(updated);
+  const final = (await adapter.findForMutation!(created.id))!;
+  assert.equal(final.revision, next.revision + 1);
+  await adapter.delete(created.id, { tenant: "a" }, final.revision);
+  await assert.rejects(
+    adapter.delete(created.id, undefined, final.revision),
+    ConflictError,
+  );
+  await assert.rejects(
+    adapter.update("bad-id", {}, undefined, final.revision),
+    ConflictError,
+  );
+  await assert.rejects(
+    adapter.delete("bad-id", undefined, final.revision),
+    ConflictError,
+  );
+});
+
+test("Drizzle rejects invalid revision configuration and tokens", async () => {
+  const { db, resource, adapter } = versionedAdapter();
+  assert.throws(
+    () =>
+      createDrizzleAdapter(db, resource, {
+        versionColumn: versionedPosts.title,
+      }),
+    /versionColumn/,
+  );
+  await assert.rejects(
+    adapter.update("1", {}, undefined, -1),
+    /valid revision/,
+  );
+  const unversioned = createDrizzleAdapter(db, resource);
+  assert.equal(unversioned.findForMutation, undefined);
+  await assert.rejects(unversioned.delete("1", undefined, 0), /versionColumn/);
+});
+
+test("Drizzle rejects invalid stored revisions rather than falling back to an unconditional write", async () => {
+  const { db, adapter } = versionedAdapter();
+  const created = await adapter.create({ title: "Draft", tenant: "a" });
+  db.run(sql`UPDATE versioned_posts SET revision = 'invalid'`);
+  await assert.rejects(
+    adapter.findForMutation!(created.id),
+    /Invalid stored revision/,
+  );
+  db.run(sql`UPDATE versioned_posts SET revision = -1`);
+  await assert.rejects(adapter.findForMutation!(created.id), /valid revision/);
 });

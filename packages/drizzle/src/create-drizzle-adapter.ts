@@ -1,3 +1,4 @@
+import { ConflictError } from "@verikit/core";
 import type { FieldMap, RelationshipMap, Resource } from "@verikit/core";
 import {
   UniqueConstraintError,
@@ -6,6 +7,9 @@ import {
 } from "@verikit/server";
 import {
   and,
+  getTableColumns,
+  sql,
+  type Column,
   asc,
   count,
   desc,
@@ -43,6 +47,11 @@ export type AnyDrizzleDatabase =
   | MySqlDatabase<any, any, any, any>;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+export interface DrizzleAdapterOptions {
+  /** Dedicated NOT NULL integer revision column, excluded from resource fields. All external writers must increment it. */
+  versionColumn?: Column;
+}
+
 /** A canonical API record returned by the Drizzle adapter. */
 export interface DrizzleResourceRecord extends Record<string, unknown> {
   /** String form of the table's single primary key, suitable for resource URLs. */
@@ -59,6 +68,7 @@ export function createDrizzleAdapter<
 >(
   db: AnyDrizzleDatabase,
   resource: Resource<string, TFields, TTable, TRelationships>,
+  options: DrizzleAdapterOptions = {},
 ): ResourceAdapter<DrizzleResourceRecord> {
   const { table } = resource;
 
@@ -77,6 +87,40 @@ export function createDrizzleAdapter<
   const schema = resource.toSchema();
   const idColumn = resolveIdColumn(table, resource.name);
   const columnsByField = resolveFieldColumns(table, schema.fields);
+  const versionColumn = options.versionColumn;
+  const versionKey = Object.entries(getTableColumns(table)).find(
+    ([, column]) => column === versionColumn,
+  )?.[0];
+  if (
+    versionColumn &&
+    (!versionKey ||
+      versionColumn.dataType !== "number" ||
+      !versionColumn.notNull ||
+      versionColumn === idColumn ||
+      [...columnsByField.values()].some(
+        ({ column }) => column === versionColumn,
+      ))
+  ) {
+    throw new Error(
+      "versionColumn must be a dedicated NOT NULL numeric column of the resource table.",
+    );
+  }
+  function revisionCondition(expectedRevision: number | undefined) {
+    if (expectedRevision === undefined) return undefined;
+    if (
+      !versionColumn ||
+      !Number.isSafeInteger(expectedRevision) ||
+      expectedRevision < 0 ||
+      expectedRevision >= Number.MAX_SAFE_INTEGER
+    ) {
+      throw new Error(
+        "Conditional writes require a configured versionColumn and a valid revision.",
+      );
+    }
+    return eq(versionColumn, expectedRevision);
+  }
+  const conflict = () =>
+    new ConflictError("Record changed since authorization. Retry the request.");
   // Query aliases are the resource's public field names, not drizzle's table
   // property keys. This both supports `from(column).as(...)` and ensures ORM-only
   // columns can never enter an adapter result.
@@ -208,6 +252,25 @@ export function createDrizzleAdapter<
   }
 
   return {
+    ...(versionColumn && {
+      async findForMutation(id: string, scope?: Record<string, unknown>) {
+        const value = coerceId(idColumn, id);
+        if (value === undefined) return undefined;
+        const [snapshot] = await client
+          .select({ record: publicSelection, revision: versionColumn })
+          .from(table)
+          .where(and(eq(idColumn, value), scopeCondition(scope)))
+          .limit(1);
+        if (!snapshot) return undefined;
+        if (typeof snapshot.revision !== "number")
+          throw new Error("Invalid stored revision.");
+        revisionCondition(snapshot.revision);
+        return {
+          record: toPublicRecord(snapshot.record),
+          revision: snapshot.revision as number,
+        };
+      },
+    }),
     async list(params: ResourceListParams) {
       // A search term against a resource with no searchable fields can never
       // match anything; treat it as an unsatisfiable filter (zero results),
@@ -300,7 +363,9 @@ export function createDrizzleAdapter<
       id: string,
       values: Record<string, unknown>,
       scope?: Record<string, unknown>,
+      expectedRevision?: number,
     ) {
+      const condition = revisionCondition(expectedRevision);
       const value = coerceId(idColumn, id);
 
       // No record can have this id (a non-numeric id against a numeric column), or the
@@ -308,6 +373,7 @@ export function createDrizzleAdapter<
       // way, matches `find`'s "missing" signal (`undefined`) rather than throwing, so
       // `@verikit/server` can map it to a 404 instead of an opaque 500.
       if (value === undefined) {
+        if (expectedRevision !== undefined) throw conflict();
         return undefined;
       }
 
@@ -321,6 +387,7 @@ export function createDrizzleAdapter<
       // An empty payload (or one whose keys are all undeclared, non-field extras) is a
       // legitimate no-op: the caller already confirmed the record exists, so this
       // returns it unchanged rather than sending drizzle a `set({})`, which throws "No values to set" instead of updating zero columns.
+      if (versionColumn) row[versionKey!] = sql`${versionColumn} + 1`;
       if (Object.keys(row).length === 0) {
         return selectById(value, scope);
       }
@@ -329,9 +396,10 @@ export function createDrizzleAdapter<
         const [record] = await client
           .update(table)
           .set(row)
-          .where(and(eq(idColumn, value), scopeCondition(scope)))
+          .where(and(eq(idColumn, value), scopeCondition(scope), condition))
           .returning(publicSelection);
 
+        if (!record && expectedRevision !== undefined) throw conflict();
         return record ? toPublicRecord(record) : undefined;
       } catch (error) {
         if (isUniqueConstraintError(error)) {
@@ -344,16 +412,28 @@ export function createDrizzleAdapter<
       }
     },
 
-    async delete(id: string, scope?: Record<string, unknown>) {
+    async delete(
+      id: string,
+      scope?: Record<string, unknown>,
+      expectedRevision?: number,
+    ) {
+      const condition = revisionCondition(expectedRevision);
       const value = coerceId(idColumn, id);
 
       if (value === undefined) {
+        if (expectedRevision !== undefined) throw conflict();
         return;
       }
 
-      await client
+      const query = client
         .delete(table)
-        .where(and(eq(idColumn, value), scopeCondition(scope)));
+        .where(and(eq(idColumn, value), scopeCondition(scope), condition));
+      if (expectedRevision === undefined) {
+        await query;
+      } else {
+        const deleted = await query.returning({ id: idColumn });
+        if (deleted.length === 0) throw conflict();
+      }
     },
   };
 }
