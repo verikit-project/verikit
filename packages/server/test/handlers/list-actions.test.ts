@@ -150,3 +150,40 @@ test("an unknown include value is rejected", async () => {
   assert.equal(response.status, 400);
   assert.equal(body.error.code, "VALIDATION_ERROR");
 });
+
+test("include=actions keys numeric ids as strings, skips records without an id or with nothing to report, and omits a missing guard message", async () => {
+  const archive = action("archive").label("Archive");
+  const handler = createServer({
+    resources: [
+      {
+        resource: defineResource("post", {
+          fields: { title: text() },
+          actions: [archive],
+        }),
+        // Adapters should always return an id; a record without one can't
+        // be targeted by an action, so it's left out rather than guessed at.
+        adapter: createInMemoryAdapter([
+          { id: 7, title: "Numeric" },
+          { id: "8", title: "Open" },
+          { title: "No id" },
+        ] as unknown as Post[]),
+        handlers: [
+          archive
+            .availableWhen<unknown, { title: string }>(
+              ({ record }) => record?.title === "Open",
+            )
+            .execute(() => "done"),
+        ],
+        permissions: "open",
+      },
+    ],
+  });
+
+  const response = await handler(new Request("https://x/post?include=actions"));
+  const body = await response.json();
+
+  assert.deepEqual(body.meta.actions, {
+    records: { "7": { archive: { reason: "unavailable" } } },
+    collection: {},
+  });
+});
