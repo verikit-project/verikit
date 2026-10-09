@@ -38,7 +38,7 @@ export function resourceComponentSchemas<TActor>(
     ),
   };
 
-  for (const action of entry.config.actions ?? []) {
+  for (const action of entry.actions) {
     const form = action.toSchema().form;
     if (form) {
       schemas[`${name}${capitalize(action.name)}Input`] = fieldsToJsonSchema(

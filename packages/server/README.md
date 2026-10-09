@@ -4,6 +4,49 @@ Web-standard CRUD and action server for VeriKit resources.
 
 See the [VeriKit documentation](https://verikit.dev) for setup and usage.
 
+## Actions: declared on the resource, handled on the server
+
+Declare actions next to the resource, without `.execute()`. The declaration is
+client-safe, so `ResourceTable` and `ResourceForm` read its label,
+confirmation, and form straight from the resource schema:
+
+```ts
+// resources/posts.ts: shared by client and server
+export const publish = action("publish")
+  .label("Publish")
+  .confirmation("Publish this post?")
+  .form({ note: text() });
+
+export const posts = defineResource("posts", { fields, actions: [publish] });
+```
+
+Attach the handler on the server only, built from the declaration:
+
+```ts
+// server.ts
+createServer({
+  resources: [
+    {
+      resource: posts,
+      adapter,
+      permissions,
+      handlers: [publish.execute(async ({ record, input }) => /* ... */)],
+    },
+  ],
+});
+```
+
+Only actions with a handler get a `POST {base}/actions/:name` route.
+`createServer()` throws at startup if a handler names an action the resource
+doesn't declare, lacks `.execute()`, or changes the declared label, form, or
+confirmation. Server-only `.availableWhen()`, `.hooks()`, and `.permissions()`
+can still be chained onto the handler.
+
+**Migrating:** the per-resource `actions` option of `createServer()` is
+deprecated. It still works, but logs a one-time warning per resource, and will
+be removed in the next minor release. Move each action's declaration into
+`defineResource({ actions })` and pass `action.execute(fn)` via `handlers`.
+
 ## Upload security
 
 `file()` and `image()` accept rules verify recognized file signatures before

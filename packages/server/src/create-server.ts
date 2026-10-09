@@ -27,6 +27,19 @@ export interface ServerErrorRoute {
   action: RouteAction;
 }
 
+/**
+ * An executable action: a declaration from `defineResource({ actions })` with `.execute()` (and optionally `.availableWhen()`, `.hooks()`, `.permissions()`) attached on the server. Form/record/result type params are erased since actions of differing shapes share one array; `runAction` recovers them per-action when the server invokes it.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above */
+export type ServerActionHandler<TActor = unknown> = ActionBuilder<
+  string,
+  any,
+  TActor,
+  any,
+  any
+>;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 /** One resource registered with `createServer()`. */
 export interface ServerResourceConfig<TActor = unknown> {
   resource: Resource;
@@ -36,10 +49,13 @@ export interface ServerResourceConfig<TActor = unknown> {
    */
   path?: string;
   /**
-   * Named runtime actions (`@verikit/runtime`'s `action(...)`) exposed as `POST {base}/actions/:name`. Form/record/result type params are erased here since actions of differing shapes share one array; `runAction` recovers them per-action when the server invokes it.
+   * Server implementations of actions declared on `resource`, exposed as `POST {base}/actions/:name`. Build each from its client-safe declaration, e.g. `publish.execute(fn)`, so handler code never reaches client bundles. Startup fails if a handler names an undeclared action or diverges from its declaration's label, form, or confirmation.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
-  actions?: ActionBuilder<string, any, TActor, any, any>[];
+  handlers?: ServerActionHandler<TActor>[];
+  /**
+   * @deprecated Declare actions with `defineResource({ actions })` and pass their server implementations via `handlers`. Still served (and logged once as deprecated) until the next minor release.
+   */
+  actions?: ServerActionHandler<TActor>[];
   /**
    * Required access control for resource operations, fields, and actions.
    * Use `"open"` to explicitly opt out of permission checks.

@@ -403,7 +403,7 @@ export function resourcePaths<TActor>(
     },
   };
 
-  for (const action of config.actions ?? []) {
+  for (const action of entry.actions) {
     const actionSchema = action.toSchema();
     const inputRef: OpenApiSchema | undefined = actionSchema.form
       ? {
