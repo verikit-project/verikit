@@ -110,6 +110,15 @@ export class ActionBuilder<
     });
   }
 
+  /** Sets whether the action targets one record (default) or the whole collection. */
+  scope(
+    scope: NonNullable<ActionPresentation["scope"]>,
+  ): ActionBuilder<TName, TForm, TContext, TRecord, TResult> {
+    return this.withState({
+      presentation: { ...this.state.presentation, scope },
+    });
+  }
+
   /** Merges adapter-specific presentation metadata. */
   meta(
     meta: Record<string, unknown>,
@@ -229,6 +238,7 @@ export class ActionBuilder<
       description: this.state.presentation.description,
       icon: this.state.presentation.icon,
       variant: this.state.presentation.variant,
+      scope: this.state.presentation.scope,
       confirmation: this.state.confirmation,
       form,
       result: schemaResultMessages(this.state.result),

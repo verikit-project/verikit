@@ -39,10 +39,30 @@ export interface AnyRelationshipBuilder {
 /** Map of relationship names to their builders. */
 export type RelationshipMap = Record<string, AnyRelationshipBuilder>;
 
-/** Minimal serializable shape of a finalized action, kept loose so `core` never depends on `@verikit/runtime`'s concrete `ActionSchema`. */
+/**
+ * Serializable, client-safe shape of a finalized action declaration. Defined here so `core` never depends on `@verikit/runtime`, whose `ActionSchema` extends it; handlers, availability guards, and hooks never serialize.
+ */
 export interface ActionSchemaLike {
   type: "action";
   name: string;
+  label?: string;
+  description?: string;
+  icon?: string;
+  variant?: "primary" | "secondary" | "danger";
+  /** Whether the action runs against one record (default) or the whole collection. */
+  scope?: "record" | "collection";
+  confirmation?: {
+    title?: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+  };
+  form?: Record<string, FieldSchema>;
+  result?: {
+    successMessage?: string;
+    errorMessage?: string;
+  };
+  meta?: Record<string, unknown>;
 }
 
 /**
@@ -191,9 +211,10 @@ export interface ResourceConfig<
   access?: ResourceAccess;
   meta?: Record<string, unknown>;
   /**
-   * Runtime actions (e.g. `@verikit/runtime`'s `action(...)`) associated
-   * with this resource. Included in `toSchema()` by name, reusing each
-   * action's own `toSchema()` output.
+   * Client-safe action declarations (e.g. `@verikit/runtime`'s `action(...)`
+   * without `.execute()`). Included in `toSchema()` by name so UIs can render
+   * labels, confirmations, and forms; the server attaches handlers separately
+   * via `createServer({ resources: [{ handlers }] })`.
    */
   actions?: readonly AnyActionBuilder[];
   /**
@@ -354,6 +375,16 @@ export class Resource<
       throw new Error(
         `Resource "${name}" cannot define both a field and relationship named "${duplicateName}".`,
       );
+    }
+
+    const actionNames = new Set<string>();
+    for (const actionBuilder of config.actions ?? []) {
+      if (actionNames.has(actionBuilder.name)) {
+        throw new Error(
+          `Resource "${name}" has duplicate action "${actionBuilder.name}".`,
+        );
+      }
+      actionNames.add(actionBuilder.name);
     }
 
     this.name = name;

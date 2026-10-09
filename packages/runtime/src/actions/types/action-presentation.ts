@@ -9,6 +9,8 @@ export interface ActionPresentation {
   description?: string;
   icon?: string;
   variant?: "primary" | "secondary" | "danger";
+  /** Whether the action targets one record (default) or the whole collection. */
+  scope?: "record" | "collection";
   meta?: Record<string, unknown>;
 }
 
