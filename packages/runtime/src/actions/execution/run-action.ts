@@ -1,13 +1,13 @@
-import { checkAction, validateResourceAsync } from "@verikit/core";
+import { validateResourceAsync } from "@verikit/core";
 import type { ActionBuilder } from "../builders/action-builder.js";
 import type { ActionFormMap, InferActionForm } from "../types/action-form.js";
-import { normalizeAvailability } from "../utils/availability.js";
 import { messageFrom } from "../utils/messages.js";
 import type { ActionRunRequest } from "./action-context.js";
+import { checkActionAvailability } from "./check-availability.js";
 import type { ActionRunResult } from "./action-result.js";
 
 /**
- * Runs an action, in order: a permissions check, an availability check, a confirmation gate, form validation, lifecycle hooks, and execution. Availability is checked before confirmation so an unavailable action reports `reason: "unavailable"` even when it also declares `.confirmation()` otherwise a caller would be asked to confirm an action that can't actually run. Any error thrown by the `before` hook, action handler, or `after` hook causes the action to fail. The optional `error` hook is then invoked. Errors thrown by the `error` hook are ignored so they do not mask the original execution failure.
+ * Runs an action, in order: a permissions check and an availability check (see `checkActionAvailability()`), a confirmation gate, form validation, lifecycle hooks, and execution. Availability is checked before confirmation so an unavailable action reports `reason: "unavailable"` even when it also declares `.confirmation()` otherwise a caller would be asked to confirm an action that can't actually run. Any error thrown by the `before` hook, action handler, or `after` hook causes the action to fail. The optional `error` hook is then invoked. Errors thrown by the `error` hook are ignored so they do not mask the original execution failure.
  */
 export async function runAction<
   TName extends string,
@@ -29,36 +29,13 @@ export async function runAction<
     | undefined;
 
   try {
-    if (runtime.permissions) {
-      const permission = await checkAction(runtime.permissions, action.name, {
-        actor: request.context,
-        record: request.record,
-      });
-
-      if (!permission.allowed) {
-        return {
-          success: false,
-          reason: "forbidden",
-          message: permission.reason,
-        };
-      }
-    }
-
-    const availability = runtime.isAvailable
-      ? normalizeAvailability(
-          await runtime.isAvailable({
-            context: request.context,
-            record: request.record,
-            input: request.input,
-          }),
-        )
-      : { available: true };
+    const availability = await checkActionAvailability(action, request);
 
     if (!availability.available) {
       return {
         success: false,
-        reason: "unavailable",
-        message: availability.reason,
+        reason: availability.reason,
+        message: availability.message,
       };
     }
 

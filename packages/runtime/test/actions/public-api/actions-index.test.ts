@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { action, runAction } from "../../../src/actions/index.js";
+import {
+  action,
+  checkActionAvailability,
+  runAction,
+} from "../../../src/actions/index.js";
 import {
   action as packageAction,
+  checkActionAvailability as packageCheckActionAvailability,
   runAction as packageRunAction,
 } from "../../../src/index.js";
 
@@ -11,6 +16,7 @@ test("actions barrels expose the builder and execution entrypoints", () => {
   assert.equal(typeof runAction, "function");
   assert.equal(packageAction, action);
   assert.equal(packageRunAction, runAction);
+  assert.equal(packageCheckActionAvailability, checkActionAvailability);
 });
 
 test("ActionState is not part of the public actions barrel", () => {
