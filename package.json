@@ -1,6 +1,6 @@
 {
   "name": "verikit",
-  "version": "0.24.3",
+  "version": "0.24.4",
   "private": true,
   "description": "A TypeScript resource framework.",
   "scripts": {
