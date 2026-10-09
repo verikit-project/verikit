@@ -200,6 +200,7 @@ export function useDeleteResource(
       context: MutationFunctionContext,
     ) => {
       queryClient.removeQueries({ queryKey: keys.find(id) });
+      queryClient.removeQueries({ queryKey: keys.findWithActions(id) });
       return options?.onSuccess?.(data, id, onMutateResult?.caller, context);
     },
     // Always refetch after deletion to reconcile optimistic state with the server.

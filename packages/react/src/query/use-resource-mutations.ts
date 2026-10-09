@@ -173,6 +173,7 @@ export function useDeleteResource(
     },
     onSuccess: (data, id, ...rest) => {
       queryClient.removeQueries({ queryKey: keys.find(id) });
+      queryClient.removeQueries({ queryKey: keys.findWithActions(id) });
       return options?.onSuccess?.(data, id, ...rest);
     },
     // Always refetch after deletion to reconcile optimistic state with the server.

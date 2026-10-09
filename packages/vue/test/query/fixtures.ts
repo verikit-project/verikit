@@ -11,6 +11,7 @@ import type {
 import { QueryClient } from "@tanstack/vue-query";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { defineComponent, h, type Component } from "vue";
+import { VerikitClientError } from "@verikit/client";
 import { VerikitProvider } from "../../src/client/index.js";
 
 export interface FakeRecord extends Record<string, unknown> {
@@ -30,6 +31,7 @@ export interface FakeResourceCalls {
 
 export interface FakeClientFailures {
   list?: boolean | Error;
+  find?: boolean | Error;
   create?: boolean | Error;
   update?: boolean | Error;
   delete?: boolean | Error;
@@ -73,7 +75,7 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   block: (method: FakeMethod) => () => void;
   lastListParams: ListParams | undefined;
   lastAction: FakeActionCall | undefined;
-  /** Returned as `actions` by `list`/`search` calls made with `includeActions: true`. */
+  /** Returned as `actions` by `list`/`search` calls made with `includeActions: true`, and per record by `findWithActions`. */
   actionAvailability: ListActionAvailability | undefined;
 } {
   const records: FakeRecord[] = initial.map((record) => ({ ...record }));
@@ -169,6 +171,26 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       }
 
       return record;
+    },
+
+    async findWithActions(id, options) {
+      const findFailure = consumeFailure(
+        failNext.find,
+        "Simulated find failure.",
+      );
+      failNext.find = false;
+      if (findFailure) {
+        throw findFailure;
+      }
+      // Like the server, a missing record is a 404 the page shows as not found.
+      if (!records.some((candidate) => candidate.id === id)) {
+        throw new VerikitClientError(404, "Not found.", "NOT_FOUND");
+      }
+      const record = await resourceClient.find(id, options);
+      return {
+        record,
+        actions: state.actionAvailability?.records[id] ?? {},
+      };
     },
 
     async create(input, _options) {

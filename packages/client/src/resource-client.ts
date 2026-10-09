@@ -7,6 +7,7 @@ import type {
   ListResponse,
   RequestOptions,
   ResourceClient,
+  UnavailableActions,
 } from "./types.js";
 
 interface ResourceClientDeps {
@@ -19,6 +20,7 @@ interface ResourceClientDeps {
 interface RecordEnvelope<T> {
   data: T;
   message?: string;
+  meta?: { actions?: UnavailableActions };
 }
 
 interface ListEnvelope<T> {
@@ -99,6 +101,14 @@ export function createResourceClient<
         signal: options.signal,
       })) as RecordEnvelope<TRecord>;
       return envelope.data;
+    },
+
+    async findWithActions(id, options = {}) {
+      const envelope = (await run("GET", [id], {
+        query: new URLSearchParams({ include: "actions" }),
+        signal: options.signal,
+      })) as RecordEnvelope<TRecord>;
+      return { record: envelope.data, actions: envelope.meta?.actions ?? {} };
     },
 
     async create(input, options = {}) {

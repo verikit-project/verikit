@@ -1,6 +1,10 @@
 import type { UseQueryOptions, UseQueryResult } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
-import type { ListParams, ListResponse } from "@verikit/client";
+import type {
+  ListParams,
+  ListResponse,
+  FindWithActionsResponse,
+} from "@verikit/client";
 import { useVerikitClient } from "../client/use-verikit-client.js";
 import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 
@@ -46,6 +50,31 @@ export function useResourceFind<
     queryKey: resourceQueryKeys(name, client).find(id),
     queryFn: ({ signal }) =>
       client.resource<TRecord>(name).find(id, { signal }),
+    ...options,
+  });
+}
+
+export type UseFindWithActionsResourceOptions<TRecord extends object> = Omit<
+  UseQueryOptions<FindWithActionsResponse<TRecord>, Error>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Fetches a single record by id along with the record-scoped actions the caller can't run on it, cached per resource name + id.
+ */
+export function useResourceFindWithActions<
+  TRecord extends object = Record<string, unknown>,
+>(
+  name: string,
+  id: string,
+  options?: UseFindWithActionsResourceOptions<TRecord>,
+): UseQueryResult<FindWithActionsResponse<TRecord>, Error> {
+  const client = useVerikitClient();
+
+  return useQuery({
+    queryKey: resourceQueryKeys(name, client).findWithActions(id),
+    queryFn: ({ signal }) =>
+      client.resource<TRecord>(name).findWithActions(id, { signal }),
     ...options,
   });
 }

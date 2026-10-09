@@ -1,11 +1,13 @@
 export {
   useListResource,
   useResourceFind,
+  useResourceFindWithActions,
   useResourceRelationship,
 } from "./use-resource-queries.js";
 export type {
   UseListResourceOptions,
   UseFindResourceOptions,
+  UseFindWithActionsResourceOptions,
   UseResourceRelationshipOptions,
 } from "./use-resource-queries.js";
 export {
