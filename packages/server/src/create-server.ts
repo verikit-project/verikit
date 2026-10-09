@@ -61,6 +61,12 @@ export interface ServerResourceConfig<TActor = unknown> {
    * Use `"open"` to explicitly opt out of permission checks.
    */
   permissions: PermissionsBuilder<TActor, unknown> | "open";
+  /**
+   * Lets update and delete run on a resource with permissions even though its adapter can't do conditional writes (no `findForMutation`, e.g. Prisma without `versionField` or Drizzle without `versionColumn`), instead of returning 501. Adapters that can still write conditionally.
+   *
+   * Unsafe in general: permissions are checked against the record as it was read, and the write no longer fails if the record changed in between. Only set this when the update and delete rules don't depend on record fields that can change, e.g. a rule that checks only the actor's role.
+   */
+  unsafeUnconditionalWrites?: true;
 }
 
 export interface CreateServerOptions<TActor = unknown> {

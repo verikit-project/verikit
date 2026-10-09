@@ -41,6 +41,14 @@ library does not run database migrations. Adapters without conditional-write
 support return HTTP 501 for protected update/delete; explicitly `"open"` resources
 retain unconditional writes.
 
+When a revision column isn't possible, a protected resource can opt out with
+`unsafeUnconditionalWrites: true` in its `createServer()` resource config.
+Update and delete then check permissions against the record as read and write
+without a revision, so a change made in between is not detected. This is only
+safe when the update and delete rules don't depend on record fields that can
+change, such as a rule that checks only the actor's role. Adapters that support
+conditional writes keep using them.
+
 Custom adapter wrappers must forward `expectedRevision` (fourth argument to
 `update`, third to `delete`). `findForMutation` must capture record and revision
 atomically and return a detached record. Revisions must be safe nonnegative
