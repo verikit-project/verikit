@@ -38,6 +38,7 @@ import {
   type UseResourceTableSource,
 } from "../query/use-resource-table.js";
 import {
+  isActionDenied,
   isPermissionDenied,
   ResourceActionDialog,
   useRunResourceAction,
@@ -80,7 +81,7 @@ export interface ResourceTableProps<
    */
   actions?: boolean;
   /**
-   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. As with the built-in actions, one denied (403) by the server is hidden for the rest of this component's lifetime. Defaults to `actions`.
+   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. As with the built-in actions, one denied by the server (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
    */
   resourceActions?: boolean;
   /**
@@ -205,7 +206,7 @@ export function ResourceTable<
   const directAction = useRunResourceAction(resource.name, {
     onSuccess: () => setActionError(null),
     onError: (mutationError, variables) => {
-      if (isPermissionDenied(mutationError)) {
+      if (isActionDenied(mutationError, variables.recordId)) {
         denyAction(variables.action, variables.recordId);
       } else {
         setActionError(mutationError.message);

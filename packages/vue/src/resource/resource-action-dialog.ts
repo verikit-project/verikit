@@ -21,13 +21,30 @@ import { RenderField } from "../fields/registry.js";
 import type { VerikitFieldRegistry } from "../fields/types.js";
 import { useVerikitForm } from "../form/use-verikit-form.js";
 
-/** True for an error whose `status` is 403, duck-typed like `ResourceTable`. */
-export function isPermissionDenied(error: unknown): boolean {
+function hasStatus(error: unknown, status: number): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
     "status" in error &&
-    (error as { status: unknown }).status === 403
+    (error as { status: unknown }).status === status
+  );
+}
+
+/** True for an error whose `status` is 403, duck-typed like `ResourceTable`. */
+export function isPermissionDenied(error: unknown): boolean {
+  return hasStatus(error, 403);
+}
+
+/**
+ * True when the server denied running an action. The server denies record actions with 404 rather than 403 so it never reveals whether the record exists; the caller already holds that record, so a 404 there means the action can't run on it (denied, or the record is gone).
+ */
+export function isActionDenied(
+  error: unknown,
+  recordId: string | undefined,
+): boolean {
+  return (
+    isPermissionDenied(error) ||
+    (recordId !== undefined && hasStatus(error, 404))
   );
 }
 
@@ -82,7 +99,7 @@ export interface ResourceActionDialogProps {
   recordId?: string;
   /** Called when the dialog closes, after success or cancel. */
   onClose: () => void;
-  /** Called when the server denies the action (403); the dialog then closes. */
+  /** Called when the server denies the action (403, or 404 for a record action); the dialog then closes. */
   onDenied?: (action: ActionSchemaLike) => void;
   /** Optional renderer overrides for the action's form fields. */
   registry?: Partial<VerikitFieldRegistry>;
@@ -119,7 +136,7 @@ const ActionDialogBody = defineComponent({
     const run = useRunResourceAction(props.resourceName, {
       onSuccess: () => props.onClose(),
       onError: (error) => {
-        if (isPermissionDenied(error)) {
+        if (isActionDenied(error, props.recordId)) {
           props.onDenied?.(action);
           props.onClose();
         } else if (error instanceof VerikitClientError && error.issues) {
@@ -171,7 +188,7 @@ const ActionDialogBody = defineComponent({
               ...form.getFieldProps(name),
             }),
           ),
-          run.error.value && !isPermissionDenied(run.error.value)
+          run.error.value && !isActionDenied(run.error.value, props.recordId)
             ? h(
                 "p",
                 { role: "alert", class: "text-sm text-destructive" },

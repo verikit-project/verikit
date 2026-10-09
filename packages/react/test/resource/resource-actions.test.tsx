@@ -48,6 +48,10 @@ function forbidden(): VerikitClientError {
   return new VerikitClientError(403, "Forbidden.", "FORBIDDEN");
 }
 
+function notFound(): VerikitClientError {
+  return new VerikitClientError(404, "Not found.", "NOT_FOUND");
+}
+
 function buttons(root: ParentNode, label: string): HTMLButtonElement[] {
   return Array.from(root.querySelectorAll("button")).filter(
     (button) => button.textContent === label,
@@ -386,6 +390,45 @@ test("denials accumulate per row across different actions", async () => {
 
   assert.equal(buttons(harness.container, "Feature").length, 0);
   assert.equal(buttons(harness.container, "Reject").length, 2);
+
+  harness.cleanup();
+});
+
+test("a 404 from a record action is the server's denial: it hides the action for that row, direct or via the dialog", async () => {
+  const fixture = createFakeClient([
+    { id: "1", title: "Hello" },
+    { id: "2", title: "World" },
+  ]);
+  const harness = await renderTable(fixture);
+
+  fixture.failNext.action = notFound();
+  click(harness.container, "Feature");
+  await waitFor(() => buttons(harness.container, "Feature").length === 2);
+
+  fixture.failNext.action = notFound();
+  click(harness.container, "Publish");
+  await waitFor(() => dialog() !== null);
+  click(dialog()!, "Yes, publish");
+  await waitFor(() => dialog() === null);
+  await waitFor(() => buttons(harness.container, "Publish").length === 2);
+
+  assert.equal(
+    harness.container.querySelector('[role="alert"]'),
+    null,
+    "a denial hides the action rather than showing an error",
+  );
+
+  harness.cleanup();
+});
+
+test("a 404 from a collection action is shown as an error, not treated as a denial", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = await renderTable(fixture);
+
+  fixture.failNext.action = notFound();
+  click(harness.container, "Reindex");
+  await waitFor(() => /Not found\./.test(harness.container.textContent ?? ""));
+  assert.equal(buttons(harness.container, "Reindex").length, 1);
 
   harness.cleanup();
 });

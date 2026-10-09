@@ -39,6 +39,10 @@ function forbidden(): VerikitClientError {
   return new VerikitClientError(403, "Forbidden.", "FORBIDDEN");
 }
 
+function notFound(): VerikitClientError {
+  return new VerikitClientError(404, "Not found.", "NOT_FOUND");
+}
+
 function root(wrapper: { element: unknown }): HTMLElement {
   return wrapper.element as HTMLElement;
 }
@@ -369,6 +373,45 @@ test("ResourceForm renders declared action nodes without an actions prop", async
     Boolean(root(wrapper).querySelector('input[name="reason"]')),
   );
   assert.equal(buttons(root(wrapper), "Reject").length, 1);
+
+  harness.cleanup();
+});
+
+test("a 404 from a record action is the server's denial: it hides the action for that row, direct or via the dialog", async () => {
+  const fixture = createFakeClient([
+    { id: "1", title: "Hello" },
+    { id: "2", title: "World" },
+  ]);
+  const { harness, container } = await renderTable(fixture);
+
+  fixture.failNext.action = notFound();
+  await click(container, "Feature");
+  await waitFor(() => buttons(container, "Feature").length === 2);
+
+  fixture.failNext.action = notFound();
+  await click(container, "Publish");
+  await waitFor(() => dialog() !== null);
+  await click(dialog()!, "Yes, publish");
+  await waitFor(() => dialog() === null);
+  await waitFor(() => buttons(container, "Publish").length === 2);
+
+  assert.equal(
+    container.querySelector('[role="alert"]'),
+    null,
+    "a denial hides the action rather than showing an error",
+  );
+
+  harness.cleanup();
+});
+
+test("a 404 from a collection action is shown as an error, not treated as a denial", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const { harness, container } = await renderTable(fixture);
+
+  fixture.failNext.action = notFound();
+  await click(container, "Reindex");
+  await waitFor(() => /Not found\./.test(container.textContent ?? ""));
+  assert.equal(buttons(container, "Reindex").length, 1);
 
   harness.cleanup();
 });
