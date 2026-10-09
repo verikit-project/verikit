@@ -1,4 +1,5 @@
 import {
+  AnyActionBuilder,
   FieldMap,
   RelationshipMap,
   Resource,
@@ -11,9 +12,10 @@ export function defineResource<
   const TFields extends FieldMap,
   TTable = unknown,
   TRelationships extends RelationshipMap = RelationshipMap,
+  const TActions extends readonly AnyActionBuilder[] = readonly [],
 >(
   name: TName,
-  config: ResourceConfig<TFields, TTable, TRelationships>,
-): Resource<TName, TFields, TTable, TRelationships> {
+  config: ResourceConfig<TFields, TTable, TRelationships, TActions>,
+): Resource<TName, TFields, TTable, TRelationships, TActions> {
   return new Resource(name, config);
 }

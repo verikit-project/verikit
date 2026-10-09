@@ -15,7 +15,8 @@ confirmation, and form straight from the resource schema:
 export const publish = action("publish")
   .label("Publish")
   .confirmation("Publish this post?")
-  .form({ note: text() });
+  .form({ note: text() })
+  .returns<{ publishedAt: string }>(); // type-only; the handler must match
 
 export const posts = defineResource("posts", { fields, actions: [publish] });
 ```
@@ -41,6 +42,21 @@ Only actions with a handler get a `POST {base}/actions/:name` route.
 doesn't declare, lacks `.execute()`, or changes the declared label, form, or
 confirmation. Server-only `.availableWhen()`, `.hooks()`, and `.permissions()`
 can still be chained onto the handler.
+
+The same declarations type the client, so action names, inputs, and results
+need no hand-written definitions:
+
+```ts
+import type { InferClientResource } from "@verikit/runtime";
+
+const client = createClient<{
+  posts: InferClientResource<typeof posts> & { record: { id: string } };
+}>({ baseUrl: "/api" });
+
+const { result } = await client.resource("posts").action("publish", {
+  note: "Ship it",
+}); // result: { publishedAt: string }
+```
 
 **Migrating:** the per-resource `actions` option of `createServer()` is
 deprecated. It still works, but logs a one-time warning per resource, and will
