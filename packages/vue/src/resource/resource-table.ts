@@ -24,6 +24,12 @@ import {
 } from "#components/dialog";
 import { Input } from "#components/input";
 import { cn } from "#lib/utils";
+import type { ActionSchemaLike } from "@verikit/core";
+import {
+  actionLabel,
+  actionNeedsDialog,
+  resourceActionSchemas,
+} from "@verikit/ui-core/actions/resource-actions";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
 import {
@@ -31,27 +37,28 @@ import {
   type UseResourceTableOptions,
   type UseResourceTableSource,
 } from "../query/use-resource-table.js";
+import {
+  isPermissionDenied,
+  ResourceActionDialog,
+  useRunResourceAction,
+} from "./resource-action-dialog.js";
 import { ResourceForm } from "./resource-form.js";
 import {
   filterableFields,
   ResourceTableFilterPanel,
 } from "./resource-table-filters.js";
 
-/**
- * True for an error whose `status` is 403 (permission denied). Duck-typed on
- * `status`, not `instanceof VerikitClientError`.
- */
-function isPermissionDenied(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    (error as { status: unknown }).status === 403
-  );
-}
+/** Which row actions a permission-denied response has hidden, keyed by record id. */
+type DeniedRowActions = Record<
+  string,
+  { update?: boolean; delete?: boolean; actions?: Record<string, true> }
+>;
 
-/** Which built-in row actions a permission-denied response has hidden, keyed by record id. */
-type DeniedRowActions = Record<string, { update?: boolean; delete?: boolean }>;
+/** A declared action awaiting confirmation or input, with the row it targets. */
+interface ActiveAction {
+  action: ActionSchemaLike;
+  recordId?: string;
+}
 
 /** Props for {@link ResourceTable}. */
 export interface ResourceTableProps<
@@ -64,6 +71,10 @@ export interface ResourceTableProps<
    * Edit/Delete row actions.
    */
   actions?: boolean;
+  /**
+   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. One denied (403) by the server is hidden for the rest of this component's lifetime. Defaults to `actions`.
+   */
+  resourceActions?: boolean;
   /** Renders per-row actions (e.g. custom edit/delete buttons). */
   renderActions?: (record: TRecord) => VNodeChild;
   /** Renders custom actions for the current row selection. */
@@ -128,6 +139,10 @@ export const ResourceTable = defineComponent({
       default: undefined,
     },
     actions: { type: Boolean, default: false },
+    resourceActions: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
     renderActions: {
       type: Function as PropType<ResourceTableProps["renderActions"]>,
       default: undefined,
@@ -160,6 +175,91 @@ export const ResourceTable = defineComponent({
     const bulkDeleteOpen = ref(false);
     const bulkDeleteError = ref<string | null>(null);
     const bulkDeleting = ref(false);
+    const activeAction = ref<ActiveAction | null>(null);
+    const deniedCollectionActions = ref<Record<string, true>>({});
+    const actionError = ref<string | null>(null);
+
+    const showResourceActions = props.resourceActions ?? props.actions;
+    const recordActions = showResourceActions
+      ? resourceActionSchemas(props.resource, "record")
+      : [];
+    const collectionActions = showResourceActions
+      ? resourceActionSchemas(props.resource, "collection")
+      : [];
+
+    function denyAction(
+      action: ActionSchemaLike,
+      id: string | undefined,
+    ): void {
+      if (id === undefined) {
+        deniedCollectionActions.value = {
+          ...deniedCollectionActions.value,
+          [action.name]: true,
+        };
+        return;
+      }
+
+      deniedRows.value = {
+        ...deniedRows.value,
+        [id]: {
+          ...deniedRows.value[id],
+          actions: { ...deniedRows.value[id]?.actions, [action.name]: true },
+        },
+      };
+    }
+
+    const directAction = useRunResourceAction(props.resource.name, {
+      onSuccess: () => {
+        actionError.value = null;
+      },
+      onError: (mutationError, variables) => {
+        if (isPermissionDenied(mutationError)) {
+          denyAction(variables.action, variables.recordId);
+        } else {
+          actionError.value = mutationError.message;
+        }
+      },
+    });
+
+    function startAction(action: ActionSchemaLike, id?: string): void {
+      actionError.value = null;
+
+      if (actionNeedsDialog(action)) {
+        activeAction.value = { action, recordId: id };
+      } else {
+        directAction.mutate({ action, recordId: id });
+      }
+    }
+
+    function declaredActionButton(
+      action: ActionSchemaLike,
+      variant: "ghost" | "outline",
+      id?: string,
+    ): VNodeChild {
+      return h(
+        Button,
+        {
+          key: action.name,
+          type: "button",
+          variant: action.variant === "danger" ? "destructive" : variant,
+          size: "sm",
+          disabled: directAction.isPending.value,
+          onClick: () => startAction(action, id),
+        },
+        { default: () => actionLabel(action) },
+      );
+    }
+
+    function declaredRowActions(record: TRecord): VNodeChild {
+      const id = recordId(record)!;
+      const denied = deniedRows.value[id]?.actions;
+
+      return recordActions.map((action) =>
+        denied?.[action.name]
+          ? null
+          : declaredActionButton(action, "ghost", id),
+      );
+    }
 
     const deleteMutation = useDeleteResource(props.resource.name, {
       onError: (mutationError: Error, id: string) => {
@@ -272,6 +372,7 @@ export const ResourceTable = defineComponent({
 
     function rowActions(record: TRecord): VNodeChild {
       return h("div", { class: "flex items-center justify-end gap-1" }, [
+        declaredRowActions(record),
         props.actions ? builtInRowActions(record) : null,
         props.renderActions ? props.renderActions(record) : null,
       ]);
@@ -285,7 +386,10 @@ export const ResourceTable = defineComponent({
       const deleteId = deleteRecord.value
         ? recordId(deleteRecord.value)
         : undefined;
-      const hasActionsColumn = props.actions || Boolean(props.renderActions);
+      const hasActionsColumn =
+        props.actions ||
+        Boolean(props.renderActions) ||
+        recordActions.length > 0;
       const hasSelectionColumn =
         props.actions || Boolean(props.renderBulkActions);
       const hasFilterableFields = filterableFields(fields).length > 0;
@@ -346,20 +450,35 @@ export const ResourceTable = defineComponent({
                 )
               : null,
           ]),
-          props.actions && !createDenied.value
-            ? h(
-                Button,
-                {
-                  type: "button",
-                  size: "sm",
-                  onClick: () => {
-                    createOpen.value = true;
+          h("div", { class: "flex items-center gap-2" }, [
+            ...collectionActions.map((action) =>
+              deniedCollectionActions.value[action.name]
+                ? null
+                : declaredActionButton(action, "outline"),
+            ),
+            props.actions && !createDenied.value
+              ? h(
+                  Button,
+                  {
+                    type: "button",
+                    size: "sm",
+                    onClick: () => {
+                      createOpen.value = true;
+                    },
                   },
-                },
-                { default: () => [h(PlusIcon), "New"] },
-              )
-            : null,
+                  { default: () => [h(PlusIcon), "New"] },
+                )
+              : null,
+          ]),
         ]),
+
+        actionError.value
+          ? h(
+              "p",
+              { role: "alert", class: "pb-3 text-sm text-destructive" },
+              actionError.value,
+            )
+          : null,
 
         filtersOpen.value && hasFilterableFields
           ? h("div", { class: "pb-3" }, [
@@ -638,6 +757,19 @@ export const ResourceTable = defineComponent({
             ]),
           ],
         ),
+
+        recordActions.length > 0 || collectionActions.length > 0
+          ? h(ResourceActionDialog, {
+              resourceName: props.resource.name,
+              action: activeAction.value?.action ?? null,
+              recordId: activeAction.value?.recordId,
+              onClose: () => {
+                activeAction.value = null;
+              },
+              onDenied: (action: ActionSchemaLike) =>
+                denyAction(action, activeAction.value?.recordId),
+            })
+          : null,
 
         props.actions
           ? h(

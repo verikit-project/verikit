@@ -24,7 +24,9 @@ export type VerikitSchemaTreeSource = Resource | ResourceSchema;
 export interface UseVerikitSchemaTreeFormOptions<TResult = unknown> {
   /** Resource builder or schema containing the tree to render. */
   resource: VerikitSchemaTreeSource;
-  /** Runtime actions whose forms should render for matching action nodes. */
+  /**
+   * Runtime actions whose forms should render for matching action nodes. Merged over the actions the resource declares via `defineResource({ actions })`, which are used by default.
+   */
   actions?: SchemaActionRegistry;
   /** Initial values passed to TanStack Form. */
   defaultValues?: VerikitFormValues;
@@ -77,6 +79,17 @@ function resolveVerikitTree(source: VerikitSchemaTreeSource): SchemaNode[] {
   return isResource(source) ? source.toSchema().tree : source.tree;
 }
 
+function resolveActionRegistry(
+  source: VerikitSchemaTreeSource,
+  overrides: SchemaActionRegistry | undefined,
+): SchemaActionRegistry | undefined {
+  const declared = isResource(source)
+    ? source.toSchema().actions
+    : source.actions;
+
+  return declared ? { ...declared, ...overrides } : overrides;
+}
+
 /** Creates a TanStack-backed form for a Verikit schema tree. */
 export function useVerikitSchemaTreeForm<TResult = unknown>({
   resource,
@@ -85,6 +98,10 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
   onSubmit,
 }: UseVerikitSchemaTreeFormOptions<TResult>): UseVerikitSchemaTreeFormResult<TResult> {
   const tree = useMemo(() => resolveVerikitTree(resource), [resource]);
+  const actionRegistry = useMemo(
+    () => resolveActionRegistry(resource, actions),
+    [resource, actions],
+  );
   const [fieldErrors, setFieldErrors] = useState<VerikitFieldErrors>({});
   // Stable per-row ids for repeater rows, keyed by the repeater's own path. Grown
   // lazily (per index, as `getRepeaterRowKey` is called during render) to cover rows
@@ -207,7 +224,7 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
     treeProps: {
       values: form.state.values,
       errors,
-      actions,
+      actions: actionRegistry,
       onFieldChange,
       onFieldBlur,
       onRepeaterAdd,

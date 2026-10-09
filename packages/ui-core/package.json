@@ -30,6 +30,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./actions/*": {
+      "types": "./dist/actions/*.d.ts",
+      "default": "./dist/actions/*.js"
+    },
     "./form/*": {
       "types": "./dist/form/*.d.ts",
       "default": "./dist/form/*.js"

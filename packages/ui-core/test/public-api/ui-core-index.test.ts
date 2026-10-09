@@ -5,6 +5,8 @@ test("ui-core package exposes its public entrypoint", async () => {
   const module = await import("../../src/index.js");
 
   assert.deepEqual(Object.keys(module).sort(), [
+    "actionLabel",
+    "actionNeedsDialog",
     "firstFieldError",
     "firstFieldErrors",
     "getValueAtPath",
@@ -18,6 +20,7 @@ test("ui-core package exposes its public entrypoint", async () => {
     "recordId",
     "removeCachedListRecord",
     "resolveVerikitFields",
+    "resourceActionSchemas",
     "resourceQueryKeys",
     "restoreDeletedRecord",
     "restoreResourceQueries",

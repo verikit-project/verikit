@@ -35,6 +35,14 @@ export interface FakeClientFailures {
   create?: boolean | Error;
   update?: boolean | Error;
   delete?: boolean | Error;
+  action?: boolean | Error;
+}
+
+/** The arguments of the most recent `action()` call. */
+export interface FakeActionCall {
+  name: string;
+  input: Record<string, unknown> | undefined;
+  options: ActionOptions | undefined;
 }
 
 type FakeMethod =
@@ -71,6 +79,8 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   block: (method: FakeMethod) => () => void;
   /** The `ListParams` most recently passed to `list`/`search`, for asserting what a caller actually requested. */
   lastListParams: ListParams | undefined;
+  /** The most recent `action()` call, if any. */
+  lastAction: FakeActionCall | undefined;
 } {
   const records: FakeRecord[] = initial.map((record) => ({ ...record }));
   const calls: FakeResourceCalls = {
@@ -84,8 +94,12 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   };
   const failNext: FakeClientFailures = {};
   const gates = new Map<FakeMethod, Promise<void>>();
-  const state: { lastListParams: ListParams | undefined } = {
+  const state: {
+    lastListParams: ListParams | undefined;
+    lastAction: FakeActionCall | undefined;
+  } = {
     lastListParams: undefined,
+    lastAction: undefined,
   };
 
   function block(method: FakeMethod): () => void {
@@ -244,7 +258,18 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       options?: ActionOptions,
     ): Promise<ActionResult<TResult>> {
       calls.action += 1;
+      state.lastAction = { name: actionName, input, options };
       await waitForGate("action");
+
+      const actionFailure = consumeFailure(
+        failNext.action,
+        "Simulated action failure.",
+      );
+      if (actionFailure) {
+        failNext.action = undefined;
+        throw actionFailure;
+      }
+
       return {
         result: { actionName, input, recordId: options?.recordId } as TResult,
         message: "done",
@@ -269,6 +294,9 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     block,
     get lastListParams() {
       return state.lastListParams;
+    },
+    get lastAction() {
+      return state.lastAction;
     },
   };
 }

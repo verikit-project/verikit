@@ -24,6 +24,12 @@ import {
 } from "#components/dialog";
 import { Input } from "#components/input";
 import { cn } from "#lib/utils";
+import type { ActionSchemaLike } from "@verikit/core";
+import {
+  actionLabel,
+  actionNeedsDialog,
+  resourceActionSchemas,
+} from "@verikit/ui-core/actions/resource-actions";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
 import {
@@ -31,28 +37,28 @@ import {
   type UseResourceTableOptions,
   type UseResourceTableSource,
 } from "../query/use-resource-table.js";
+import {
+  isPermissionDenied,
+  ResourceActionDialog,
+  useRunResourceAction,
+} from "./resource-action-dialog.js";
 import { ResourceForm } from "./resource-form.js";
 import {
   filterableFields,
   ResourceTableFilterPanel,
 } from "./resource-table-filters.js";
 
-/**
- * True for an error whose `status` is 403 (permission denied). Duck-typed on
- * `status`, not `instanceof VerikitClientError`  the same convention that
- * class's own doc comment specifies, for callers distinguishing error cases.
- */
-function isPermissionDenied(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    (error as { status: unknown }).status === 403
-  );
-}
+/** Which row actions a permission-denied response has hidden, keyed by record id. */
+type DeniedRowActions = Record<
+  string,
+  { update?: boolean; delete?: boolean; actions?: Record<string, true> }
+>;
 
-/** Which built-in row actions a permission-denied response has hidden, keyed by record id. */
-type DeniedRowActions = Record<string, { update?: boolean; delete?: boolean }>;
+/** A declared action awaiting confirmation or input, with the row it targets. */
+interface ActiveAction {
+  action: ActionSchemaLike;
+  recordId?: string;
+}
 
 /** Props for {@link ResourceTable}. */
 export interface ResourceTableProps<
@@ -73,6 +79,10 @@ export interface ResourceTableProps<
    * component's lifetime rather than shown as a dead end.
    */
   actions?: boolean;
+  /**
+   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. As with the built-in actions, one denied (403) by the server is hidden for the rest of this component's lifetime. Defaults to `actions`.
+   */
+  resourceActions?: boolean;
   /**
    * Renders per-row actions (e.g. custom edit/delete buttons). Composed
    * alongside the built-in actions when `actions` is also set, not in place
@@ -143,6 +153,7 @@ export function ResourceTable<
   resource,
   pageSize,
   actions = false,
+  resourceActions = actions,
   renderActions,
   renderBulkActions,
   emptyState,
@@ -160,6 +171,57 @@ export function ResourceTable<
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
+  const [deniedCollectionActions, setDeniedCollectionActions] = useState<
+    Record<string, true>
+  >({});
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const recordActions = resourceActions
+    ? resourceActionSchemas(resource, "record")
+    : [];
+  const collectionActions = resourceActions
+    ? resourceActionSchemas(resource, "collection")
+    : [];
+
+  function denyAction(action: ActionSchemaLike, id: string | undefined): void {
+    if (id === undefined) {
+      setDeniedCollectionActions((current) => ({
+        ...current,
+        [action.name]: true,
+      }));
+      return;
+    }
+
+    setDeniedRows((current) => ({
+      ...current,
+      [id]: {
+        ...current[id],
+        actions: { ...current[id]?.actions, [action.name]: true },
+      },
+    }));
+  }
+
+  const directAction = useRunResourceAction(resource.name, {
+    onSuccess: () => setActionError(null),
+    onError: (mutationError, variables) => {
+      if (isPermissionDenied(mutationError)) {
+        denyAction(variables.action, variables.recordId);
+      } else {
+        setActionError(mutationError.message);
+      }
+    },
+  });
+
+  function startAction(action: ActionSchemaLike, id?: string): void {
+    setActionError(null);
+
+    if (actionNeedsDialog(action)) {
+      setActiveAction({ action, recordId: id });
+    } else {
+      directAction.mutate({ action, recordId: id });
+    }
+  }
 
   const deleteMutation = useDeleteResource(resource.name, {
     onError: (mutationError, id) => {
@@ -270,11 +332,33 @@ export function ResourceTable<
     );
   }
 
+  function declaredRowActions(record: TRecord): ReactNode {
+    // Same contract-guaranteed id as `builtInRowActions`.
+    const id = recordId(record)!;
+    const denied = deniedRows[id]?.actions;
+
+    return recordActions.map((action) =>
+      denied?.[action.name] ? null : (
+        <Button
+          key={action.name}
+          type="button"
+          variant={action.variant === "danger" ? "destructive" : "ghost"}
+          size="sm"
+          disabled={directAction.isPending}
+          onClick={() => startAction(action, id)}
+        >
+          {actionLabel(action)}
+        </Button>
+      ),
+    );
+  }
+
   // Only called from a `hasActionsColumn ? ... : null` branch below, so
-  // `actions`/`renderActions` being both unset here can't happen.
+  // `actions`/`renderActions`/record actions being all unset here can't happen.
   function rowActions(record: TRecord): ReactNode {
     return (
       <div className="flex items-center justify-end gap-1">
+        {declaredRowActions(record)}
         {actions ? builtInRowActions(record) : null}
         {renderActions ? renderActions(record) : null}
       </div>
@@ -283,7 +367,8 @@ export function ResourceTable<
 
   const editId = editRecord ? recordId(editRecord) : undefined;
   const deleteId = deleteRecord ? recordId(deleteRecord) : undefined;
-  const hasActionsColumn = actions || Boolean(renderActions);
+  const hasActionsColumn =
+    actions || Boolean(renderActions) || recordActions.length > 0;
   const hasSelectionColumn = actions || Boolean(renderBulkActions);
   const hasFilterableFields = filterableFields(fields).length > 0;
   const activeFilterCount = Object.keys(filters).length;
@@ -338,13 +423,37 @@ export function ResourceTable<
             </Button>
           ) : null}
         </div>
-        {actions && !createDenied ? (
-          <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
-            <PlusIcon />
-            New
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {collectionActions.map((action) =>
+            deniedCollectionActions[action.name] ? null : (
+              <Button
+                key={action.name}
+                type="button"
+                variant={
+                  action.variant === "danger" ? "destructive" : "outline"
+                }
+                size="sm"
+                disabled={directAction.isPending}
+                onClick={() => startAction(action)}
+              >
+                {actionLabel(action)}
+              </Button>
+            ),
+          )}
+          {actions && !createDenied ? (
+            <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+              <PlusIcon />
+              New
+            </Button>
+          ) : null}
+        </div>
       </div>
+
+      {actionError ? (
+        <p role="alert" className="pb-3 text-sm text-destructive">
+          {actionError}
+        </p>
+      ) : null}
 
       {filtersOpen && hasFilterableFields ? (
         <div className="pb-3">
@@ -558,6 +667,16 @@ export function ResourceTable<
           </Button>
         </div>
       </div>
+
+      {recordActions.length > 0 || collectionActions.length > 0 ? (
+        <ResourceActionDialog
+          resourceName={resource.name}
+          action={activeAction?.action ?? null}
+          recordId={activeAction?.recordId}
+          onClose={() => setActiveAction(null)}
+          onDenied={(action) => denyAction(action, activeAction?.recordId)}
+        />
+      ) : null}
 
       {actions ? (
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
