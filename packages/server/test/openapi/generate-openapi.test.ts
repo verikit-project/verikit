@@ -220,7 +220,7 @@ test("upload routes exist only when storage is configured", () => {
   assert.equal(anyUploadPath, false);
 });
 
-test("list and search document include=actions and meta.actions only for a resource with actions", () => {
+test("list, search and find document include=actions and meta.actions only for a resource with actions", () => {
   const document = generateOpenApiDocument(buildOptions(true), info);
   const metaOf = (path: string) =>
     (
@@ -237,6 +237,21 @@ test("list and search document include=actions and meta.actions only for a resou
     assert.deepEqual(include?.schema, { type: "string", enum: ["actions"] });
     assert.ok("actions" in metaOf(path), path);
   }
+
+  const find = document.paths["/post/{id}"]!.get!;
+  assert.ok(find.parameters!.some((parameter) => parameter.name === "include"));
+  assert.ok(
+    "meta" in
+      (
+        find.responses["200"]!.content!["application/json"]!.schema as {
+          properties: object;
+        }
+      ).properties,
+  );
+  const authorFind = document.paths["/author/{id}"]!.get!;
+  assert.ok(
+    !authorFind.parameters!.some((parameter) => parameter.name === "include"),
+  );
 
   // No actions on `author`, and pickers never report availability.
   for (const path of ["/author", "/post/relationships/author"]) {

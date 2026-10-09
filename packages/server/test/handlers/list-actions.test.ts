@@ -33,6 +33,7 @@ function createHandler(
 ) {
   const permissions = definePermissions<Actor, Post>()
     .can("list", true)
+    .can("read", true)
     // Search only covers fields with a static read rule.
     .field("title", { read: true })
     .action("feature", true)
@@ -186,4 +187,38 @@ test("include=actions keys numeric ids as strings, skips records without an id o
     records: { "7": { archive: { reason: "unavailable" } } },
     collection: {},
   });
+});
+
+test("find with include=actions reports only the record-scoped actions the actor can't run on that record", async () => {
+  const handler = createHandler();
+
+  const published = await (
+    await handler(new Request("https://x/post/1?include=actions"))
+  ).json();
+  assert.equal(published.data.id, "1");
+  assert.deepEqual(published.meta, {
+    actions: {
+      publish: { reason: "unavailable", message: "Already published." },
+    },
+  });
+
+  const draft = await (
+    await handler(new Request("https://x/post/2?include=actions"))
+  ).json();
+  // Collection-scoped actions (reindex, purge) never appear on a record.
+  assert.deepEqual(draft.meta, {
+    actions: { feature: { reason: "forbidden" } },
+  });
+});
+
+test("find without include=actions has no meta, and an unknown include is rejected", async () => {
+  const handler = createHandler();
+
+  const plain = await (await handler(new Request("https://x/post/1"))).json();
+  assert.equal(plain.meta, undefined);
+
+  const invalid = await handler(
+    new Request("https://x/post/1?include=authors"),
+  );
+  assert.equal(invalid.status, 400);
 });

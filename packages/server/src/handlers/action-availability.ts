@@ -16,7 +16,7 @@ export interface ListActionAvailability {
   collection: Record<string, UnavailableAction>;
 }
 
-/** True when the list request asks for `include=actions`; any other `include` value is rejected. */
+/** True when a list or find request asks for `include=actions`; any other `include` value is rejected. */
 export function includesActions(url: URL): boolean {
   const values = url.searchParams
     .getAll("include")
@@ -42,16 +42,7 @@ export async function listActionAvailability(
   ctx: HandlerContext,
   records: readonly Record<string, unknown>[],
 ): Promise<ListActionAvailability> {
-  const recordActions: ServerActionHandler[] = [];
-  const collectionActions: ServerActionHandler[] = [];
-
-  for (const action of ctx.entry.actions) {
-    if ((action.toSchema().scope ?? "record") === "collection") {
-      collectionActions.push(action);
-    } else {
-      recordActions.push(action);
-    }
-  }
+  const { recordActions, collectionActions } = actionsByScope(ctx);
 
   const [recordEntries, collectionEntries] = await Promise.all([
     Promise.all(
@@ -79,6 +70,34 @@ export async function listActionAvailability(
     ),
     collection: collectionEntries,
   };
+}
+
+/**
+ * The record-scoped actions the actor can't run on one record, sent as `meta.actions` when a find request asks for `include=actions`. Runs the same checks as `listActionAvailability`.
+ */
+export function recordActionAvailability(
+  ctx: HandlerContext,
+  record: Record<string, unknown>,
+): Promise<Record<string, UnavailableAction>> {
+  return unavailableActions(ctx, actionsByScope(ctx).recordActions, record);
+}
+
+function actionsByScope(ctx: HandlerContext): {
+  recordActions: ServerActionHandler[];
+  collectionActions: ServerActionHandler[];
+} {
+  const recordActions: ServerActionHandler[] = [];
+  const collectionActions: ServerActionHandler[] = [];
+
+  for (const action of ctx.entry.actions) {
+    if ((action.toSchema().scope ?? "record") === "collection") {
+      collectionActions.push(action);
+    } else {
+      recordActions.push(action);
+    }
+  }
+
+  return { recordActions, collectionActions };
 }
 
 async function unavailableActions(

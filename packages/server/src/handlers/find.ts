@@ -5,15 +5,22 @@ import {
   presentRecord,
   unreadableFieldNames,
 } from "../permissions.js";
+import {
+  includesActions,
+  recordActionAvailability,
+} from "./action-availability.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
 
-/** Handles `GET {base}/:id`. */
+/**
+ * Handles `GET {base}/:id`. With `include=actions`, also reports which record-scoped actions the actor can't run on the record as `meta.actions`.
+ */
 export async function handleFind(
   ctx: HandlerContext,
   id: string,
 ): Promise<Response> {
-  const { entry, actor } = ctx;
+  const { entry, actor, url } = ctx;
+  const withActions = includesActions(url);
   const scope = await resolveScope(entry, actor);
   const record = (await entry.config.adapter.find(id, scope)) as
     Record<string, unknown> | undefined;
@@ -42,5 +49,11 @@ export async function handleFind(
     },
   );
 
-  return dataResponse(presentRecord(record, entry.fields, hidden));
+  const actions = withActions
+    ? await recordActionAvailability(ctx, record)
+    : undefined;
+
+  return dataResponse(presentRecord(record, entry.fields, hidden), {
+    ...(actions && { meta: { actions } }),
+  });
 }

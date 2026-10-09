@@ -135,16 +135,23 @@ function listParameters(
   }
 
   if (includeActions) {
-    parameters.push({
-      name: "include",
-      in: "query",
-      description:
+    parameters.push(
+      includeActionsParameter(
         "Set to `actions` to report, in `meta.actions`, which actions the caller can't run on the returned records.",
-      schema: { type: "string", enum: ["actions"] },
-    });
+      ),
+    );
   }
 
   return parameters;
+}
+
+function includeActionsParameter(description: string): ParameterObject {
+  return {
+    name: "include",
+    in: "query",
+    description,
+    schema: { type: "string", enum: ["actions"] },
+  };
 }
 
 const unavailableActionsSchema: OpenApiSchema = {
@@ -252,14 +259,38 @@ function createOperation(
 function findOperation(
   operationId: string,
   responseRef: OpenApiSchema,
+  includeActions: boolean,
 ): OperationObject {
   return {
     operationId,
-    parameters: [idParameter()],
+    parameters: [
+      idParameter(),
+      ...(includeActions
+        ? [
+            includeActionsParameter(
+              "Set to `actions` to report, in `meta.actions`, which record-scoped actions the caller can't run on this record.",
+            ),
+          ]
+        : []),
+    ],
     responses: {
       "200": jsonResponse("The requested record.", {
         type: "object",
-        properties: { data: responseRef },
+        properties: {
+          data: responseRef,
+          ...(includeActions && {
+            meta: {
+              type: "object",
+              properties: {
+                actions: {
+                  ...unavailableActionsSchema,
+                  description:
+                    "Present with `include=actions`: the record-scoped actions the caller can't run, keyed by action name.",
+                },
+              },
+            },
+          }),
+        },
         required: ["data"],
       }),
       "404": notFoundResponse(),
@@ -452,7 +483,7 @@ export function resourcePaths<TActor>(
       ),
     },
     [`${resourceBase}/{id}`]: {
-      get: findOperation(`find_${resourceName}`, responseRef),
+      get: findOperation(`find_${resourceName}`, responseRef, hasActions),
       patch: updateOperation(`update_${resourceName}`, updateRef, responseRef),
       delete: deleteOperation(`delete_${resourceName}`),
     },

@@ -69,6 +69,10 @@ Guards run without `input` here. A guard that throws counts as forbidden and is
 passed to `onError`. `ResourceTable` asks for this automatically: it hides
 forbidden actions and disables unavailable ones, with the reason as a tooltip.
 
+Fetching one record accepts `include=actions` too (`findWithActions(id)` on the
+client), reporting only that record's record-scoped actions in `meta.actions`.
+`ResourceDetail`, the built-in record page, uses it the same way.
+
 **Migrating:** the per-resource `actions` option of `createServer()` is
 deprecated. It still works, but logs a one-time warning per resource, and will
 be removed in the next minor release. Move each action's declaration into
