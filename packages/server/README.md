@@ -58,6 +58,17 @@ const { result } = await client.resource("posts").action("publish", {
 }); // result: { publishedAt: string }
 ```
 
+To show only the actions a caller can run, list with `include=actions`
+(`list({ includeActions: true })` on the client). The response's
+`meta.actions` names each action the caller can't run, per record and for the
+collection: `{ reason: "forbidden" }` when permissions deny it, or
+`{ reason: "unavailable", message? }` when `.availableWhen()` says no. These
+are the same checks the action route runs first, evaluated for every record on
+the page, so they cost one permission check and guard call per action per row.
+Guards run without `input` here. A guard that throws counts as forbidden and is
+passed to `onError`. `ResourceTable` asks for this automatically: it hides
+forbidden actions and disables unavailable ones, with the reason as a tooltip.
+
 **Migrating:** the per-resource `actions` option of `createServer()` is
 deprecated. It still works, but logs a one-time warning per resource, and will
 be removed in the next minor release. Move each action's declaration into

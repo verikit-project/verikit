@@ -81,8 +81,11 @@ export interface CreateServerOptions<TActor = unknown> {
    */
   basePath?: string;
   /**
-   * Called for unexpected errors before they become a generic 500 response.
-   * `VerikitError`s bypass this hook; errors thrown by the hook are ignored.
+   * Called for unexpected errors before they become a generic 500 response,
+   * and for errors thrown by an action's permissions or availability guard
+   * while a list reports action availability (the action is then reported as
+   * forbidden). `VerikitError`s bypass this hook; errors thrown by the hook
+   * are ignored.
    */
   onError?: (error: unknown, request: Request, route: ServerErrorRoute) => void;
   /**
@@ -334,10 +337,29 @@ export function createServer<TActor = unknown>(
     }
 
     const { action } = resolved.resolution;
+    const resourceName = resolved.entry.config.resource.name;
+
+    function reportError(error: unknown, route: RouteAction): void {
+      try {
+        options.onError?.(error, request, {
+          resource: resourceName,
+          action: route,
+        });
+      } catch {
+        // Ignore errors from onError so a broken logger doesn't mask the original failure.
+      }
+    }
 
     try {
       const actor = (await options.context?.(request)) as TActor;
-      const ctx = { entry: resolved.entry, actor, request, url, maxBodyBytes };
+      const ctx = {
+        entry: resolved.entry,
+        actor,
+        request,
+        url,
+        maxBodyBytes,
+        reportError: (error: unknown) => reportError(error, action),
+      };
 
       switch (action.kind) {
         case "list":
@@ -400,14 +422,7 @@ export function createServer<TActor = unknown>(
         return withCors(toErrorResponse(error), responseCorsHeaders);
       }
 
-      try {
-        options.onError?.(error, request, {
-          resource: resolved.entry.config.resource.name,
-          action,
-        });
-      } catch {
-        // Ignore errors from onError so a broken logger doesn't mask the original failure.
-      }
+      reportError(error, action);
       return withCors(
         errorResponse(500, "INTERNAL_ERROR", "Internal server error."),
         responseCorsHeaders,

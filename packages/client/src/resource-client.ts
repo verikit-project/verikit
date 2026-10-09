@@ -2,6 +2,7 @@ import { buildListQuery, sendRequest } from "./request.js";
 import type {
   ActionOptions,
   HeadersSource,
+  ListActionAvailability,
   ListParams,
   ListResponse,
   RequestOptions,
@@ -22,7 +23,12 @@ interface RecordEnvelope<T> {
 
 interface ListEnvelope<T> {
   data: T[];
-  meta: { total: number; page: number; pageSize: number };
+  meta: {
+    total: number;
+    page: number;
+    pageSize: number;
+    actions?: ListActionAvailability;
+  };
 }
 
 /**
@@ -69,6 +75,7 @@ export function createResourceClient<
       total: envelope.meta.total,
       page: envelope.meta.page,
       pageSize: envelope.meta.pageSize,
+      ...(envelope.meta.actions && { actions: envelope.meta.actions }),
     };
   }
 

@@ -137,13 +137,31 @@ export interface ListParams<TRecord extends object = Record<string, unknown>> {
   search?: string;
   sort?: { field: StringKey<TRecord>; direction?: "asc" | "desc" };
   filters?: Partial<Record<StringKey<TRecord>, FieldFilter>>;
+  /**
+   * Also asks which of the resource's actions the caller can't run on the returned records, returned as `actions`. Each action's permissions and availability guard run per record on the server, so only ask when the actions are shown. Ignored by `relationship()`.
+   */
+  includeActions?: boolean;
 }
 
-export interface ListResponse<TRecord> {
+/** An action the caller can't run: denied by permissions, or not available right now (with the guard's reason, if it gave one). */
+export type UnavailableAction =
+  { reason: "forbidden" } | { reason: "unavailable"; message?: string };
+
+/** Which actions the caller can't run on a page of records. Only those actions are listed. */
+export interface ListActionAvailability<TActionName extends string = string> {
+  /** Record-scoped actions, keyed by record id, then action name. */
+  records: Record<string, Partial<Record<TActionName, UnavailableAction>>>;
+  /** Collection-scoped actions, keyed by action name. */
+  collection: Partial<Record<TActionName, UnavailableAction>>;
+}
+
+export interface ListResponse<TRecord, TActionName extends string = string> {
   records: TRecord[];
   total: number;
   page: number;
   pageSize: number;
+  /** Present when the list was requested with `includeActions: true`. */
+  actions?: ListActionAvailability<TActionName>;
 }
 
 export interface RequestOptions {
@@ -181,11 +199,11 @@ export interface ResourceClient<
   list(
     params?: ListParams<TRecord>,
     options?: RequestOptions,
-  ): Promise<ListResponse<TRecord>>;
+  ): Promise<ListResponse<TRecord, StringKey<TActions>>>;
   search(
     params?: ListParams<TRecord>,
     options?: RequestOptions,
-  ): Promise<ListResponse<TRecord>>;
+  ): Promise<ListResponse<TRecord, StringKey<TActions>>>;
   /**
    * Lists selectable records for this resource's `belongsTo` relationship.
    * The server applies the target resource's permissions and actor-aware scope.

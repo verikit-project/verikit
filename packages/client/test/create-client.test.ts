@@ -75,6 +75,25 @@ test("list() GETs the resource base with page/pageSize/sort/order/search seriali
   });
 });
 
+test("list({ includeActions: true }) sends include=actions and returns meta.actions as actions", async () => {
+  const actions = {
+    records: { "1": { publish: { reason: "unavailable", message: "Done." } } },
+    collection: { purge: { reason: "forbidden" } },
+  };
+  const { fetchImpl, calls } = fakeFetch(() =>
+    jsonResponse({
+      data: [{ id: "1" }],
+      meta: { total: 1, page: 1, pageSize: 25, actions },
+    }),
+  );
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+
+  const result = await client.resource("posts").list({ includeActions: true });
+
+  assert.equal(calls[0]!.url, "https://x.test/posts?include=actions");
+  assert.deepEqual(result.actions, actions);
+});
+
 test("search() hits the /search sub-route", async () => {
   const { fetchImpl, calls } = fakeFetch(() =>
     jsonResponse({ data: [], meta: { total: 0, page: 1, pageSize: 10 } }),

@@ -220,6 +220,31 @@ test("upload routes exist only when storage is configured", () => {
   assert.equal(anyUploadPath, false);
 });
 
+test("list and search document include=actions and meta.actions only for a resource with actions", () => {
+  const document = generateOpenApiDocument(buildOptions(true), info);
+  const metaOf = (path: string) =>
+    (
+      document.paths[path]!.get!.responses["200"]!.content!["application/json"]!
+        .schema as { properties: { meta: { properties: object } } }
+    ).properties.meta.properties;
+  const parameterNames = (path: string) =>
+    document.paths[path]!.get!.parameters!.map((parameter) => parameter.name);
+
+  for (const path of ["/post", "/post/search"]) {
+    const include = document.paths[path]!.get!.parameters!.find(
+      (parameter) => parameter.name === "include",
+    );
+    assert.deepEqual(include?.schema, { type: "string", enum: ["actions"] });
+    assert.ok("actions" in metaOf(path), path);
+  }
+
+  // No actions on `author`, and pickers never report availability.
+  for (const path of ["/author", "/post/relationships/author"]) {
+    assert.ok(!parameterNames(path).includes("include"), path);
+    assert.ok(!("actions" in metaOf(path)), path);
+  }
+});
+
 test("a belongsTo relationship gets a picker route; a hasMany relationship does not", () => {
   const document = generateOpenApiDocument(buildOptions(true), info);
 

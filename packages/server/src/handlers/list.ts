@@ -7,15 +7,19 @@ import {
   unreadableFieldNames,
   unreadableQueryFieldNames,
 } from "../permissions.js";
+import {
+  includesActions,
+  listActionAvailability,
+} from "./action-availability.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
 
 /**
- * Handles both `GET {base}` (list) and `GET {base}/search` (a smaller-page-size alias).
+ * Handles both `GET {base}` (list) and `GET {base}/search` (a smaller-page-size alias). With `include=actions`, also reports which actions the actor can't run on the returned page as `meta.actions`, unless `options.actionAvailability` is `false`.
  */
 export async function handleList(
   ctx: HandlerContext,
-  options: { defaultPageSize?: number } = {},
+  options: { defaultPageSize?: number; actionAvailability?: boolean } = {},
 ): Promise<Response> {
   const { entry, actor, url } = ctx;
 
@@ -29,6 +33,8 @@ export async function handleList(
     throw new ForbiddenError(permission.message);
   }
 
+  const withActions =
+    options.actionAvailability !== false && includesActions(url);
   const { sort, ...rest } = parseListParams(url, options);
   const scope = await resolveScope(entry, actor);
   // Query parameters are evaluated before records exist. Only a static allow
@@ -82,7 +88,19 @@ export async function handleList(
     }),
   );
 
+  const actions = withActions
+    ? await listActionAvailability(
+        ctx,
+        result.records as Record<string, unknown>[],
+      )
+    : undefined;
+
   return dataResponse(records, {
-    meta: { total: result.total, page: params.page, pageSize: params.pageSize },
+    meta: {
+      total: result.total,
+      page: params.page,
+      pageSize: params.pageSize,
+      ...(actions && { actions }),
+    },
   });
 }
