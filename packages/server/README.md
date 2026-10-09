@@ -39,8 +39,9 @@ createServer({
 
 Only actions with a handler get a `POST {base}/actions/:name` route.
 `createServer()` throws at startup if a handler names an action the resource
-doesn't declare, lacks `.execute()`, or changes the declared label, form, or
-confirmation. Server-only `.availableWhen()`, `.hooks()`, and `.permissions()`
+doesn't declare, lacks `.execute()`, or doesn't serialize exactly like its
+declaration: label, description, icon, variant, scope, confirmation, form,
+`meta`, and string result messages must all match. Server-only `.availableWhen()`, `.hooks()`, and `.permissions()`
 can still be chained onto the handler.
 
 The same declarations type the client, so action names, inputs, and results
@@ -70,8 +71,10 @@ passed to `onError`. `ResourceTable` asks for this automatically: it hides
 forbidden actions and disables unavailable ones, with the reason as a tooltip.
 
 Fetching one record accepts `include=actions` too (`findWithActions(id)` on the
-client), reporting only that record's record-scoped actions in `meta.actions`.
-`ResourceDetail`, the built-in record page, uses it the same way.
+client), reporting only that record's record-scoped actions in `meta.actions`,
+and the built-in operations (`update`, `delete`) the caller can't run on it in
+`meta.operations`. `ResourceDetail`, the built-in record page, uses both to hide
+controls the caller can't use.
 
 **Migrating:** the per-resource `actions` option of `createServer()` is
 deprecated. It still works, but logs a one-time warning per resource, and will

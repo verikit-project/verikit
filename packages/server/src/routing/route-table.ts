@@ -44,8 +44,18 @@ function stableJson(value: unknown): string {
   );
 }
 
+/** Top-level action schema keys whose serialized values differ, sorted. */
+function divergedSchemaKeys(actual: object, expected: object): string[] {
+  const a = actual as Record<string, unknown>;
+  const b = expected as Record<string, unknown>;
+
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])]
+    .filter((key) => stableJson(a[key]) !== stableJson(b[key]))
+    .sort();
+}
+
 /**
- * Resolves a resource's executable actions. Every `handlers` entry must match an action declared on the resource and serialize identically to it, so the client renders the same form, confirmation, and labels the server enforces. Declared actions without a handler get no route.
+ * Resolves a resource's executable actions. Every `handlers` entry must match an action declared on the resource and serialize identically to it, so the client renders exactly what the server enforces: label, description, icon, variant, scope, confirmation, form, `meta`, and string result messages. Declared actions without a handler get no route.
  */
 function resolveActions<TActor>(
   config: ServerResourceConfig<TActor>,
@@ -85,9 +95,14 @@ function resolveActions<TActor>(
       );
     }
 
-    if (stableJson(handler.toSchema()) !== stableJson(declaration.toSchema())) {
+    const diverged = divergedSchemaKeys(
+      handler.toSchema(),
+      declaration.toSchema(),
+    );
+
+    if (diverged.length > 0) {
       throw new Error(
-        `Resource "${resourceName}" handler for action "${handler.name}" does not match its declaration. Build the handler from the declared action (e.g. \`${handler.name}.execute(fn)\`) instead of redefining its label, form, or confirmation.`,
+        `Resource "${resourceName}" handler for action "${handler.name}" does not match its declaration (differs in: ${diverged.join(", ")}). Build the handler from the declared action (e.g. \`${handler.name}.execute(fn)\`) instead of redefining it; its serialized schema (label, description, icon, variant, scope, confirmation, form, meta, and string result messages) must be identical.`,
       );
     }
 

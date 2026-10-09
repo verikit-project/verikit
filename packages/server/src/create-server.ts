@@ -49,7 +49,7 @@ export interface ServerResourceConfig<TActor = unknown> {
    */
   path?: string;
   /**
-   * Server implementations of actions declared on `resource`, exposed as `POST {base}/actions/:name`. Build each from its client-safe declaration, e.g. `publish.execute(fn)`, so handler code never reaches client bundles. Startup fails if a handler names an undeclared action or diverges from its declaration's label, form, or confirmation.
+   * Server implementations of actions declared on `resource`, exposed as `POST {base}/actions/:name`. Build each from its client-safe declaration, e.g. `publish.execute(fn)`, so handler code never reaches client bundles. Startup fails if a handler names an undeclared action or serializes differently from its declaration: label, description, icon, variant, scope, confirmation, form, `meta`, or string result messages.
    */
   handlers?: ServerActionHandler<TActor>[];
   /**

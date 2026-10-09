@@ -145,7 +145,30 @@ test("buildRouteTable rejects a handler that diverges from its declaration", () 
         ],
         "",
       ),
-    /handler for action "publish" does not match its declaration/,
+    /handler for action "publish" does not match its declaration \(differs in: label\)/,
+  );
+});
+
+test("buildRouteTable rejects a handler that diverges outside label, form, or confirmation", () => {
+  assert.throws(
+    () =>
+      buildRouteTable(
+        [
+          {
+            resource: postResource(),
+            adapter: createInMemoryAdapter(),
+            handlers: [
+              publish
+                .description("Make it public")
+                .meta({ audit: true })
+                .execute(() => "ok"),
+            ],
+            permissions: "open",
+          },
+        ],
+        "",
+      ),
+    /does not match its declaration \(differs in: description, meta\)/,
   );
 });
 
