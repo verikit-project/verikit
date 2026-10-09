@@ -8,6 +8,7 @@ import type {
   RequestOptions,
   ResourceClient,
   UnavailableActions,
+  UnavailableOperations,
 } from "./types.js";
 
 interface ResourceClientDeps {
@@ -20,7 +21,7 @@ interface ResourceClientDeps {
 interface RecordEnvelope<T> {
   data: T;
   message?: string;
-  meta?: { actions?: UnavailableActions };
+  meta?: { actions?: UnavailableActions; operations?: UnavailableOperations };
 }
 
 interface ListEnvelope<T> {
@@ -108,7 +109,11 @@ export function createResourceClient<
         query: new URLSearchParams({ include: "actions" }),
         signal: options.signal,
       })) as RecordEnvelope<TRecord>;
-      return { record: envelope.data, actions: envelope.meta?.actions ?? {} };
+      return {
+        record: envelope.data,
+        actions: envelope.meta?.actions ?? {},
+        operations: envelope.meta?.operations ?? {},
+      };
     },
 
     async create(input, options = {}) {

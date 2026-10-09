@@ -221,6 +221,46 @@ test("actions renders Edit and Delete with the declared actions; resourceActions
   rendered.harness.cleanup();
 });
 
+test("editAction and deleteAction turn Edit and Delete on or off on their own", async () => {
+  const fixture = createFakeClient([post]);
+  let rendered = await renderLoaded(fixture, {
+    actions: true,
+    deleteAction: false,
+  });
+  assert.equal(buttons(rendered.container, "Edit").length, 1);
+  assert.equal(buttons(rendered.container, "Delete").length, 0);
+  assert.equal(buttons(rendered.container, "Feature").length, 1);
+  rendered.harness.cleanup();
+
+  rendered = await renderLoaded(fixture, { deleteAction: true });
+  assert.equal(buttons(rendered.container, "Edit").length, 0);
+  assert.equal(buttons(rendered.container, "Delete").length, 1);
+  assert.equal(buttons(rendered.container, "Feature").length, 0);
+  rendered.harness.cleanup();
+});
+
+test("Edit and Delete the server reports the actor can't run are hidden up front", async () => {
+  const fixture = createFakeClient([post]);
+  fixture.operationAvailability = {
+    "1": { update: { reason: "forbidden" } },
+  };
+  let rendered = await renderLoaded(fixture, { actions: true });
+  assert.equal(buttons(rendered.container, "Edit").length, 0);
+  assert.equal(buttons(rendered.container, "Delete").length, 1);
+  rendered.harness.cleanup();
+
+  // With nothing else to show, there's no action bar.
+  fixture.operationAvailability = {
+    "1": { update: { reason: "forbidden" }, delete: { reason: "forbidden" } },
+  };
+  rendered = await renderLoaded(fixture, {
+    editAction: true,
+    deleteAction: true,
+  });
+  assert.equal(rendered.container.querySelectorAll("button").length, 0);
+  rendered.harness.cleanup();
+});
+
 test("Edit saves through ResourceForm; a failed save keeps it open and a denied one hides Edit", async () => {
   const fixture = createFakeClient([post]);
   const { harness, container } = await renderLoaded(fixture, {
@@ -248,6 +288,31 @@ test("Edit saves through ResourceForm; a failed save keeps it open and a denied 
   await click(dialog()!, "Save changes");
   await waitFor(() => dialog() === null);
   await waitFor(() => buttons(container, "Edit").length === 0);
+
+  harness.cleanup();
+});
+
+test("Edit and Delete denied with a 404, as the server answers a denied update or delete, are hidden", async () => {
+  const fixture = createFakeClient([post]);
+  const { harness, container } = await renderLoaded(fixture, {
+    actions: true,
+  });
+  const notFound = () => new VerikitClientError(404, "Not found.", "NOT_FOUND");
+
+  fixture.failNext.update = notFound();
+  await click(container, "Edit");
+  await waitFor(() => dialog() !== null);
+  await click(dialog()!, "Save changes");
+  await waitFor(() => dialog() === null);
+  await waitFor(() => buttons(container, "Edit").length === 0);
+
+  fixture.failNext.delete = notFound();
+  await click(container, "Delete");
+  await waitFor(() => dialog() !== null);
+  await click(dialog()!, "Delete");
+  await waitFor(() => dialog() === null);
+  await waitFor(() => buttons(container, "Delete").length === 0);
+  assert.equal(container.querySelector('[role="alert"]'), null);
 
   harness.cleanup();
 });

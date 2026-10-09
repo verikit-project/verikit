@@ -220,7 +220,7 @@ test("upload routes exist only when storage is configured", () => {
   assert.equal(anyUploadPath, false);
 });
 
-test("list, search and find document include=actions and meta.actions only for a resource with actions", () => {
+test("list and search document include=actions and meta.actions only for a resource with actions; find always does", () => {
   const document = generateOpenApiDocument(buildOptions(true), info);
   const metaOf = (path: string) =>
     (
@@ -248,10 +248,15 @@ test("list, search and find document include=actions and meta.actions only for a
         }
       ).properties,
   );
+  // Find also reports built-in operations, so it documents include=actions
+  // even for a resource with no declared actions.
   const authorFind = document.paths["/author/{id}"]!.get!;
   assert.ok(
-    !authorFind.parameters!.some((parameter) => parameter.name === "include"),
+    authorFind.parameters!.some((parameter) => parameter.name === "include"),
   );
+  for (const path of ["/post/{id}", "/author/{id}"]) {
+    assert.deepEqual(Object.keys(metaOf(path)), ["actions", "operations"]);
+  }
 
   // No actions on `author`, and pickers never report availability.
   for (const path of ["/author", "/post/relationships/author"]) {

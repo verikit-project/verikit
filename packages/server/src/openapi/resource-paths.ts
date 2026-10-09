@@ -176,6 +176,20 @@ const unavailableActionsSchema: OpenApiSchema = {
   },
 };
 
+const unavailableOperationsSchema: OpenApiSchema = {
+  type: "object",
+  properties: Object.fromEntries(
+    ["update", "delete"].map((operation) => [
+      operation,
+      {
+        type: "object",
+        properties: { reason: { type: "string", enum: ["forbidden"] } },
+        required: ["reason"],
+      },
+    ]),
+  ),
+};
+
 function listResponses(
   hasPermissions: boolean,
   itemsRef: OpenApiSchema,
@@ -259,37 +273,37 @@ function createOperation(
 function findOperation(
   operationId: string,
   responseRef: OpenApiSchema,
-  includeActions: boolean,
 ): OperationObject {
   return {
     operationId,
     parameters: [
       idParameter(),
-      ...(includeActions
-        ? [
-            includeActionsParameter(
-              "Set to `actions` to report, in `meta.actions`, which record-scoped actions the caller can't run on this record.",
-            ),
-          ]
-        : []),
+      includeActionsParameter(
+        "Set to `actions` to report, in `meta.actions`, which record-scoped actions the caller can't run on this record, and in `meta.operations`, which built-in operations (`update`, `delete`).",
+      ),
     ],
     responses: {
       "200": jsonResponse("The requested record.", {
         type: "object",
         properties: {
           data: responseRef,
-          ...(includeActions && {
-            meta: {
-              type: "object",
-              properties: {
-                actions: {
-                  ...unavailableActionsSchema,
-                  description:
-                    "Present with `include=actions`: the record-scoped actions the caller can't run, keyed by action name.",
-                },
+          meta: {
+            type: "object",
+            description: "Present with `include=actions`.",
+            properties: {
+              actions: {
+                ...unavailableActionsSchema,
+                description:
+                  "The record-scoped actions the caller can't run, keyed by action name.",
+              },
+              operations: {
+                ...unavailableOperationsSchema,
+                description:
+                  "The built-in operations the caller can't run on this record. Only those are listed.",
               },
             },
-          }),
+            required: ["actions", "operations"],
+          },
         },
         required: ["data"],
       }),
@@ -483,7 +497,7 @@ export function resourcePaths<TActor>(
       ),
     },
     [`${resourceBase}/{id}`]: {
-      get: findOperation(`find_${resourceName}`, responseRef, hasActions),
+      get: findOperation(`find_${resourceName}`, responseRef),
       patch: updateOperation(`update_${resourceName}`, updateRef, responseRef),
       delete: deleteOperation(`delete_${resourceName}`),
     },

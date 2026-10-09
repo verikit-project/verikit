@@ -24,7 +24,6 @@ import { DeclaredActionButton } from "./declared-action-button.js";
 import {
   hasStatus,
   isActionDenied,
-  isPermissionDenied,
   ResourceActionDialog,
   useRunResourceAction,
 } from "./resource-action-dialog.js";
@@ -39,9 +38,17 @@ export interface ResourceDetailProps<
   /** Id of the record to show. */
   id: string;
   /**
-   * Renders the built-in Edit (opens a `ResourceForm` dialog pre-filled from the record) and Delete (opens a confirmation dialog) actions. One the server denies (403) is hidden for the rest of this component's lifetime.
+   * Renders the built-in Edit and Delete actions, and the default for `editAction`, `deleteAction`, and `resourceActions`.
    */
   actions?: boolean;
+  /**
+   * Renders the built-in Edit action, which opens a `ResourceForm` dialog pre-filled from the record. Hidden when the server reports the actor can't update the record, or when an update is denied (403 or 404) for the rest of this component's lifetime. Defaults to `actions`.
+   */
+  editAction?: boolean;
+  /**
+   * Renders the built-in Delete action, which opens a confirmation dialog. Hidden when the server reports the actor can't delete the record, or when a delete is denied (403 or 404) for the rest of this component's lifetime. Defaults to `actions`.
+   */
+  deleteAction?: boolean;
   /**
    * Renders the record-scoped actions declared on the resource via `defineResource({ actions })`. The page asks the server which of them the actor can't run on this record: those it may not run are hidden, and those that can't run right now are disabled, with the reason as a tooltip. An action denied when run (403 or 404) is hidden for the rest of this component's lifetime. Defaults to `actions`.
    */
@@ -57,7 +64,7 @@ export interface ResourceDetailProps<
 }
 
 /**
- * Shows one record's fields as a label/value list, with its actions: the built-in Edit and Delete, and the record-scoped actions declared on the resource. Fields marked `.hidden()`, or left out by the server because the actor can't read them, aren't shown. A record the actor can't read shows as not found, as the server doesn't reveal whether it exists.
+ * Shows one record's fields as a label/value list, with its actions: the built-in Edit and Delete, and the record-scoped actions declared on the resource. Edit and Delete are hidden up front when the server reports the actor can't update or delete the record. Fields marked `.hidden()`, or left out by the server because the actor can't read them, aren't shown. A record the actor can't read shows as not found, as the server doesn't reveal whether it exists.
  */
 export function ResourceDetail<
   TRecord extends Record<string, unknown> = Record<string, unknown>,
@@ -65,6 +72,8 @@ export function ResourceDetail<
   resource,
   id,
   actions = false,
+  editAction = actions,
+  deleteAction = actions,
   resourceActions = actions,
   renderActions,
   onDeleted,
@@ -121,7 +130,9 @@ export function ResourceDetail<
 
   const deleteMutation = useDeleteResource(resource.name, {
     onError: (mutationError) => {
-      if (isPermissionDenied(mutationError)) {
+      // The server answers a denied delete with 404 so as not to reveal
+      // whether the record exists, the same as a denied record action.
+      if (isActionDenied(mutationError, id)) {
         setDenied((current) => ({ ...current, delete: true }));
         setDeleteOpen(false);
       }
@@ -165,12 +176,17 @@ export function ResourceDetail<
     );
   }
 
-  const { record, actions: unavailable } = query.data;
+  const { record, actions: unavailable, operations } = query.data;
+  const showEdit = editAction && !denied.update && !operations.update;
+  const showDelete = deleteAction && !denied.delete && !operations.delete;
   const visibleFields = Object.values(fields).filter(
     (field) => !field.hidden && Object.hasOwn(record, field.name),
   );
   const hasActions =
-    actions || recordActions.length > 0 || Boolean(renderActions);
+    showEdit ||
+    showDelete ||
+    recordActions.length > 0 ||
+    Boolean(renderActions);
 
   return (
     <div className={cn("w-full", className)}>
@@ -190,7 +206,7 @@ export function ResourceDetail<
               />
             ),
           )}
-          {actions && !denied.update ? (
+          {showEdit ? (
             <Button
               type="button"
               variant="outline"
@@ -201,7 +217,7 @@ export function ResourceDetail<
               Edit
             </Button>
           ) : null}
-          {actions && !denied.delete ? (
+          {showDelete ? (
             <Button
               type="button"
               variant="outline"
@@ -248,7 +264,7 @@ export function ResourceDetail<
         />
       ) : null}
 
-      {actions ? (
+      {editAction ? (
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent>
             <DialogHeader>
@@ -260,7 +276,7 @@ export function ResourceDetail<
               defaultValues={record}
               onSuccess={() => setEditOpen(false)}
               onError={(mutationError) => {
-                if (isPermissionDenied(mutationError)) {
+                if (isActionDenied(mutationError, id)) {
                   setDenied((current) => ({ ...current, update: true }));
                   setEditOpen(false);
                 }
@@ -271,7 +287,7 @@ export function ResourceDetail<
         </Dialog>
       ) : null}
 
-      {actions ? (
+      {deleteAction ? (
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <DialogContent>
             <DialogHeader>
@@ -279,7 +295,7 @@ export function ResourceDetail<
               <DialogDescription>This can&apos;t be undone.</DialogDescription>
             </DialogHeader>
             {deleteMutation.error &&
-            !isPermissionDenied(deleteMutation.error) ? (
+            !isActionDenied(deleteMutation.error, id) ? (
               <p role="alert" className="text-sm text-destructive">
                 {deleteMutation.error.message}
               </p>

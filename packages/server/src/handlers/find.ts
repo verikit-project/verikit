@@ -8,12 +8,13 @@ import {
 import {
   includesActions,
   recordActionAvailability,
+  recordOperationAvailability,
 } from "./action-availability.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
 
 /**
- * Handles `GET {base}/:id`. With `include=actions`, also reports which record-scoped actions the actor can't run on the record as `meta.actions`.
+ * Handles `GET {base}/:id`. With `include=actions`, also reports which record-scoped actions the actor can't run on the record as `meta.actions`, and which built-in operations (`update`, `delete`) as `meta.operations`.
  */
 export async function handleFind(
   ctx: HandlerContext,
@@ -49,11 +50,14 @@ export async function handleFind(
     },
   );
 
-  const actions = withActions
-    ? await recordActionAvailability(ctx, record)
+  const meta = withActions
+    ? await Promise.all([
+        recordActionAvailability(ctx, record),
+        recordOperationAvailability(ctx, record),
+      ]).then(([actions, operations]) => ({ actions, operations }))
     : undefined;
 
   return dataResponse(presentRecord(record, entry.fields, hidden), {
-    ...(actions && { meta: { actions } }),
+    ...(meta && { meta }),
   });
 }

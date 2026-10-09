@@ -196,9 +196,14 @@ test("find with include=actions reports only the record-scoped actions the actor
     await handler(new Request("https://x/post/1?include=actions"))
   ).json();
   assert.equal(published.data.id, "1");
+  // No update or delete rule: the built-in operations fail closed.
   assert.deepEqual(published.meta, {
     actions: {
       publish: { reason: "unavailable", message: "Already published." },
+    },
+    operations: {
+      update: { reason: "forbidden" },
+      delete: { reason: "forbidden" },
     },
   });
 
@@ -208,7 +213,74 @@ test("find with include=actions reports only the record-scoped actions the actor
   // Collection-scoped actions (reindex, purge) never appear on a record.
   assert.deepEqual(draft.meta, {
     actions: { feature: { reason: "forbidden" } },
+    operations: {
+      update: { reason: "forbidden" },
+      delete: { reason: "forbidden" },
+    },
   });
+});
+
+test("find with include=actions reports the built-in operations the actor can't run, failing closed when a rule throws", async () => {
+  const errors: unknown[] = [];
+  const boom = new Error("Rule offline.");
+  const permissions = definePermissions<Actor, Post>()
+    .can("read", true)
+    .can("update", ({ record }) => record?.published === false)
+    .can("delete", () => {
+      throw boom;
+    });
+  const handler = createServer({
+    context: () => ({ role: "viewer" }) as Actor,
+    onError: (error) => errors.push(error),
+    resources: [
+      {
+        resource: defineResource("post", {
+          fields: { title: text(), published: boolean() },
+        }),
+        adapter: createInMemoryAdapter(posts),
+        permissions: permissions as unknown as ReturnType<
+          typeof definePermissions<Actor>
+        >,
+      },
+    ],
+  });
+
+  const published = await (
+    await handler(new Request("https://x/post/1?include=actions"))
+  ).json();
+  assert.deepEqual(published.meta, {
+    actions: {},
+    operations: {
+      update: { reason: "forbidden" },
+      delete: { reason: "forbidden" },
+    },
+  });
+
+  const draft = await (
+    await handler(new Request("https://x/post/2?include=actions"))
+  ).json();
+  assert.deepEqual(draft.meta, {
+    actions: {},
+    operations: { delete: { reason: "forbidden" } },
+  });
+  assert.deepEqual(errors, [boom, boom]);
+});
+
+test("find with include=actions reports no operations on an open resource", async () => {
+  const handler = createServer({
+    resources: [
+      {
+        resource: defineResource("post", { fields: { title: text() } }),
+        adapter: createInMemoryAdapter(posts),
+        permissions: "open",
+      },
+    ],
+  });
+
+  const body = await (
+    await handler(new Request("https://x/post/1?include=actions"))
+  ).json();
+  assert.deepEqual(body.meta, { actions: {}, operations: {} });
 });
 
 test("find without include=actions has no meta, and an unknown include is rejected", async () => {

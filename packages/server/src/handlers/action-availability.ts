@@ -1,12 +1,23 @@
 import { ValidationError } from "@verikit/core";
 import { checkActionAvailability } from "@verikit/runtime";
 import type { ServerActionHandler } from "../create-server.js";
-import { maybeCheckAction } from "../permissions.js";
+import {
+  maybeCheckAction,
+  maybeCheckResourceOperation,
+} from "../permissions.js";
 import type { HandlerContext } from "./context.js";
 
 /** An action the actor can't run, as reported in a list response's `meta.actions`. */
 export type UnavailableAction =
   { reason: "forbidden" } | { reason: "unavailable"; message?: string };
+
+/** A built-in record operation reported in a find response's `meta.operations`. */
+export type RecordOperation = "update" | "delete";
+
+/** The built-in record operations the actor can't run on a record, keyed by operation. Operations it can run are left out. */
+export type UnavailableOperations = Partial<
+  Record<RecordOperation, { reason: "forbidden" }>
+>;
 
 /**
  * The actions the actor can't run on a page of records, sent as `meta.actions` when a list request asks for `include=actions`. Only actions that can't run are listed: `records` is keyed by record id, then action name, for record-scoped actions; `collection` is keyed by action name, for collection-scoped ones.
@@ -80,6 +91,37 @@ export function recordActionAvailability(
   record: Record<string, unknown>,
 ): Promise<Record<string, UnavailableAction>> {
   return unavailableActions(ctx, actionsByScope(ctx).recordActions, record);
+}
+
+/**
+ * The built-in operations (`update`, `delete`) the actor can't run on one record, sent as `meta.operations` when a find request asks for `include=actions`. Runs the same resource permission check as `handleUpdate` and `handleDelete`, which answer a denial with 404. A check that throws fails closed, reporting the operation as forbidden, and passes the error to `onError`.
+ */
+export async function recordOperationAvailability(
+  ctx: HandlerContext,
+  record: Record<string, unknown>,
+): Promise<UnavailableOperations> {
+  const operations: readonly RecordOperation[] = ["update", "delete"];
+  const results = await Promise.all(
+    operations.map(async (operation) => {
+      try {
+        const permission = await maybeCheckResourceOperation(
+          ctx.entry.config.permissions,
+          operation,
+          { actor: ctx.actor, record },
+        );
+        return [operation, permission.allowed] as const;
+      } catch (error) {
+        ctx.reportError?.(error);
+        return [operation, false] as const;
+      }
+    }),
+  );
+
+  return Object.fromEntries(
+    results
+      .filter(([, allowed]) => !allowed)
+      .map(([operation]) => [operation, { reason: "forbidden" }]),
+  );
 }
 
 function actionsByScope(ctx: HandlerContext): {

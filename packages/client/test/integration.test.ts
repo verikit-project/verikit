@@ -140,7 +140,7 @@ test("list({ includeActions: true }) reports the actions each caller can't run",
   assert.equal(plain.actions, undefined);
 });
 
-test("findWithActions() reports the actions each caller can't run on a record", async () => {
+test("findWithActions() reports the actions and operations each caller can't run on a record", async () => {
   const { fetch: fetchImpl } = createTestServerFetch([
     { id: "1", title: "Hello", body: "world", published: false },
   ]);
@@ -148,7 +148,9 @@ test("findWithActions() reports the actions each caller can't run on a record", 
   const asViewer = await clientAs(fetchImpl, "viewer").findWithActions("1");
   assert.equal(asViewer.record.title, "Hello");
   assert.deepEqual(asViewer.actions, { publish: { reason: "forbidden" } });
+  assert.deepEqual(asViewer.operations, { delete: { reason: "forbidden" } });
 
   const asAdmin = await clientAs(fetchImpl, "admin").findWithActions("1");
   assert.deepEqual(asAdmin.actions, {});
+  assert.deepEqual(asAdmin.operations, {});
 });

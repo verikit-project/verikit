@@ -227,6 +227,46 @@ test("actions renders Edit and Delete with the declared actions; resourceActions
   harness.cleanup();
 });
 
+test("editAction and deleteAction turn Edit and Delete on or off on their own", async () => {
+  const fixture = createFakeClient([post]);
+  let harness = await renderLoaded(fixture, {
+    actions: true,
+    deleteAction: false,
+  });
+  assert.equal(buttons(harness.container, "Edit").length, 1);
+  assert.equal(buttons(harness.container, "Delete").length, 0);
+  assert.equal(buttons(harness.container, "Feature").length, 1);
+  harness.cleanup();
+
+  harness = await renderLoaded(fixture, { deleteAction: true });
+  assert.equal(buttons(harness.container, "Edit").length, 0);
+  assert.equal(buttons(harness.container, "Delete").length, 1);
+  assert.equal(buttons(harness.container, "Feature").length, 0);
+  harness.cleanup();
+});
+
+test("Edit and Delete the server reports the actor can't run are hidden up front", async () => {
+  const fixture = createFakeClient([post]);
+  fixture.operationAvailability = {
+    "1": { update: { reason: "forbidden" } },
+  };
+  let harness = await renderLoaded(fixture, { actions: true });
+  assert.equal(buttons(harness.container, "Edit").length, 0);
+  assert.equal(buttons(harness.container, "Delete").length, 1);
+  harness.cleanup();
+
+  // With nothing else to show, there's no action bar.
+  fixture.operationAvailability = {
+    "1": { update: { reason: "forbidden" }, delete: { reason: "forbidden" } },
+  };
+  harness = await renderLoaded(fixture, {
+    editAction: true,
+    deleteAction: true,
+  });
+  assert.equal(harness.container.querySelectorAll("button").length, 0);
+  harness.cleanup();
+});
+
 test("Edit saves through ResourceForm; a failed save keeps it open and a denied one hides Edit", async () => {
   const fixture = createFakeClient([post]);
   const harness = await renderLoaded(fixture, { actions: true });
@@ -252,6 +292,29 @@ test("Edit saves through ResourceForm; a failed save keeps it open and a denied 
   click(dialog()!, "Save changes");
   await waitFor(() => dialog() === null);
   await waitFor(() => buttons(harness.container, "Edit").length === 0);
+
+  harness.cleanup();
+});
+
+test("Edit and Delete denied with a 404, as the server answers a denied update or delete, are hidden", async () => {
+  const fixture = createFakeClient([post]);
+  const harness = await renderLoaded(fixture, { actions: true });
+  const notFound = () => new VerikitClientError(404, "Not found.", "NOT_FOUND");
+
+  fixture.failNext.update = notFound();
+  click(harness.container, "Edit");
+  await waitFor(() => dialog() !== null);
+  click(dialog()!, "Save changes");
+  await waitFor(() => dialog() === null);
+  await waitFor(() => buttons(harness.container, "Edit").length === 0);
+
+  fixture.failNext.delete = notFound();
+  click(harness.container, "Delete");
+  await waitFor(() => dialog() !== null);
+  click(dialog()!, "Delete");
+  await waitFor(() => dialog() === null);
+  await waitFor(() => buttons(harness.container, "Delete").length === 0);
+  assert.equal(harness.container.querySelector('[role="alert"]'), null);
 
   harness.cleanup();
 });

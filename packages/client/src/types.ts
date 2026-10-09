@@ -160,13 +160,22 @@ export interface ListActionAvailability<TActionName extends string = string> {
   collection: UnavailableActions<TActionName>;
 }
 
-/** A record, with the record-scoped actions the caller can't run on it. */
+/** A built-in record operation whose availability `findWithActions()` reports. */
+export type RecordOperation = "update" | "delete";
+
+/** The built-in record operations the caller can't run, keyed by operation. Operations it can run are left out. */
+export type UnavailableOperations = Partial<
+  Record<RecordOperation, { reason: "forbidden" }>
+>;
+
+/** A record, with the record-scoped actions and built-in operations the caller can't run on it. */
 export interface FindWithActionsResponse<
   TRecord,
   TActionName extends string = string,
 > {
   record: TRecord;
   actions: UnavailableActions<TActionName>;
+  operations: UnavailableOperations;
 }
 
 export interface ListResponse<TRecord, TActionName extends string = string> {

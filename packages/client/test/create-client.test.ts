@@ -100,7 +100,10 @@ test("findWithActions() GETs the record with include=actions and returns its una
       call.url.includes("include=actions")
         ? {
             data: { id: "1" },
-            meta: { actions: { publish: { reason: "forbidden" } } },
+            meta: {
+              actions: { publish: { reason: "forbidden" } },
+              operations: { delete: { reason: "forbidden" } },
+            },
           }
         : { data: { id: "1" } },
     ),
@@ -113,6 +116,7 @@ test("findWithActions() GETs the record with include=actions and returns its una
   assert.deepEqual(result, {
     record: { id: "1" },
     actions: { publish: { reason: "forbidden" } },
+    operations: { delete: { reason: "forbidden" } },
   });
 });
 
@@ -123,6 +127,7 @@ test("findWithActions() returns no actions when the server reports none", async 
   assert.deepEqual(await client.resource("posts").findWithActions("1"), {
     record: { id: "1" },
     actions: {},
+    operations: {},
   });
 });
 
