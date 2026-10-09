@@ -30,6 +30,7 @@ test("ui-core package exposes its public entrypoint", async () => {
     "submitVerikitResourceForm",
     "submitVerikitSchemaTreeActionForm",
     "submitVerikitSchemaTreeForm",
+    "unavailableAction",
     "unsetValueAtPath",
     "validationIssuesToFieldErrors",
   ]);

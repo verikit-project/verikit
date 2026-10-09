@@ -35,6 +35,15 @@ export function isPermissionDenied(error: unknown): boolean {
   return hasStatus(error, 403);
 }
 
+function isActionUnavailable(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === "ACTION_UNAVAILABLE"
+  );
+}
+
 /**
  * True when the server denied running an action. The server denies record actions with 404 rather than 403 so it never reveals whether the record exists; the caller already holds that record, so a 404 there means the action can't run on it (denied, or the record is gone).
  */
@@ -56,7 +65,7 @@ export interface RunResourceActionVariables {
 }
 
 /**
- * Runs any declared action of a resource over `@verikit/client`, invalidating the resource's queries on success. Sends `confirmed: true` for actions that declare a confirmation, since callers only run those after the user accepted it.
+ * Runs any declared action of a resource over `@verikit/client`, invalidating the resource's queries on success, or when the server reports the action unavailable. Sends `confirmed: true` for actions that declare a confirmation, since callers only run those after the user accepted it.
  */
 export function useRunResourceAction(
   resourceName: string,
@@ -84,8 +93,14 @@ export function useRunResourceAction(
       void queryClient.invalidateQueries({ queryKey: keys.all });
       options.onSuccess?.();
     },
-    onError: (error: Error, variables: RunResourceActionVariables) =>
-      options.onError?.(error, variables),
+    onError: (error: Error, variables: RunResourceActionVariables) => {
+      // The list's action availability is stale: refetch it so the action
+      // shows as unavailable.
+      if (isActionUnavailable(error)) {
+        void queryClient.invalidateQueries({ queryKey: keys.all });
+      }
+      options.onError?.(error, variables);
+    },
   });
 }
 

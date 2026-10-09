@@ -415,3 +415,73 @@ test("a 404 from a collection action is shown as an error, not treated as a deni
 
   harness.cleanup();
 });
+
+test("the table asks for action availability only when it shows declared actions", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const first = await renderTable(fixture);
+  assert.equal(fixture.lastListParams?.includeActions, true);
+  first.harness.cleanup();
+
+  const second = await renderTable(fixture, { resourceActions: false });
+  assert.equal(fixture.lastListParams?.includeActions, undefined);
+  second.harness.cleanup();
+});
+
+test("actions the list reports forbidden are hidden; unavailable ones are disabled with the reason", async () => {
+  const fixture = createFakeClient([
+    { id: "1", title: "Hello" },
+    { id: "2", title: "World" },
+  ]);
+  fixture.actionAvailability = {
+    records: {
+      "1": {
+        feature: { reason: "forbidden" },
+        publish: { reason: "unavailable", message: "Already published." },
+      },
+    },
+    collection: {
+      purge: { reason: "forbidden" },
+      reindex: { reason: "unavailable" },
+    },
+  };
+  const { harness, container } = await renderTable(fixture);
+
+  // Two layouts (table and cards) render each row; only row 2 keeps Feature.
+  assert.equal(buttons(container, "Feature").length, 2);
+  const publish = buttons(container, "Publish");
+  assert.deepEqual(
+    publish.map((button) => button.disabled),
+    [true, false, true, false],
+  );
+  assert.equal(publish[0]!.parentElement!.title, "Already published.");
+
+  assert.equal(buttons(container, "Purge").length, 0);
+  assert.equal(buttons(container, "Reindex")[0]!.disabled, true);
+
+  harness.cleanup();
+});
+
+test("an action the server reports unavailable when run refetches the list", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const { harness, container } = await renderTable(fixture);
+  const listCalls = fixture.calls.list;
+
+  fixture.failNext.action = new VerikitClientError(
+    422,
+    "Feature quota reached.",
+    "ACTION_UNAVAILABLE",
+  );
+  fixture.actionAvailability = {
+    records: { "1": { feature: { reason: "unavailable" } } },
+    collection: {},
+  };
+  await click(container, "Feature");
+
+  await waitFor(() => fixture.calls.list > listCalls);
+  await waitFor(() => buttons(container, "Feature")[0]!.disabled);
+  await waitFor(() =>
+    /Feature quota reached\./.test(container.textContent ?? ""),
+  );
+
+  harness.cleanup();
+});

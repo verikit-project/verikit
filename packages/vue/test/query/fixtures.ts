@@ -1,6 +1,7 @@
 import type {
   ActionOptions,
   ActionResult,
+  ListActionAvailability,
   ListParams,
   ListResponse,
   RequestOptions,
@@ -72,6 +73,8 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   block: (method: FakeMethod) => () => void;
   lastListParams: ListParams | undefined;
   lastAction: FakeActionCall | undefined;
+  /** Returned as `actions` by `list`/`search` calls made with `includeActions: true`. */
+  actionAvailability: ListActionAvailability | undefined;
 } {
   const records: FakeRecord[] = initial.map((record) => ({ ...record }));
   const calls: FakeResourceCalls = {
@@ -88,9 +91,11 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   const state: {
     lastListParams: ListParams | undefined;
     lastAction: FakeActionCall | undefined;
+    actionAvailability: ListActionAvailability | undefined;
   } = {
     lastListParams: undefined,
     lastAction: undefined,
+    actionAvailability: undefined,
   };
 
   function block(method: FakeMethod): () => void {
@@ -135,6 +140,8 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
         total: records.length,
         page: 1,
         pageSize: 25,
+        ...(params?.includeActions &&
+          state.actionAvailability && { actions: state.actionAvailability }),
       };
     },
 
@@ -288,6 +295,12 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     },
     get lastAction() {
       return state.lastAction;
+    },
+    get actionAvailability() {
+      return state.actionAvailability;
+    },
+    set actionAvailability(value) {
+      state.actionAvailability = value;
     },
   };
 }

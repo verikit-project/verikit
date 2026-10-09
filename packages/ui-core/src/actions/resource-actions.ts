@@ -1,3 +1,7 @@
+import type {
+  ListActionAvailability,
+  UnavailableAction,
+} from "@verikit/client";
 import type { ActionSchemaLike, Resource, ResourceSchema } from "@verikit/core";
 
 /** Resource builder or schema whose declared actions a UI renders. */
@@ -37,4 +41,21 @@ export function actionNeedsDialog(action: ActionSchemaLike): boolean {
 /** Display label for an action, falling back to its name. */
 export function actionLabel(action: ActionSchemaLike): string {
   return action.label ?? action.name;
+}
+
+/**
+ * Looks up why an action can't run, from a list's `actions` (requested with `includeActions: true`): pass the record id for a record-scoped action, none for a collection-scoped one. Returns `undefined` when the action can run, or when the list didn't report availability.
+ */
+export function unavailableAction(
+  availability: ListActionAvailability | undefined,
+  actionName: string,
+  recordId?: string,
+): UnavailableAction | undefined {
+  if (!availability) {
+    return undefined;
+  }
+
+  return recordId === undefined
+    ? availability.collection[actionName]
+    : availability.records[recordId]?.[actionName];
 }

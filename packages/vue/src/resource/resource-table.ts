@@ -29,6 +29,7 @@ import {
   actionLabel,
   actionNeedsDialog,
   resourceActionSchemas,
+  unavailableAction,
 } from "@verikit/ui-core/actions/resource-actions";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
@@ -73,7 +74,7 @@ export interface ResourceTableProps<
    */
   actions?: boolean;
   /**
-   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. One denied by the server (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
+   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. The table asks the server which of them the actor can't run on each page: those it may not run are hidden, and those that can't run right now are disabled, with the reason as a tooltip. An action denied when run (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
    */
   resourceActions?: boolean;
   /** Renders per-row actions (e.g. custom edit/delete buttons). */
@@ -164,8 +165,26 @@ export const ResourceTable = defineComponent({
   setup(props) {
     type TRecord = Record<string, unknown>;
 
-    const { table, isLoading, error, fields, filters, setFilters } =
-      useResourceTable<TRecord>(props.resource, { pageSize: props.pageSize });
+    const showResourceActions = props.resourceActions ?? props.actions;
+    const recordActions = showResourceActions
+      ? resourceActionSchemas(props.resource, "record")
+      : [];
+    const collectionActions = showResourceActions
+      ? resourceActionSchemas(props.resource, "collection")
+      : [];
+
+    const {
+      table,
+      isLoading,
+      error,
+      fields,
+      filters,
+      setFilters,
+      actions: actionAvailability,
+    } = useResourceTable<TRecord>(props.resource, {
+      pageSize: props.pageSize,
+      includeActions: recordActions.length > 0 || collectionActions.length > 0,
+    });
 
     const createOpen = ref(false);
     const createDenied = ref(false);
@@ -179,14 +198,6 @@ export const ResourceTable = defineComponent({
     const activeAction = ref<ActiveAction | null>(null);
     const deniedCollectionActions = ref<Record<string, true>>({});
     const actionError = ref<string | null>(null);
-
-    const showResourceActions = props.resourceActions ?? props.actions;
-    const recordActions = showResourceActions
-      ? resourceActionSchemas(props.resource, "record")
-      : [];
-    const collectionActions = showResourceActions
-      ? resourceActionSchemas(props.resource, "collection")
-      : [];
 
     function denyAction(
       action: ActionSchemaLike,
@@ -232,23 +243,48 @@ export const ResourceTable = defineComponent({
       }
     }
 
+    // Hidden when the list reports the actor may not run the action; disabled,
+    // with the reason as a tooltip, when it can't run right now.
     function declaredActionButton(
       action: ActionSchemaLike,
       variant: "ghost" | "outline",
       id?: string,
     ): VNodeChild {
-      return h(
+      const unavailable = unavailableAction(
+        actionAvailability.value,
+        action.name,
+        id,
+      );
+
+      if (unavailable?.reason === "forbidden") {
+        return null;
+      }
+
+      const button = h(
         Button,
         {
           key: action.name,
           type: "button",
           variant: action.variant === "danger" ? "destructive" : variant,
           size: "sm",
-          disabled: directAction.isPending.value,
+          disabled: directAction.isPending.value || unavailable !== undefined,
           onClick: () => startAction(action, id),
         },
         { default: () => actionLabel(action) },
       );
+
+      // Disabled buttons ignore pointer events, so the tooltip sits on a wrapper.
+      return unavailable
+        ? h(
+            "span",
+            {
+              key: action.name,
+              class: "inline-flex",
+              title: unavailable.message,
+            },
+            [button],
+          )
+        : button;
     }
 
     function declaredRowActions(record: TRecord): VNodeChild {

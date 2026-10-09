@@ -24,11 +24,13 @@ import {
 } from "#components/dialog";
 import { Input } from "#components/input";
 import { cn } from "#lib/utils";
+import type { UnavailableAction } from "@verikit/client";
 import type { ActionSchemaLike } from "@verikit/core";
 import {
   actionLabel,
   actionNeedsDialog,
   resourceActionSchemas,
+  unavailableAction,
 } from "@verikit/ui-core/actions/resource-actions";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
@@ -81,7 +83,7 @@ export interface ResourceTableProps<
    */
   actions?: boolean;
   /**
-   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. As with the built-in actions, one denied by the server (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
+   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. The table asks the server which of them the actor can't run on each page: those it may not run are hidden, and those that can't run right now are disabled, with the reason as a tooltip. An action denied when run (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
    */
   resourceActions?: boolean;
   /**
@@ -145,6 +147,48 @@ function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
 }
 
 /**
+ * A declared action's button. Hidden when the list reports the actor may not run it; disabled, with the reason as a tooltip, when it can't run right now.
+ */
+function DeclaredActionButton({
+  action,
+  unavailable,
+  variant,
+  disabled,
+  onClick,
+}: {
+  action: ActionSchemaLike;
+  unavailable: UnavailableAction | undefined;
+  variant: "destructive" | "ghost" | "outline";
+  disabled: boolean;
+  onClick: () => void;
+}): ReactElement | null {
+  if (unavailable?.reason === "forbidden") {
+    return null;
+  }
+
+  const button = (
+    <Button
+      type="button"
+      variant={variant}
+      size="sm"
+      disabled={disabled || unavailable !== undefined}
+      onClick={onClick}
+    >
+      {actionLabel(action)}
+    </Button>
+  );
+
+  // Disabled buttons ignore pointer events, so the tooltip sits on a wrapper.
+  return unavailable ? (
+    <span className="inline-flex" title={unavailable.message}>
+      {button}
+    </span>
+  ) : (
+    button
+  );
+}
+
+/**
  * A responsive resource table with search, sorting, pagination, and a
  * mobile card layout. Standard CRUD actions and custom row actions are opt-in.
  */
@@ -160,8 +204,24 @@ export function ResourceTable<
   emptyState,
   className,
 }: ResourceTableProps<TRecord>): ReactElement {
-  const { table, isLoading, error, fields, filters, setFilters } =
-    useResourceTable<TRecord>(resource, { pageSize });
+  const recordActions = resourceActions
+    ? resourceActionSchemas(resource, "record")
+    : [];
+  const collectionActions = resourceActions
+    ? resourceActionSchemas(resource, "collection")
+    : [];
+  const {
+    table,
+    isLoading,
+    error,
+    fields,
+    filters,
+    setFilters,
+    actions: actionAvailability,
+  } = useResourceTable<TRecord>(resource, {
+    pageSize,
+    includeActions: recordActions.length > 0 || collectionActions.length > 0,
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createDenied, setCreateDenied] = useState(false);
@@ -177,13 +237,6 @@ export function ResourceTable<
     Record<string, true>
   >({});
   const [actionError, setActionError] = useState<string | null>(null);
-
-  const recordActions = resourceActions
-    ? resourceActionSchemas(resource, "record")
-    : [];
-  const collectionActions = resourceActions
-    ? resourceActionSchemas(resource, "collection")
-    : [];
 
   function denyAction(action: ActionSchemaLike, id: string | undefined): void {
     if (id === undefined) {
@@ -340,16 +393,14 @@ export function ResourceTable<
 
     return recordActions.map((action) =>
       denied?.[action.name] ? null : (
-        <Button
+        <DeclaredActionButton
           key={action.name}
-          type="button"
+          action={action}
+          unavailable={unavailableAction(actionAvailability, action.name, id)}
           variant={action.variant === "danger" ? "destructive" : "ghost"}
-          size="sm"
           disabled={directAction.isPending}
           onClick={() => startAction(action, id)}
-        >
-          {actionLabel(action)}
-        </Button>
+        />
       ),
     );
   }
@@ -427,18 +478,16 @@ export function ResourceTable<
         <div className="flex items-center gap-2">
           {collectionActions.map((action) =>
             deniedCollectionActions[action.name] ? null : (
-              <Button
+              <DeclaredActionButton
                 key={action.name}
-                type="button"
+                action={action}
+                unavailable={unavailableAction(actionAvailability, action.name)}
                 variant={
                   action.variant === "danger" ? "destructive" : "outline"
                 }
-                size="sm"
                 disabled={directAction.isPending}
                 onClick={() => startAction(action)}
-              >
-                {actionLabel(action)}
-              </Button>
+              />
             ),
           )}
           {actions && !createDenied ? (
