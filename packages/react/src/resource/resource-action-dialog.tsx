@@ -21,7 +21,8 @@ import { RenderField } from "../fields/index.js";
 import type { VerikitFieldRegistry } from "../fields/types.js";
 import { useVerikitForm } from "../form/use-verikit-form.js";
 
-function hasStatus(error: unknown, status: number): boolean {
+/** True for an error whose `status` matches, duck-typed like `ResourceTable`. */
+export function hasStatus(error: unknown, status: number): boolean {
   return (
     typeof error === "object" &&
     error !== null &&

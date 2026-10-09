@@ -26,11 +26,11 @@ import { Input } from "#components/input";
 import { cn } from "#lib/utils";
 import type { ActionSchemaLike } from "@verikit/core";
 import {
-  actionLabel,
   actionNeedsDialog,
   resourceActionSchemas,
   unavailableAction,
 } from "@verikit/ui-core/actions/resource-actions";
+import { formatFieldValue } from "@verikit/ui-core/layout/format-value";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
 import {
@@ -44,6 +44,7 @@ import {
   ResourceActionDialog,
   useRunResourceAction,
 } from "./resource-action-dialog.js";
+import { declaredActionButton } from "./declared-action-button.js";
 import { ResourceForm } from "./resource-form.js";
 import {
   filterableFields,
@@ -95,22 +96,6 @@ function headerText(header: {
   column: { columnDef: { header?: unknown } };
 }): string {
   return header.column.columnDef.header as string;
-}
-
-function cellText(value: unknown): string {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  if (value instanceof Date) {
-    return value.toLocaleString();
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
-  }
-
-  return String(value);
 }
 
 function sortIcon(direction: false | "asc" | "desc") {
@@ -243,48 +228,22 @@ export const ResourceTable = defineComponent({
       }
     }
 
-    // Hidden when the list reports the actor may not run the action; disabled,
-    // with the reason as a tooltip, when it can't run right now.
-    function declaredActionButton(
+    function tableActionButton(
       action: ActionSchemaLike,
       variant: "ghost" | "outline",
       id?: string,
     ): VNodeChild {
-      const unavailable = unavailableAction(
-        actionAvailability.value,
-        action.name,
-        id,
-      );
-
-      if (unavailable?.reason === "forbidden") {
-        return null;
-      }
-
-      const button = h(
-        Button,
-        {
-          key: action.name,
-          type: "button",
-          variant: action.variant === "danger" ? "destructive" : variant,
-          size: "sm",
-          disabled: directAction.isPending.value || unavailable !== undefined,
-          onClick: () => startAction(action, id),
-        },
-        { default: () => actionLabel(action) },
-      );
-
-      // Disabled buttons ignore pointer events, so the tooltip sits on a wrapper.
-      return unavailable
-        ? h(
-            "span",
-            {
-              key: action.name,
-              class: "inline-flex",
-              title: unavailable.message,
-            },
-            [button],
-          )
-        : button;
+      return declaredActionButton({
+        action,
+        unavailable: unavailableAction(
+          actionAvailability.value,
+          action.name,
+          id,
+        ),
+        variant,
+        disabled: directAction.isPending.value,
+        onClick: () => startAction(action, id),
+      });
     }
 
     function declaredRowActions(record: TRecord): VNodeChild {
@@ -292,9 +251,7 @@ export const ResourceTable = defineComponent({
       const denied = deniedRows.value[id]?.actions;
 
       return recordActions.map((action) =>
-        denied?.[action.name]
-          ? null
-          : declaredActionButton(action, "ghost", id),
+        denied?.[action.name] ? null : tableActionButton(action, "ghost", id),
       );
     }
 
@@ -491,7 +448,7 @@ export const ResourceTable = defineComponent({
             ...collectionActions.map((action) =>
               deniedCollectionActions.value[action.name]
                 ? null
-                : declaredActionButton(action, "outline"),
+                : tableActionButton(action, "outline"),
             ),
             props.actions && !createDenied.value
               ? h(
@@ -675,7 +632,7 @@ export const ResourceTable = defineComponent({
                                 h(
                                   "td",
                                   { key: cell.id, class: "px-3 py-2" },
-                                  cellText(cell.getValue()),
+                                  formatFieldValue(cell.getValue()),
                                 ),
                               ),
                             hasActionsColumn
@@ -739,7 +696,7 @@ export const ResourceTable = defineComponent({
                             h(
                               "span",
                               { class: "text-right" },
-                              cellText(cell.getValue()),
+                              formatFieldValue(cell.getValue()),
                             ),
                           ],
                         ),

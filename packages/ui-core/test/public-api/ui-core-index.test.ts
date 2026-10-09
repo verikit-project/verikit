@@ -9,6 +9,7 @@ test("ui-core package exposes its public entrypoint", async () => {
     "actionNeedsDialog",
     "firstFieldError",
     "firstFieldErrors",
+    "formatFieldValue",
     "getValueAtPath",
     "hasValueAtPath",
     "inferAndValidateResource",

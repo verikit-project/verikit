@@ -24,14 +24,13 @@ import {
 } from "#components/dialog";
 import { Input } from "#components/input";
 import { cn } from "#lib/utils";
-import type { UnavailableAction } from "@verikit/client";
 import type { ActionSchemaLike } from "@verikit/core";
 import {
-  actionLabel,
   actionNeedsDialog,
   resourceActionSchemas,
   unavailableAction,
 } from "@verikit/ui-core/actions/resource-actions";
+import { formatFieldValue } from "@verikit/ui-core/layout/format-value";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
 import {
@@ -45,6 +44,7 @@ import {
   ResourceActionDialog,
   useRunResourceAction,
 } from "./resource-action-dialog.js";
+import { DeclaredActionButton } from "./declared-action-button.js";
 import { ResourceForm } from "./resource-form.js";
 import {
   filterableFields,
@@ -118,22 +118,6 @@ function headerText(header: {
   return header.column.columnDef.header as string;
 }
 
-function cellText(value: unknown): string {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  if (value instanceof Date) {
-    return value.toLocaleString();
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
-  }
-
-  return String(value);
-}
-
 function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
   if (direction === "asc") {
     return <ArrowUpIcon className="size-3.5" />;
@@ -144,48 +128,6 @@ function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
   }
 
   return <ChevronsUpDownIcon className="size-3.5 opacity-50" />;
-}
-
-/**
- * A declared action's button. Hidden when the list reports the actor may not run it; disabled, with the reason as a tooltip, when it can't run right now.
- */
-function DeclaredActionButton({
-  action,
-  unavailable,
-  variant,
-  disabled,
-  onClick,
-}: {
-  action: ActionSchemaLike;
-  unavailable: UnavailableAction | undefined;
-  variant: "destructive" | "ghost" | "outline";
-  disabled: boolean;
-  onClick: () => void;
-}): ReactElement | null {
-  if (unavailable?.reason === "forbidden") {
-    return null;
-  }
-
-  const button = (
-    <Button
-      type="button"
-      variant={variant}
-      size="sm"
-      disabled={disabled || unavailable !== undefined}
-      onClick={onClick}
-    >
-      {actionLabel(action)}
-    </Button>
-  );
-
-  // Disabled buttons ignore pointer events, so the tooltip sits on a wrapper.
-  return unavailable ? (
-    <span className="inline-flex" title={unavailable.message}>
-      {button}
-    </span>
-  ) : (
-    button
-  );
 }
 
 /**
@@ -628,7 +570,7 @@ export function ResourceTable<
                   ) : null}
                   {row.getAllCells().map((cell) => (
                     <td key={cell.id} className="px-3 py-2">
-                      {cellText(cell.getValue())}
+                      {formatFieldValue(cell.getValue())}
                     </td>
                   ))}
                   {hasActionsColumn ? (
@@ -675,7 +617,7 @@ export function ResourceTable<
                     {headerText({ column: cell.column })}
                   </span>
                   <span className="text-right">
-                    {cellText(cell.getValue())}
+                    {formatFieldValue(cell.getValue())}
                   </span>
                 </div>
               ))}
