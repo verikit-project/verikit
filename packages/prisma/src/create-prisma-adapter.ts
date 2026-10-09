@@ -76,13 +76,17 @@ export interface PrismaAdapterOptions<TFields extends FieldMap> {
   /** The generated Prisma model delegate this adapter reads/writes, e.g. `prisma.post`. */
   model: PrismaModelDelegate;
   /**
-   * Maps every resource field to its Prisma scalar field.
-   * All fields must be explicitly mapped; relations and Prisma `include`/`select`
-   * values are not supported.
+   * Maps resource fields to Prisma scalar fields when the names differ. A field
+   * left out maps to the scalar with the same name, so a model whose scalars
+   * match the resource's field names needs no map. Relations and Prisma
+   * `include`/`select` values are not supported.
    */
-  fields: { [K in keyof TFields & string]: string };
-  /** Names the model's primary (or other unique) scalar and how to codec it. */
-  id: PrismaIdConfig;
+  fields?: { [K in keyof TFields & string]?: string };
+  /**
+   * Names the model's primary (or other unique) scalar and how to codec it.
+   * Defaults to a string `id` scalar; numeric or composite IDs need `fromPath`.
+   */
+  id?: PrismaIdConfig;
   /** See `PrismaSearchProvider`. */
   provider?: PrismaSearchProvider;
   /**
@@ -111,10 +115,9 @@ export interface PrismaResourceRecord extends Record<string, unknown> {
 
 /**
  * Creates a Prisma-backed `ResourceAdapter`.
- * Selects only configured fields plus `id`, never full model rows.
+ * Selects only the resource's fields plus `id`, never full model rows.
  *
- * @throws {Error} If a resource field is unmapped or a `.searchable()` field
- * is not text-like.
+ * @throws {Error} If a `.searchable()` field is not text-like.
  */
 export function createPrismaAdapter<
   TFields extends FieldMap,
@@ -124,9 +127,17 @@ export function createPrismaAdapter<
   resource: Resource<string, TFields, TTable, TRelationships>,
   options: PrismaAdapterOptions<TFields>,
 ): ResourceAdapter<PrismaResourceRecord> {
-  const { model, id } = options;
-  const fields = options.fields as PrismaFieldMap;
+  const { model } = options;
+  const id = options.id ?? { field: "id" };
   const schema = resource.toSchema();
+  // Only declared fields are mapped, so a stray `fields` key can never widen
+  // the select.
+  const fields: PrismaFieldMap = Object.fromEntries(
+    Object.keys(schema.fields).map((name) => [
+      name,
+      (options.fields as PrismaFieldMap | undefined)?.[name] ?? name,
+    ]),
+  );
   const versionField = options.versionField;
   if (
     versionField !== undefined &&
@@ -153,16 +164,6 @@ export function createPrismaAdapter<
   }
   const conflict = () =>
     new ConflictError("Record changed since authorization. Retry the request.");
-
-  const unmapped = Object.keys(schema.fields).filter(
-    (name) => !Object.hasOwn(fields, name),
-  );
-
-  if (unmapped.length > 0) {
-    throw new Error(
-      `@verikit/prisma: resource "${resource.name}" has no Prisma field mapping for: ${unmapped.join(", ")}. Every declared field needs an entry in \`fields\`.`,
-    );
-  }
 
   const searchableScalars = Object.entries(schema.fields)
     .filter(([, field]) => field.searchable)

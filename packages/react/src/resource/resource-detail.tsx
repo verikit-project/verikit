@@ -231,7 +231,7 @@ export function ResourceDetail<
             <dt className="text-sm font-medium text-muted-foreground">
               {field.label ?? field.name}
             </dt>
-            <dd className="text-sm break-words">
+            <dd className="text-sm wrap-break-word">
               {formatFieldValue(record[field.name])}
             </dd>
           </div>
