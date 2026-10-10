@@ -591,9 +591,9 @@ export function ResourceTable<
             Loading…
           </p>
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <div className="py-6 text-center text-sm text-muted-foreground">
             {resolvedEmptyState}
-          </p>
+          </div>
         ) : (
           rows.map((row) => (
             <div key={row.id} className="rounded-lg border border-border p-3">
