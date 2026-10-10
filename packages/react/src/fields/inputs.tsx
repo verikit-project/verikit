@@ -224,6 +224,11 @@ export function SelectField({
       <Select
         name={name ?? field.name}
         value={textValue(value)}
+        // Lets the closed trigger show the selected option's label, not its raw value.
+        items={options.map((option) => ({
+          value: String(option.value),
+          label: option.label,
+        }))}
         disabled={commonDisabled(field, disabled)}
         readOnly={commonReadOnly(field, readOnly)}
         onValueChange={(nextValue: string | null) => {

@@ -80,6 +80,13 @@ export function BelongsToRelationshipField({
     { enabled: relationshipName.length > 0 },
   );
   const records = data?.records ?? [];
+  const labels = new Map(
+    records.map((record) => [
+      recordId(record),
+      recordLabel(record, relationship.displayField),
+    ]),
+  );
+  const placeholder = isLoading ? "Loading…" : "Select…";
   const currentValue =
     value === null || value === undefined ? "" : String(value);
 
@@ -102,7 +109,12 @@ export function BelongsToRelationshipField({
           aria-describedby={errorId}
           aria-invalid={error ? true : undefined}
         >
-          <SelectValue placeholder={isLoading ? "Loading…" : "Select…"} />
+          {/* Resolves the label itself: Base UI's `items` prop isn't picked up once the records load after mount. */}
+          <SelectValue placeholder={placeholder}>
+            {(selected: string | null) =>
+              selected ? (labels.get(selected) ?? selected) : placeholder
+            }
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {records.map((record) => (

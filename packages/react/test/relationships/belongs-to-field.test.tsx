@@ -65,6 +65,29 @@ test("mounts and resolves with the relationship picker's records for a labeled f
   harness.cleanup();
 });
 
+test("shows the selected record's label, not its id, in the closed trigger", async () => {
+  const fixture = createFakeClient([
+    { id: "1", title: "Ada" },
+    { id: "2", title: "Grace" },
+  ]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <BelongsToRelationshipField
+      relationship={relationship({ displayField: "title" })}
+      value="2"
+    />,
+  );
+
+  await waitFor(
+    () =>
+      harness.container.querySelector('[data-slot="select-value"]')
+        ?.textContent === "Grace",
+  );
+
+  harness.cleanup();
+});
+
 test("resolves for a field with no displayField or label configured", async () => {
   const { client, calls } = createFakeClient([{ id: "1", title: "Ada" }]);
   const harness = setupHarness(client);
