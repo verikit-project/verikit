@@ -226,7 +226,7 @@ test("section nodes render a title and recurse into children with an inherited p
   assert.equal(fieldVNode.props?.value, "Hi");
 });
 
-test("grid nodes set a column-count style and recurse into children", () => {
+test("grid nodes stack on narrow screens, set a column count from sm up, and recurse into children", () => {
   const node: GridNode = {
     type: "grid",
     columns: 3,
@@ -234,9 +234,12 @@ test("grid nodes set a column-count style and recurse into children", () => {
   };
   const element = asVNode(RenderSchemaNode({ node, values: {} }));
 
-  assert.deepEqual(element.props?.style, {
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-  });
+  assert.deepEqual(element.props?.style, { "--vk-grid-columns": 3 });
+  assert.match(String(element.props?.class), /\bgrid-cols-1\b/);
+  assert.match(
+    String(element.props?.class),
+    /sm:grid-cols-\[repeat\(var\(--vk-grid-columns\),minmax\(0,1fr\)\)\]/,
+  );
 
   const [tree] = childrenOf(element);
   const fieldVNode = asVNode(treeNodeAt(tree, 0));

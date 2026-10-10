@@ -184,9 +184,13 @@ function renderGridNode(
 ): VNode {
   return h(
     "div",
+    // Stacks to one column on narrow screens; `node.columns` applies from `sm` up.
     {
-      class: cn("grid gap-4", props.className),
-      style: { gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` },
+      class: cn(
+        "grid grid-cols-1 gap-4 sm:grid-cols-[repeat(var(--vk-grid-columns),minmax(0,1fr))]",
+        props.className,
+      ),
+      style: { "--vk-grid-columns": node.columns },
     },
     [
       RenderSchemaTree({

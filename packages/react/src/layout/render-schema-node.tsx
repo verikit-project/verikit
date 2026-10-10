@@ -11,7 +11,7 @@ import {
   type WizardNode,
 } from "@verikit/core";
 import type { ActionSchema } from "@verikit/runtime";
-import type { ReactElement, ReactNode } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
 import { Button } from "#components/button";
 import { cn } from "#lib/utils";
 import { RenderField } from "../fields/index.js";
@@ -188,9 +188,13 @@ function renderGridNode(
   path: SchemaPath,
 ): ReactElement {
   return (
+    // Stacks to one column on narrow screens; `node.columns` applies from `sm` up.
     <div
-      className={cn("grid gap-4", props.className)}
-      style={{ gridTemplateColumns: `repeat(${node.columns}, minmax(0, 1fr))` }}
+      className={cn(
+        "grid grid-cols-1 gap-4 sm:grid-cols-[repeat(var(--vk-grid-columns),minmax(0,1fr))]",
+        props.className,
+      )}
+      style={{ "--vk-grid-columns": node.columns } as CSSProperties}
     >
       <RenderSchemaTree
         {...schemaRenderProps(props)}
