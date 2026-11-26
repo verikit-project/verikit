@@ -2,7 +2,11 @@
 // file: your changes would be overwritten. Change the source instead.
 import type { ServerResourceConfig } from "verikit/server";
 
-/** Server-side actions, by resource name. */
+/**
+ * Server-side actions, by resource name. Typed for any actor, so they fit a
+ * createServer whose `context` returns your own actor type.
+ */
 export const actions: Partial<
-  Record<string, NonNullable<ServerResourceConfig["actions"]>>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Record<string, NonNullable<ServerResourceConfig<any>["actions"]>>
 > = {};

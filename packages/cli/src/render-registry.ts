@@ -116,9 +116,13 @@ export function renderActionRegistry(
 
   return `${GENERATED_HEADER("actions/*/*.ts")}import type { ServerResourceConfig } from "${imports.server}";
 ${importLines}
-/** Server-side actions, by resource name. */
+/**
+ * Server-side actions, by resource name. Typed for any actor, so they fit a
+ * createServer whose \`context\` returns your own actor type.
+ */
 export const actions: Partial<
-  Record<string, NonNullable<ServerResourceConfig["actions"]>>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Record<string, NonNullable<ServerResourceConfig<any>["actions"]>>
 > = {
 ${entries}};
 `;
