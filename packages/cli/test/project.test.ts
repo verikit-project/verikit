@@ -3,6 +3,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { pathToFileURL } from "node:url";
+import { createServer } from "@verikit/server";
+import { createInMemoryAdapter } from "@verikit/server/testing";
 import { getTableColumns, getTableName } from "drizzle-orm";
 import { loadResources } from "../src/load-resources.js";
 import { findActions } from "../src/render-registry.js";
@@ -213,13 +215,13 @@ describe("apps that install the verikit meta-package", () => {
 
     assert.match(read(root, "resources/post.ts"), /from "verikit";/);
     assert.match(
-      read(root, "actions/post/publish.ts"),
+      read(root, "resources/post.actions.ts"),
       /import \{ action \} from "verikit";/,
     );
     assert.match(read(root, "actions/index.ts"), /from "verikit\/server";/);
 
-    const { actions } = await importFrom(root, "actions/index.ts");
-    assert.equal(actions.post[0].name, "publish");
+    const { handlers } = await importFrom(root, "actions/index.ts");
+    assert.equal(handlers.post[0].name, "publish");
   });
 
   it("checks devDependencies too", () => {
@@ -232,22 +234,90 @@ describe("apps that install the verikit meta-package", () => {
 });
 
 describe("make:action", () => {
-  it("creates a registered action that loads", async () => {
+  it("declares the action on the resource and registers a handler the server accepts", async () => {
     const root = project();
     const config = readConfig(root);
     await makeResource(config, "blogPost", ["title:text"]);
 
     const report = await makeAction(config, "blog-post", "Publish now");
-    assert.deepEqual(report.created, ["actions/blog-post/publish-now.ts"]);
-    assert.deepEqual(report.updated, ["actions/index.ts"]);
+    assert.deepEqual(report.created, [
+      "resources/blog-post.actions.ts",
+      "actions/blog-post/publish-now.ts",
+    ]);
+    assert.deepEqual(report.updated, [
+      "resources/blog-post.ts",
+      "actions/index.ts",
+    ]);
+    assert.match(
+      read(root, "resources/blog-post.ts"),
+      /import \* as blogPostActions from "\.\/blog-post\.actions\.ts";[\s\S]*actions: Object\.values\(blogPostActions\),/,
+    );
+    assert.match(
+      read(root, "actions/blog-post/publish-now.ts"),
+      /from "\.\.\/\.\.\/resources\/blog-post\.actions\.ts";/,
+    );
 
-    const { actions } = await importFrom(root, "actions/index.ts");
-    assert.equal(actions.blogPost[0].name, "publishNow");
+    const { blogPost } = await importFrom(root, "resources/blog-post.ts");
+    assert.deepEqual(Object.keys(blogPost.toSchema().actions), ["publishNow"]);
+
+    const { handlers } = await importFrom(root, "actions/index.ts");
+    const api = createServer({
+      resources: [
+        {
+          resource: blogPost,
+          adapter: createInMemoryAdapter(),
+          handlers: handlers.blogPost,
+          permissions: "open",
+        },
+      ],
+    });
+    const response = await api(
+      new Request("http://test/blogPost/actions/publishNow", {
+        method: "POST",
+        body: "{}",
+      }),
+    );
+    assert.equal(response.status, 200);
+    assert.deepEqual((await response.json()).data, { ok: true });
+  });
+
+  it("appends later actions without editing the resource again", async () => {
+    const root = project();
+    const config = readConfig(root);
+    await makeResource(config, "post", ["title:text"]);
+    await makeAction(config, "post", "publish");
+    const resourceBefore = read(root, "resources/post.ts");
+
+    const report = await makeAction(config, "post", "archive");
+    assert.deepEqual(report.created, ["actions/post/archive.ts"]);
+    assert.deepEqual(report.updated, [
+      "resources/post.actions.ts",
+      "actions/index.ts",
+    ]);
+    assert.equal(read(root, "resources/post.ts"), resourceBefore);
+    assert.match(
+      read(root, "actions/index.ts"),
+      /post: \[postArchive, postPublish\]/,
+    );
 
     await assert.rejects(
-      makeAction(config, "blogPost", "publishNow"),
-      /already exists/,
+      makeAction(config, "post", "publish"),
+      /"publish" is already declared in resources\/post\.actions\.ts/,
     );
+    const forced = await makeAction(config, "post", "publish", { force: true });
+    assert.deepEqual(forced.updated, ["actions/post/publish.ts"]);
+    assert.equal(
+      read(root, "resources/post.actions.ts").match(/export const publish\b/g)
+        ?.length,
+      1,
+    );
+  });
+
+  it("rejects bad names and unknown resources", async () => {
+    const root = project();
+    const config = readConfig(root);
+    await makeResource(config, "blogPost", ["title:text"]);
+
     await assert.rejects(makeAction(config, "blogPost", "delete"), /reserved/);
     await assert.rejects(
       makeAction(config, "comment", "x"),
@@ -259,18 +329,23 @@ describe("make:action", () => {
     );
   });
 
-  it("finds a resource by its export name", async () => {
+  it("explains how to connect a resource it can't edit", async () => {
     const root = project({
       "resources/post.ts": `import { defineResource, text } from "@verikit/core";\nexport const article = defineResource("post", { fields: { title: text().required() } });\n`,
     });
 
     const report = await makeAction(readConfig(root), "article", "archive");
     assert.deepEqual(report.created, [
+      "resources/post.actions.ts",
       "actions/post/archive.ts",
       "resources/index.ts",
       "actions/index.ts",
       "db/schema.ts",
     ]);
+    assert.match(
+      report.notes.join("\n"),
+      /Couldn't connect resources\/post\.ts to its actions[\s\S]*actions: Object\.values\(postActions\),/,
+    );
   });
 });
 

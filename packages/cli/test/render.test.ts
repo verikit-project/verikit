@@ -5,7 +5,12 @@ import {
   renderActionRegistry,
   renderResourceRegistry,
 } from "../src/render-registry.js";
-import { renderAction, renderResource } from "../src/render-resource.js";
+import {
+  renderActionDeclaration,
+  renderActionDeclarationsFile,
+  renderActionHandler,
+  renderResource,
+} from "../src/render-resource.js";
 import { renderSchema } from "../src/render-schema.js";
 import { loaded } from "./helpers.js";
 
@@ -143,10 +148,25 @@ export const post = defineResource("post", {
     assert.doesNotMatch(source, /^import \{ tag \}/m);
   });
 
-  it("renders an action skeleton", () => {
-    const source = renderAction("post", "publishNow");
-    assert.match(source, /export const publishNow = action\("publishNow"\)/);
-    assert.match(source, /\.label\("Publish now"\)/);
+  it("renders action declarations and a handler built from one", () => {
+    assert.match(
+      renderActionDeclarationsFile("post"),
+      /^import \{ action \} from "@verikit\/runtime";/,
+    );
+    assert.equal(
+      renderActionDeclaration("publishNow"),
+      '\nexport const publishNow = action("publishNow").label("Publish now");\n',
+    );
+
+    const handler = renderActionHandler("post", "publishNow", "../x.ts");
+    assert.match(
+      handler,
+      /import \{ publishNow as declaration \} from "\.\.\/x\.ts";/,
+    );
+    assert.match(
+      handler,
+      /export const publishNow = declaration\.execute\(async/,
+    );
   });
 });
 

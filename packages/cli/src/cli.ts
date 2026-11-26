@@ -12,7 +12,8 @@ export const USAGE = `Usage: verikit <command> [options]
 
 Commands:
   make:resource <Name> [field:type ...]  Create resources/<name>.ts, then regenerate
-  make:action <resource> <name>          Create actions/<resource>/<name>.ts, then regenerate
+  make:action <resource> <name>          Declare an action in resources/<resource>.actions.ts,
+                                         create its handler in actions/<resource>/<name>.ts
   generate:schema [--check]              Regenerate db/schema.ts, resources/index.ts,
                                          and actions/index.ts from resources/
 

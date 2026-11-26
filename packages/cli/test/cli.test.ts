@@ -59,6 +59,7 @@ describe("main", () => {
 
     const action = env(["make:action", "post", "publish", "--force"], root);
     assert.equal(await main(action), 0);
+    assert.ok(action.logs.includes("  created  resources/post.actions.ts"));
     assert.ok(action.logs.includes("  created  actions/post/publish.ts"));
 
     const fresh = env(["generate:schema"], root);

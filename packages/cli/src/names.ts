@@ -88,3 +88,9 @@ export function invalidIdentifier(
 
   return undefined;
 }
+
+/** A relative file path as an import specifier: "x.ts" becomes "./x.ts". */
+export function importSpecifier(relativePath: string): string {
+  const posix = relativePath.split("\\").join("/");
+  return posix.startsWith(".") ? posix : `./${posix}`;
+}

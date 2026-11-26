@@ -3,17 +3,25 @@ import path from "node:path";
 import { assertUniqueFields, parseFieldSpec } from "./field-spec.js";
 import { META_IMPORTS, SCOPED_IMPORTS, type ImportSources } from "./imports.js";
 import { loadResources, REGISTRY_FILE } from "./load-resources.js";
-import { camelCase, invalidIdentifier, kebabCase } from "./names.js";
+import {
+  camelCase,
+  importSpecifier,
+  invalidIdentifier,
+  kebabCase,
+} from "./names.js";
 import {
   findActions,
   renderActionRegistry,
   renderResourceRegistry,
 } from "./render-registry.js";
 import {
-  renderAction,
+  renderActionDeclaration,
+  renderActionDeclarationsFile,
+  renderActionHandler,
   renderResource,
   type RelationTarget,
 } from "./render-resource.js";
+import { wireResourceActions } from "./wire-actions.js";
 import { renderSchema, type Dialect } from "./render-schema.js";
 
 /** Where an app keeps the files the generators read and write. */
@@ -293,14 +301,68 @@ export async function makeAction(
   }
 
   const report = emptyReport();
+  const kebab = kebabCase(resource.name);
+  const declarationsFile = path.join(
+    config.resourcesDir,
+    `${kebab}.actions.ts`,
+  );
+  const existing = existsSync(declarationsFile)
+    ? readFileSync(declarationsFile, "utf8")
+    : undefined;
+  const declared =
+    existing !== undefined &&
+    new RegExp(`^export const ${name}\\b`, "m").test(existing);
+
+  if (declared && !force) {
+    throw new Error(
+      `"${name}" is already declared in ${relative(config, declarationsFile)}. Pass --force to rewrite its handler.`,
+    );
+  }
+
+  if (!declared) {
+    writeFileSync(
+      declarationsFile,
+      (existing ??
+        renderActionDeclarationsFile(resource.name, config.imports)) +
+        renderActionDeclaration(name),
+    );
+    (existing === undefined ? report.created : report.updated).push(
+      relative(config, declarationsFile),
+    );
+  }
+
+  // The resource lists its declarations once; later actions need no edit.
+  const resourceFile = path.join(config.resourcesDir, resource.file);
+  const namespace = `${camelCase(resource.name)}Actions`;
+  const wired = wireResourceActions(
+    readFileSync(resourceFile, "utf8"),
+    resource.name,
+    `./${kebab}.actions.ts`,
+    namespace,
+  );
+
+  if (wired.status === "wired") {
+    writeFileSync(resourceFile, wired.source);
+    report.updated.push(relative(config, resourceFile));
+  } else if (wired.status === "manual") {
+    report.notes.push(
+      `Couldn't connect ${relative(config, resourceFile)} to its actions (${wired.reason}). Add:\n  import * as ${namespace} from "./${kebab}.actions.ts";\nand in defineResource("${resource.name}", { ... }):\n  actions: Object.values(${namespace}),`,
+    );
+  }
+
+  const handlerFile = path.join(
+    config.actionsDir,
+    kebab,
+    `${kebabCase(name)}.ts`,
+  );
+  const declarationsImport = importSpecifier(
+    path.relative(path.dirname(handlerFile), declarationsFile),
+  );
+
   writeNewFile(
     config,
-    path.join(
-      config.actionsDir,
-      kebabCase(resource.name),
-      `${kebabCase(name)}.ts`,
-    ),
-    renderAction(resource.name, name, config.imports),
+    handlerFile,
+    renderActionHandler(resource.name, name, declarationsImport),
     force,
     report,
   );

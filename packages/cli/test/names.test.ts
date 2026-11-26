@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   camelCase,
+  importSpecifier,
   invalidIdentifier,
   kebabCase,
   pluralCamelCase,
@@ -40,6 +41,14 @@ describe("case conversion", () => {
     assert.equal(pluralize("box"), "boxes");
     assert.equal(pluralize("address"), "addresses");
     assert.equal(pluralize("posts"), "posts");
+  });
+});
+
+describe("importSpecifier", () => {
+  it("prefixes paths that don't start with a dot", () => {
+    assert.equal(importSpecifier("../../x.ts"), "../../x.ts");
+    assert.equal(importSpecifier("x.ts"), "./x.ts");
+    assert.equal(importSpecifier("a\\b.ts"), "./a/b.ts");
   });
 });
 

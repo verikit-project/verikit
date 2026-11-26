@@ -143,24 +143,47 @@ ${fields}${relationships}
 `;
 }
 
-/** Source for `actions/<resource>/<action>.ts`. `actionName` is already camelCase. */
-export function renderAction(
+/** Source for a new `resources/<resource>.actions.ts` declarations file, without any actions. */
+export function renderActionDeclarationsFile(
   resourceName: string,
-  actionName: string,
   imports: ImportSources = SCOPED_IMPORTS,
 ): string {
   return `import { action } from "${imports.runtime}";
 
-// Runs on the server only, so it can use the database and secrets.
+// Actions for "${resourceName}", declared where the browser can see them: the
+// admin panel shows each one as a button, using its label, confirmation, and
+// form. Their server-side handlers are in actions/. Add more with
+//   npx verikit make:action ${resourceName} <name>
+`;
+}
+
+/** One action declaration, appended to a declarations file. `actionName` is already camelCase. */
+export function renderActionDeclaration(actionName: string): string {
+  return `
+export const ${actionName} = action(${JSON.stringify(actionName)}).label(${JSON.stringify(sentenceCase(actionName))});
+`;
+}
+
+/**
+ * Source for `actions/<resource>/<action>.ts`: the server-side handler, built
+ * from the declaration so the server and browser always agree on it.
+ */
+export function renderActionHandler(
+  resourceName: string,
+  actionName: string,
+  declarationsImport: string,
+): string {
+  return `import { ${actionName} as declaration } from "${declarationsImport}";
+
+// Runs on the server only, so it can use the database and secrets. Change the
+// action's label, confirmation, or form in its declaration, not here.
 // Call it from the browser with:
 //   client.resource(${JSON.stringify(resourceName)}).action(${JSON.stringify(actionName)}, input, { recordId })
-export const ${actionName} = action(${JSON.stringify(actionName)})
-  .label(${JSON.stringify(sentenceCase(actionName))})
-  .execute(async ({ record, input }) => {
-    // TODO: implement "${actionName}" for ${resourceName}. \`record\` is set
-    // when the client passes a recordId; \`input\` holds the form's values.
-    console.log(${JSON.stringify(actionName)}, record, input);
-    return { ok: true };
-  });
+export const ${actionName} = declaration.execute(async ({ record, input }) => {
+  // TODO: implement "${actionName}" for ${resourceName}. \`record\` is set
+  // when the client passes a recordId; \`input\` holds the form's values.
+  console.log(${JSON.stringify(actionName)}, record, input);
+  return { ok: true };
+});
 `;
 }

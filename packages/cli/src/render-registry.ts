@@ -88,7 +88,7 @@ export function findActions(
   return found;
 }
 
-/** Source for `actions/index.ts`: each resource's actions for `createServer`. */
+/** Source for `actions/index.ts`: each resource's action handlers for `createServer`. */
 export function renderActionRegistry(
   actions: readonly ActionFile[],
   imports: ImportSources = SCOPED_IMPORTS,
@@ -117,12 +117,13 @@ export function renderActionRegistry(
   return `${GENERATED_HEADER("actions/*/*.ts")}import type { ServerResourceConfig } from "${imports.server}";
 ${importLines}
 /**
- * Server-side actions, by resource name. Typed for any actor, so they fit a
- * createServer whose \`context\` returns your own actor type.
+ * Server-side action handlers, by resource name, for createServer's
+ * \`handlers\`. Typed for any actor, so they fit a createServer whose
+ * \`context\` returns your own actor type.
  */
-export const actions: Partial<
+export const handlers: Partial<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Record<string, NonNullable<ServerResourceConfig<any>["actions"]>>
+  Record<string, NonNullable<ServerResourceConfig<any>["handlers"]>>
 > = {
 ${entries}};
 `;
