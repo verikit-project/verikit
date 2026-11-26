@@ -117,9 +117,46 @@ for (const name of fs.readdirSync(packagesDir).sort()) {
   }
 }
 
+// Each example is a real app built on the workspace packages. Its `smoke`
+// script checks generated files, type-checks, and runs its API tests, so a
+// change that breaks the documented workflow fails here.
+const examplesDir = path.join(rootDir, "examples");
+const examples = fs.existsSync(examplesDir)
+  ? fs.readdirSync(examplesDir).sort()
+  : [];
+
+for (const name of examples) {
+  const exampleDir = path.join(examplesDir, name);
+  const packageJsonPath = path.join(exampleDir, "package.json");
+
+  if (!fs.existsSync(packageJsonPath)) continue;
+
+  const pkg = readJson(packageJsonPath);
+  console.log(`\n== example ${pkg.name} ==`);
+
+  if (!pkg.scripts?.smoke) {
+    console.error(`  ✗ has no "smoke" script`);
+    failed = true;
+    continue;
+  }
+
+  try {
+    execFileSync("pnpm", ["run", "smoke"], {
+      cwd: exampleDir,
+      stdio: "inherit",
+    });
+    console.log("  ✔ smoke script passed");
+  } catch {
+    console.error("  ✗ smoke script failed");
+    failed = true;
+  }
+}
+
 if (failed) {
   console.error("\nsmoke-test: FAILED");
   process.exit(1);
 }
 
-console.log("\nsmoke-test: all published packages import cleanly");
+console.log(
+  "\nsmoke-test: all published packages import cleanly and examples pass",
+);
