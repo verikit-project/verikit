@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { drizzleAdapter } from "verikit/drizzle";
 import { createServer } from "verikit/server";
-import { actions } from "../actions/index.ts";
+import { handlers } from "../actions/index.ts";
 import { db } from "../db/client.ts";
 import { tables } from "../db/schema.ts";
 import { resources } from "../resources/index.ts";
@@ -15,7 +15,7 @@ const api = createServer({
   adapter: drizzleAdapter(db, { tables }),
   resources: resources.map((resource) => ({
     resource,
-    actions: actions[resource.name],
+    handlers: handlers[resource.name],
     permissions: permissions[resource.name],
   })),
 });

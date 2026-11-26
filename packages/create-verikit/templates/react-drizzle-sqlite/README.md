@@ -31,18 +31,22 @@ To change a resource later, edit its file in `resources/` and run
 npx verikit make:action post publish
 ```
 
-Creates `actions/post/publish.ts`, which runs on the server and is served at
-`POST /api/post/actions/publish`.
+Declares the action in `resources/post.actions.ts`, where the admin panel picks
+it up as a button on each row, and creates its server-side handler in
+`actions/post/publish.ts`, served at `POST /api/post/actions/publish`. Set the
+label, confirmation, or form on the declaration; the handler is built from it,
+so the server and browser always agree.
 
 ## Where things live
 
 | Path                    | What it is                                                         | Edit it? |
 | ----------------------- | ------------------------------------------------------------------ | -------- |
 | `resources/*.ts`        | Resource definitions: fields, validation, relationships            | Yes      |
-| `actions/*/*.ts`        | Server-side actions                                                | Yes      |
+| `resources/*.actions.ts` | Action declarations: labels, confirmations, forms                 | Yes      |
+| `actions/*/*.ts`        | Server-side action handlers                                        | Yes      |
 | `server/permissions.ts` | Who may do what with each resource                                 | Yes      |
 | `resources/index.ts`    | List of every resource                                             | Generated |
-| `actions/index.ts`      | List of every action                                               | Generated |
+| `actions/index.ts`      | List of every action handler                                       | Generated |
 | `db/schema.ts`          | Drizzle tables, one per resource                                   | Generated |
 | `db/custom-schema.ts`   | Extra tables of your own (optional; re-exported by `db/schema.ts`) | Yes      |
 | `db/migrations/`        | SQL migrations, applied on startup                                 | Generated |
