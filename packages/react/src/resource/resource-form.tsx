@@ -69,6 +69,7 @@ export function ResourceForm<TRecord extends object = Record<string, unknown>>({
     >
       <RenderSchemaTree
         nodes={result.tree}
+        resourceName={resource.name}
         registry={registry}
         renderRelationship={renderRelationship}
         {...result.treeProps}

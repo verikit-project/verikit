@@ -39,6 +39,15 @@ export const BelongsToRelationshipField = defineComponent({
       type: Object as PropType<BelongsToRelationshipSchema>,
       required: true,
     },
+    /**
+     * Name of the resource that owns the relationship (the one being edited).
+     * Options come from its `/relationships/:name` route. Defaults to the
+     * target resource, which only matches for a self-referencing relationship.
+     */
+    resourceName: {
+      type: String as PropType<string | undefined>,
+      default: undefined,
+    },
     id: { type: String as PropType<string | undefined>, default: undefined },
     value: { type: null as unknown as PropType<unknown>, required: false },
     error: { type: null as unknown as PropType<VNodeChild>, required: false },
@@ -68,7 +77,7 @@ export const BelongsToRelationshipField = defineComponent({
     // during render creates new watchers on every update, causing an infinite loop.
     const relationshipName = props.relationship.name ?? "";
     const relationshipQuery = useResourceRelationship<Record<string, unknown>>(
-      props.relationship.resource,
+      props.resourceName ?? props.relationship.resource,
       relationshipName,
       { pageSize: RELATIONSHIP_PICKER_PAGE_SIZE },
       { enabled: relationshipName.length > 0 },

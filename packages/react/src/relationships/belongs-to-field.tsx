@@ -19,6 +19,12 @@ const RELATIONSHIP_PICKER_PAGE_SIZE = 100;
 export interface BelongsToRelationshipFieldProps {
   /** Finalized `belongsTo` relationship node being rendered. */
   relationship: BelongsToRelationshipSchema;
+  /**
+   * Name of the resource that owns the relationship (the one being edited).
+   * Options come from its `/relationships/:name` route. Defaults to the
+   * target resource, which only matches for a self-referencing relationship.
+   */
+  resourceName?: string;
   /** Explicit input id. Defaults to a stable id derived from the relationship. */
   id?: string;
   /** Current foreign-key value (the selected record's id), if any. */
@@ -56,6 +62,7 @@ function recordLabel(
  */
 export function BelongsToRelationshipField({
   relationship,
+  resourceName,
   id,
   value,
   error,
@@ -74,7 +81,7 @@ export function BelongsToRelationshipField({
     isLoading,
     error: fetchError,
   } = useResourceRelationship<Record<string, unknown>>(
-    relationship.resource,
+    resourceName ?? relationship.resource,
     relationshipName,
     { pageSize: RELATIONSHIP_PICKER_PAGE_SIZE },
     { enabled: relationshipName.length > 0 },
@@ -91,6 +98,14 @@ export function BelongsToRelationshipField({
       <Select
         name={relationshipName}
         value={currentValue}
+        // Lets the trigger show the selected record's label, not its id,
+        // before the popup has ever been opened (e.g. on an edit form).
+        items={Object.fromEntries(
+          records.map((record) => [
+            recordId(record),
+            recordLabel(record, relationship.displayField),
+          ]),
+        )}
         disabled={disabled === true}
         readOnly={readOnly === true}
         onValueChange={onValueChange}

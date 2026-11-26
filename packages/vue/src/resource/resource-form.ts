@@ -99,6 +99,7 @@ export const ResourceForm = defineComponent({
         [
           RenderSchemaTree({
             nodes: result.tree,
+            resourceName: props.resource.name,
             registry: props.registry,
             renderRelationship: props.renderRelationship,
             ...result.treeProps.value,

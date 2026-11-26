@@ -149,3 +149,34 @@ test("shows a relationship fetch failure instead of silently leaving the picker 
 
   harness.cleanup();
 });
+
+test("a resource form loads picker options from the owning resource's route", async () => {
+  const { belongsTo, defineResource, text } = await import("@verikit/core");
+  const { ResourceForm } = await import("../../src/resource/index.js");
+  const fixture = createFakeClient([{ id: "1", title: "Ada" }]);
+  const requested: string[] = [];
+  const client = {
+    ...fixture.client,
+    resource: ((name: string) => {
+      requested.push(name);
+      return fixture.client.resource(name);
+    }) as typeof fixture.client.resource,
+  };
+  const author = defineResource("author", { fields: { name: text() } });
+  const article = defineResource("article", {
+    fields: { authorId: text().formHidden() },
+    relationships: (field) => ({
+      author: belongsTo(() => author).via(field("authorId")),
+    }),
+  });
+  const harness = setupHarness(client);
+
+  harness.mountWithProvider(ResourceForm, { resource: article });
+  await waitFor(() => fixture.calls.list === 1);
+
+  // The server serves pickers at /{owner}/relationships/{name}, so the
+  // request must go to "article", not the target "author".
+  assert.deepEqual([...new Set(requested)], ["article"]);
+
+  harness.cleanup();
+});

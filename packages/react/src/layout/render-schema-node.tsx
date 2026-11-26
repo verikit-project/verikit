@@ -154,6 +154,7 @@ function renderRelationshipNode(
   return (
     <BelongsToRelationshipField
       relationship={node}
+      resourceName={props.resourceName}
       className={props.className}
       value={getValueAtPath(props.values, foreignKeyPath)}
       error={props.errors?.[pathKey(foreignKeyPath)]}

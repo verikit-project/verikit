@@ -1,14 +1,20 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import type { BelongsToRelationshipSchema } from "@verikit/core";
+import { act } from "react";
 import { installJsdom } from "../dom-setup.js";
-import { BelongsToRelationshipField } from "../../src/relationships/index.js";
 import { createFakeClient, setupHarness, waitFor } from "../query/fixtures.js";
 
 let uninstallJsdom: () => void;
+// Imported after jsdom is installed: Base UI checks for a DOM once, when first
+// imported, and without one its Select never resolves item labels. See
+// resource-table.test.tsx.
+let BelongsToRelationshipField: typeof import("../../src/relationships/index.js").BelongsToRelationshipField;
 
-before(() => {
+before(async () => {
   uninstallJsdom = installJsdom();
+  ({ BelongsToRelationshipField } =
+    await import("../../src/relationships/index.js"));
 });
 
 after(async () => {
@@ -186,6 +192,62 @@ test("shows a relationship fetch failure instead of silently leaving the picker 
   assert.match(
     harness.container.querySelector('[role="alert"]')?.textContent ?? "",
     /Could not load authors/,
+  );
+
+  harness.cleanup();
+});
+
+test("a resource form loads picker options from the owning resource's route", async () => {
+  const { belongsTo, defineResource, text } = await import("@verikit/core");
+  const { ResourceForm } = await import("../../src/resource/index.js");
+  const fixture = createFakeClient([{ id: "1", title: "Ada" }]);
+  const requested: string[] = [];
+  const client = {
+    ...fixture.client,
+    resource: ((name: string) => {
+      requested.push(name);
+      return fixture.client.resource(name);
+    }) as typeof fixture.client.resource,
+  };
+  const author = defineResource("author", { fields: { name: text() } });
+  const article = defineResource("article", {
+    fields: { authorId: text().formHidden() },
+    relationships: (field) => ({
+      author: belongsTo(() => author).via(field("authorId")),
+    }),
+  });
+  const harness = setupHarness(client);
+
+  await harness.render(<ResourceForm resource={article} />);
+  await waitFor(() => fixture.calls.list === 1);
+
+  // The server serves pickers at /{owner}/relationships/{name}, so the
+  // request must go to "article", not the target "author".
+  assert.deepEqual([...new Set(requested)], ["article"]);
+
+  harness.cleanup();
+});
+
+test("shows the selected record's label, not its id, before the popup opens", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Ada" }]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <BelongsToRelationshipField
+      relationship={relationship({ displayField: "title" })}
+      value="1"
+    />,
+  );
+
+  await waitFor(() => fixture.calls.list === 1);
+  // Let the query result commit inside act(), so Select receives its items.
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+
+  assert.equal(
+    harness.container.querySelector('[data-slot="select-value"]')?.textContent,
+    "Ada",
   );
 
   harness.cleanup();

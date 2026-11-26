@@ -21,6 +21,11 @@ export type SchemaActionRegistry = Partial<Record<string, SchemaActionSource>>;
 export interface SchemaRenderProps {
   /** Current form values. */
   values: Record<string, unknown>;
+  /**
+   * Name of the resource this tree belongs to. `belongsTo` pickers load
+   * their options from that resource's `/relationships/:name` route.
+   */
+  resourceName?: string;
   /** Path prefix for nested schema nodes. */
   path?: SchemaPath;
   /** Error content keyed by schema path. */
