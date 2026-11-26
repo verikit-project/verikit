@@ -52,6 +52,15 @@ export interface DrizzleAdapterOptions {
   versionColumn?: Column;
 }
 
+/**
+ * Options for a resource defined without a `table`, such as one shared with
+ * browser code that shouldn't import database modules.
+ */
+export interface DrizzleAdapterTableOptions extends DrizzleAdapterOptions {
+  /** The table backing the resource. */
+  table: Table;
+}
+
 /** A canonical API record returned by the Drizzle adapter. */
 export interface DrizzleResourceRecord extends Record<string, unknown> {
   /** String form of the table's single primary key, suitable for resource URLs. */
@@ -59,7 +68,7 @@ export interface DrizzleResourceRecord extends Record<string, unknown> {
 }
 
 /**
- * Builds a `ResourceAdapter` backed by a drizzle table, so `@verikit/server` never has to import drizzle-orm itself: `createServer()` only ever talks to the `ResourceAdapter` interface, and this is the piece that turns that interface into real queries. Column mapping: a field maps to the same-named table column by default, or to an explicit one via `from(column).as(field())` when the names differ. The row's id always comes from the table's own primary key column; a resource doesn't need to declare an "id" field for this to work. @throws {Error} If `resource.table` is missing, the table doesn't declare exactly one primary key column, or the table is a MySQL table (MySQL has no `RETURNING` support, so `create`/`update` can't be implemented on it yet).
+ * Builds a `ResourceAdapter` backed by a drizzle table, so `@verikit/server` never has to import drizzle-orm itself: `createServer()` only ever talks to the `ResourceAdapter` interface, and this is the piece that turns that interface into real queries. Column mapping: a field maps to the same-named table column by default, or to an explicit one via `from(column).as(field())` when the names differ. The row's id always comes from the table's own primary key column; a resource doesn't need to declare an "id" field for this to work. @throws {Error} If neither `resource.table` nor `options.table` is set, the table doesn't declare exactly one primary key column, or the table is a MySQL table (MySQL has no `RETURNING` support, so `create`/`update` can't be implemented on it yet).
  */
 export function createDrizzleAdapter<
   TFields extends FieldMap,
@@ -68,13 +77,27 @@ export function createDrizzleAdapter<
 >(
   db: AnyDrizzleDatabase,
   resource: Resource<string, TFields, TTable, TRelationships>,
-  options: DrizzleAdapterOptions = {},
+  options?: DrizzleAdapterOptions,
+): ResourceAdapter<DrizzleResourceRecord>;
+/**
+ * Builds a `ResourceAdapter` for a resource whose table is passed in
+ * `options.table` instead of declared on the resource.
+ */
+export function createDrizzleAdapter(
+  db: AnyDrizzleDatabase,
+  resource: Resource,
+  options: DrizzleAdapterTableOptions,
+): ResourceAdapter<DrizzleResourceRecord>;
+export function createDrizzleAdapter(
+  db: AnyDrizzleDatabase,
+  resource: Resource,
+  options: Partial<DrizzleAdapterTableOptions> = {},
 ): ResourceAdapter<DrizzleResourceRecord> {
-  const { table } = resource;
+  const table = (options.table ?? resource.table) as Table | undefined;
 
   if (!table) {
     throw new Error(
-      `@verikit/drizzle: resource "${resource.name}" has no table. Pass one via defineResource(name, { table: ... }).`,
+      `@verikit/drizzle: resource "${resource.name}" has no table. Pass one via defineResource(name, { table: ... }) or createDrizzleAdapter(db, resource, { table }).`,
     );
   }
 

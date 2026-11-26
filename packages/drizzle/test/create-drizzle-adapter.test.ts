@@ -479,6 +479,23 @@ test("adapter results expose only resource fields and canonical id", async () =>
   });
 });
 
+test("uses options.table for a resource defined without one", async () => {
+  const db = createTestDb();
+  const resource = defineResource("post", {
+    fields: { title: text().required(), published: boolean().default(false) },
+  });
+  const adapter = createDrizzleAdapter(db, resource, { table: posts });
+
+  const created = await adapter.create({ title: "Shared" });
+  assert.equal(created.title, "Shared");
+  assert.equal(created.published, false);
+  assert.deepEqual((await adapter.list({ page: 1, pageSize: 10 })).total, 1);
+  assert.equal(
+    (await adapter.update(created.id, { title: "Renamed" }))?.title,
+    "Renamed",
+  );
+});
+
 test("throws when the resource has no table", () => {
   const db = createTestDb();
   const resource = defineResource("untabled", {
