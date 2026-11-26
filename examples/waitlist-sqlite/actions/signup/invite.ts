@@ -1,16 +1,31 @@
 import { eq, sql } from "drizzle-orm";
-import { action, VerikitError } from "verikit";
+import { VerikitError } from "verikit";
 import { db } from "../../db/client.ts";
 import { signups } from "../../db/schema.ts";
+import { invite as declaration } from "../../resources/signup.actions.ts";
+
+interface SignupRecord {
+  id: string;
+  status: string;
+}
 
 // Created with `npx verikit make:action signup invite`. Runs on the server
-// only; server/permissions.ts lets only admins run it. Call it with
-//   client.resource("signup").action("invite", {}, { recordId })
-// or POST /api/signup/actions/invite with { "recordId": "..." }.
-export const invite = action("invite")
-  .label("Invite")
+// only; server/permissions.ts lets only admins run it. The label and
+// confirmation come from the declaration in resources/signup.actions.ts.
+// Call it with
+//   client.resource("signup").action("invite", {}, { recordId, confirmed: true })
+// or POST /api/signup/actions/invite with { "recordId": "...", "confirmed": true }.
+export const invite = declaration
+  // Checked before the handler runs, and by the panel for every row on the
+  // page: the Invite button is disabled, with this reason, once someone is
+  // invited.
+  .availableWhen(({ record }) =>
+    (record as SignupRecord | undefined)?.status === "invited"
+      ? { available: false, reason: "Already invited." }
+      : true,
+  )
   .execute(async ({ record }) => {
-    const id = (record as { id?: string } | undefined)?.id;
+    const id = (record as SignupRecord | undefined)?.id;
 
     if (!id) {
       throw new VerikitError(

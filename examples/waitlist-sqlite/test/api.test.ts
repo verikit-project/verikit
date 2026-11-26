@@ -105,32 +105,28 @@ describe("an admin", () => {
   it("can invite a signup, which only admins may do", async () => {
     await join("invite@example.com");
     const id = await findId("invite@example.com");
+    const invite = (body: object, headers: Record<string, string> = ADMIN) =>
+      api("/signup/actions/invite", { method: "POST", body, headers });
 
-    const denied = await api("/signup/actions/invite", {
-      method: "POST",
-      body: { recordId: id },
-    });
     // A record the caller may not read looks missing, so its existence
     // isn't revealed.
-    assert.equal(denied.status, 404);
+    assert.equal((await invite({ recordId: id }, {})).status, 404);
 
-    const missing = await api("/signup/actions/invite", {
-      method: "POST",
-      body: {},
-      headers: ADMIN,
-    });
-    assert.equal(missing.status, 400);
+    // The declaration asks for confirmation, so an unconfirmed call is refused.
+    assert.equal((await invite({ recordId: id })).status, 409);
+    assert.equal((await invite({ confirmed: true })).status, 400);
 
-    const invited = await api("/signup/actions/invite", {
-      method: "POST",
-      body: { recordId: id },
-      headers: ADMIN,
-    });
+    const invited = await invite({ recordId: id, confirmed: true });
     assert.equal(invited.status, 200);
     assert.deepEqual(invited.body.data, { id, status: "invited" });
 
     const { body } = await api(`/signup/${id}`, { headers: ADMIN });
     assert.equal(body.data.status, "invited");
+
+    // availableWhen turns the action off once someone is invited.
+    const again = await invite({ recordId: id, confirmed: true });
+    assert.equal(again.status, 422);
+    assert.match(JSON.stringify(again.body), /Already invited/);
 
     // The action bumped the revision, so editing afterwards still works.
     const edited = await api(`/signup/${id}`, {
@@ -139,6 +135,19 @@ describe("an admin", () => {
       headers: ADMIN,
     });
     assert.equal(edited.status, 200);
+  });
+
+  it("is told which rows can't be invited, so the panel can disable them", async () => {
+    await join("listed@example.com");
+    const id = await findId("listed@example.com");
+    await api("/signup/actions/invite", {
+      method: "POST",
+      body: { recordId: id, confirmed: true },
+      headers: ADMIN,
+    });
+
+    const { body } = await api("/signup?include=actions", { headers: ADMIN });
+    assert.match(JSON.stringify(body.meta.actions), /Already invited/);
   });
 
   it("can delete a signup", async () => {
