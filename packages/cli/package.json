@@ -1,0 +1,46 @@
+{
+  "name": "@verikit/cli",
+  "version": "0.24.2",
+  "description": "Generators for Verikit apps: make:resource, make:action, and generate:schema.",
+  "type": "module",
+  "bin": {
+    "verikit": "./dist/index.js"
+  },
+  "keywords": [
+    "typescript",
+    "resource",
+    "framework",
+    "verikit",
+    "cli",
+    "generator",
+    "drizzle"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/verikit-project/verikit",
+    "directory": "packages/cli"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "build": "pnpm clean && tsc -b",
+    "prepack": "pnpm build",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@verikit/core": "workspace:*",
+    "@verikit/runtime": "workspace:*",
+    "@verikit/server": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "typescript": "^6.0.3"
+  }
+}

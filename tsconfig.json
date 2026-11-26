@@ -42,6 +42,9 @@
       "path": "./packages/react-panel"
     },
     {
+      "path": "./packages/cli"
+    },
+    {
       "path": "./packages/create-verikit"
     }
   ]
