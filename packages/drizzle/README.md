@@ -27,8 +27,11 @@ const api = createServer({
 A table's `revision` column is used for conditional writes automatically (see
 below). Pass `versionColumn: false` to `createDrizzleAdapter` to turn that off.
 
+## Production
 
-## Conditional writes for protected resources
+You don't need this to get started. Read it before you deploy.
+
+### Conditional writes for protected resources
 
 Update and delete on resources with permissions require an adapter implementing
 `findForMutation`. The server authorizes its detached record snapshot and passes

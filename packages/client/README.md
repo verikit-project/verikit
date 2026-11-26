@@ -14,7 +14,11 @@ the logical resource name and provide its route path explicitly:
 client.resource("post", { path: "posts" });
 ```
 
-## Cache identity
+## Production
+
+You don't need this to get started. Read it before you deploy.
+
+### Cache identity
 
 React and Vue queries are isolated by client identity, including when providers
 share a TanStack `QueryClient`. Keep the client stable during a session. On login,

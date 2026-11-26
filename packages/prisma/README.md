@@ -10,7 +10,7 @@ See the [VeriKit documentation](https://verikit.dev) for setup and usage.
 through it, in the same transaction, so a concurrent write between them can
 never desync a page from `meta.total`. The adapter only ever sees a single
 model delegate, not the full Prisma client, so it has no way to open a
-transaction on its own  pass one built from your `PrismaClient`:
+transaction on its own, so pass one built from your `PrismaClient`:
 
 ```ts
 createPrismaAdapter(resource, {
@@ -23,8 +23,13 @@ createPrismaAdapter(resource, {
       { isolationLevel: "RepeatableRead" },
     ),
 });
+```
 
-## Conditional writes for protected resources
+## Production
+
+You don't need this to get started. Read it before you deploy.
+
+### Conditional writes for protected resources
 
 Update and delete on resources with permissions require an adapter implementing
 `findForMutation`. The server authorizes its detached record snapshot and passes

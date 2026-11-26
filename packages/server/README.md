@@ -21,7 +21,11 @@ const api = createServer({
 
 `createServer` throws at startup if a resource ends up with no adapter.
 
-## Upload security
+## Production
+
+You don't need this to get started. Read it before you deploy.
+
+### Upload security
 
 `file()` and `image()` accept rules verify recognized file signatures before
 storage. In particular, `image()` rejects content that cannot be identified as
@@ -43,7 +47,7 @@ separate from create/update because an upload persists to storage before any
 record mutation occurs.
 
 
-## Conditional writes for protected resources
+### Conditional writes for protected resources
 
 Update and delete on resources with permissions require an adapter implementing
 `findForMutation`. The server authorizes its detached record snapshot and passes

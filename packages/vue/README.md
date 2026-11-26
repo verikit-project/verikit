@@ -4,7 +4,11 @@ Vue UI bindings for VeriKit resource workflows.
 
 See the [VeriKit documentation](https://verikit.dev) for setup and usage.
 
-## Cache identity
+## Production
+
+You don't need this to get started. Read it before you deploy.
+
+### Cache identity
 
 Queries, mutations, and optimistic updates are isolated by client. Keep the client
 stable during a session; replace it when the account, tenant, or access identity
