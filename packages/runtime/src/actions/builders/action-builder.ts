@@ -110,6 +110,15 @@ export class ActionBuilder<
     });
   }
 
+  /** Sets whether the action targets one record (default) or the whole collection. */
+  scope(
+    scope: NonNullable<ActionPresentation["scope"]>,
+  ): ActionBuilder<TName, TForm, TContext, TRecord, TResult> {
+    return this.withState({
+      presentation: { ...this.state.presentation, scope },
+    });
+  }
+
   /** Merges adapter-specific presentation metadata. */
   meta(
     meta: Record<string, unknown>,
@@ -181,8 +190,27 @@ export class ActionBuilder<
     } as ActionState<TContext, TRecord, InferActionForm<TNextForm>, TResult>);
   }
 
-  /** Attaches the function that performs the action. */
-  execute<TNextResult>(
+  /**
+   * Declares the result type clients receive, without attaching a handler, so a client-safe declaration carries it to inferred client types. Type-only: returns this builder unchanged at runtime. `.execute()` must then return a compatible value.
+   */
+  returns<TNextResult>(): ActionBuilder<
+    TName,
+    TForm,
+    TContext,
+    TRecord,
+    TNextResult
+  > {
+    return this as unknown as ActionBuilder<
+      TName,
+      TForm,
+      TContext,
+      TRecord,
+      TNextResult
+    >;
+  }
+
+  /** Attaches the function that performs the action. When `.returns<T>()` was declared, the handler must return a `T`. */
+  execute<TNextResult extends TResult>(
     handler: ActionHandler<
       TContext,
       TRecord,
@@ -229,6 +257,7 @@ export class ActionBuilder<
       description: this.state.presentation.description,
       icon: this.state.presentation.icon,
       variant: this.state.presentation.variant,
+      scope: this.state.presentation.scope,
       confirmation: this.state.confirmation,
       form,
       result: schemaResultMessages(this.state.result),

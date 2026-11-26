@@ -1,6 +1,6 @@
 {
   "name": "@verikit/react-panel",
-  "version": "0.24.2",
+  "version": "0.24.4",
   "description": "A mountable React admin panel for Verikit resources: navigation, routing, list/create/edit pages, and auth.",
   "type": "module",
   "main": "./dist/index.js",

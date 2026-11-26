@@ -1,6 +1,8 @@
 import type {
   ActionOptions,
   ActionResult,
+  ListActionAvailability,
+  UnavailableOperations,
   ListParams,
   ListResponse,
   RequestOptions,
@@ -10,6 +12,7 @@ import type {
 import { QueryClient } from "@tanstack/vue-query";
 import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { defineComponent, h, type Component } from "vue";
+import { VerikitClientError } from "@verikit/client";
 import { VerikitProvider } from "../../src/client/index.js";
 
 export interface FakeRecord extends Record<string, unknown> {
@@ -29,9 +32,18 @@ export interface FakeResourceCalls {
 
 export interface FakeClientFailures {
   list?: boolean | Error;
+  find?: boolean | Error;
   create?: boolean | Error;
   update?: boolean | Error;
   delete?: boolean | Error;
+  action?: boolean | Error;
+}
+
+/** The arguments of the most recent `action()` call. */
+export interface FakeActionCall {
+  name: string;
+  input: Record<string, unknown> | undefined;
+  options: ActionOptions | undefined;
 }
 
 type FakeMethod =
@@ -63,6 +75,11 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   failNext: FakeClientFailures;
   block: (method: FakeMethod) => () => void;
   lastListParams: ListParams | undefined;
+  lastAction: FakeActionCall | undefined;
+  /** Returned as `actions` by `list`/`search` calls made with `includeActions: true`, and per record by `findWithActions`. */
+  actionAvailability: ListActionAvailability | undefined;
+  /** Returned as `operations` by `findWithActions`, keyed by record id. */
+  operationAvailability: Record<string, UnavailableOperations> | undefined;
 } {
   const records: FakeRecord[] = initial.map((record) => ({ ...record }));
   const calls: FakeResourceCalls = {
@@ -76,8 +93,16 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   };
   const failNext: FakeClientFailures = {};
   const gates = new Map<FakeMethod, Promise<void>>();
-  const state: { lastListParams: ListParams | undefined } = {
+  const state: {
+    lastListParams: ListParams | undefined;
+    lastAction: FakeActionCall | undefined;
+    actionAvailability: ListActionAvailability | undefined;
+    operationAvailability: Record<string, UnavailableOperations> | undefined;
+  } = {
     lastListParams: undefined,
+    lastAction: undefined,
+    actionAvailability: undefined,
+    operationAvailability: undefined,
   };
 
   function block(method: FakeMethod): () => void {
@@ -122,6 +147,8 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
         total: records.length,
         page: 1,
         pageSize: 25,
+        ...(params?.includeActions &&
+          state.actionAvailability && { actions: state.actionAvailability }),
       };
     },
 
@@ -149,6 +176,27 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       }
 
       return record;
+    },
+
+    async findWithActions(id, options) {
+      const findFailure = consumeFailure(
+        failNext.find,
+        "Simulated find failure.",
+      );
+      failNext.find = false;
+      if (findFailure) {
+        throw findFailure;
+      }
+      // Like the server, a missing record is a 404 the page shows as not found.
+      if (!records.some((candidate) => candidate.id === id)) {
+        throw new VerikitClientError(404, "Not found.", "NOT_FOUND");
+      }
+      const record = await resourceClient.find(id, options);
+      return {
+        record,
+        actions: state.actionAvailability?.records[id] ?? {},
+        operations: state.operationAvailability?.[id] ?? {},
+      };
     },
 
     async create(input, _options) {
@@ -236,7 +284,18 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
       options?: ActionOptions,
     ): Promise<ActionResult<TResult>> {
       calls.action += 1;
+      state.lastAction = { name: actionName, input, options };
       await waitForGate("action");
+
+      const actionFailure = consumeFailure(
+        failNext.action,
+        "Simulated action failure.",
+      );
+      if (actionFailure) {
+        failNext.action = undefined;
+        throw actionFailure;
+      }
+
       return {
         result: { actionName, input, recordId: options?.recordId } as TResult,
         message: "done",
@@ -261,6 +320,21 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     block,
     get lastListParams() {
       return state.lastListParams;
+    },
+    get lastAction() {
+      return state.lastAction;
+    },
+    get actionAvailability() {
+      return state.actionAvailability;
+    },
+    set actionAvailability(value) {
+      state.actionAvailability = value;
+    },
+    get operationAvailability() {
+      return state.operationAvailability;
+    },
+    set operationAvailability(value) {
+      state.operationAvailability = value;
     },
   };
 }

@@ -75,6 +75,62 @@ test("list() GETs the resource base with page/pageSize/sort/order/search seriali
   });
 });
 
+test("list({ includeActions: true }) sends include=actions and returns meta.actions as actions", async () => {
+  const actions = {
+    records: { "1": { publish: { reason: "unavailable", message: "Done." } } },
+    collection: { purge: { reason: "forbidden" } },
+  };
+  const { fetchImpl, calls } = fakeFetch(() =>
+    jsonResponse({
+      data: [{ id: "1" }],
+      meta: { total: 1, page: 1, pageSize: 25, actions },
+    }),
+  );
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+
+  const result = await client.resource("posts").list({ includeActions: true });
+
+  assert.equal(calls[0]!.url, "https://x.test/posts?include=actions");
+  assert.deepEqual(result.actions, actions);
+});
+
+test("findWithActions() GETs the record with include=actions and returns its unavailable actions", async () => {
+  const { fetchImpl, calls } = fakeFetch((call) =>
+    jsonResponse(
+      call.url.includes("include=actions")
+        ? {
+            data: { id: "1" },
+            meta: {
+              actions: { publish: { reason: "forbidden" } },
+              operations: { delete: { reason: "forbidden" } },
+            },
+          }
+        : { data: { id: "1" } },
+    ),
+  );
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+
+  const result = await client.resource("posts").findWithActions("1");
+
+  assert.equal(calls[0]!.url, "https://x.test/posts/1?include=actions");
+  assert.deepEqual(result, {
+    record: { id: "1" },
+    actions: { publish: { reason: "forbidden" } },
+    operations: { delete: { reason: "forbidden" } },
+  });
+});
+
+test("findWithActions() returns no actions when the server reports none", async () => {
+  const { fetchImpl } = fakeFetch(() => jsonResponse({ data: { id: "1" } }));
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+
+  assert.deepEqual(await client.resource("posts").findWithActions("1"), {
+    record: { id: "1" },
+    actions: {},
+    operations: {},
+  });
+});
+
 test("search() hits the /search sub-route", async () => {
   const { fetchImpl, calls } = fakeFetch(() =>
     jsonResponse({ data: [], meta: { total: 0, page: 1, pageSize: 10 } }),

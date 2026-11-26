@@ -23,6 +23,13 @@ export function filterableFields(
 
 const ALL_VALUE = "__all__";
 
+/** Labels for the boolean filter's options, so the closed trigger shows "Yes" rather than "true". */
+const BOOLEAN_FILTER_ITEMS = [
+  { value: ALL_VALUE, label: "All" },
+  { value: "true", label: "Yes" },
+  { value: "false", label: "No" },
+];
+
 /** Converts a browser `datetime-local` value into the UTC ISO format adapters expect. */
 export function dateTimeFilterValue(value: string): string | undefined {
   if (value === "") return undefined;
@@ -67,6 +74,7 @@ function BooleanFilterControl({
   return (
     <Select
       value={current}
+      items={BOOLEAN_FILTER_ITEMS}
       onValueChange={(next: string | null) => {
         if (next === "true") {
           onChange({ eq: true });
@@ -108,6 +116,13 @@ function SelectFilterControl({
   return (
     <Select
       value={current}
+      items={[
+        { value: ALL_VALUE, label: "All" },
+        ...options.map((option) => ({
+          value: String(option.value),
+          label: option.label,
+        })),
+      ]}
       onValueChange={(next: string | null) => {
         if (next === null || next === ALL_VALUE) {
           onChange(undefined);

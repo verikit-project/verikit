@@ -87,6 +87,13 @@ export function BelongsToRelationshipField({
     { enabled: relationshipName.length > 0 },
   );
   const records = data?.records ?? [];
+  const labels = new Map(
+    records.map((record) => [
+      recordId(record),
+      recordLabel(record, relationship.displayField),
+    ]),
+  );
+  const placeholder = isLoading ? "Loading…" : "Select…";
   const currentValue =
     value === null || value === undefined ? "" : String(value);
 
@@ -98,14 +105,6 @@ export function BelongsToRelationshipField({
       <Select
         name={relationshipName}
         value={currentValue}
-        // Lets the trigger show the selected record's label, not its id,
-        // before the popup has ever been opened (e.g. on an edit form).
-        items={Object.fromEntries(
-          records.map((record) => [
-            recordId(record),
-            recordLabel(record, relationship.displayField),
-          ]),
-        )}
         disabled={disabled === true}
         readOnly={readOnly === true}
         onValueChange={onValueChange}
@@ -117,7 +116,12 @@ export function BelongsToRelationshipField({
           aria-describedby={errorId}
           aria-invalid={error ? true : undefined}
         >
-          <SelectValue placeholder={isLoading ? "Loading…" : "Select…"} />
+          {/* Resolves the label itself: Base UI's `items` prop isn't picked up once the records load after mount. */}
+          <SelectValue placeholder={placeholder}>
+            {(selected: string | null) =>
+              selected ? (labels.get(selected) ?? selected) : placeholder
+            }
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {records.map((record) => (

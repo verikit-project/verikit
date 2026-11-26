@@ -811,24 +811,48 @@ test("boolean fields round-trip as real booleans, not 0/1", async (t) => {
   assert.equal(created.published, true);
 });
 
-test("throws at construction when fields is missing a mapping for a declared resource field", () => {
-  const resource = defineResource("post", {
-    fields: {
-      title: text().required(),
-      nickname: text(),
-    },
+test("fields and id default to same-named scalars, so a matching model needs neither", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const adapter = createPrismaAdapter(createPostResource(), {
+    model: db.post,
+    listTransaction: (operation) => db.$transaction((tx) => operation(tx.post)),
   });
 
-  assert.throws(
-    () =>
-      createPrismaAdapter(resource, {
-        model: {} as PrismaModelDelegate,
-        fields: { title: "title" } as never,
-        id: { field: "id" },
-        listTransaction: (operation) => operation({} as PrismaModelDelegate),
-      }),
-    /has no Prisma field mapping for: nickname/,
+  const created = await adapter.create({ title: "Hello", body: "World" });
+  assert.deepEqual(await adapter.find(created.id), {
+    id: created.id,
+    title: "Hello",
+    body: "World",
+    published: false,
+  });
+  assert.equal(
+    (await adapter.list({ page: 1, pageSize: 10, search: "hello" })).total,
+    1,
   );
+});
+
+test("a partial fields map overrides only the fields it names; stray keys are ignored", async (t) => {
+  const db = await createTestDb();
+  t.after(() => db.$disconnect());
+  const resource = defineResource("post", {
+    fields: { title: text().required(), note: text() },
+  });
+  const adapter = createPrismaAdapter(resource, {
+    model: db.post,
+    // `body` isn't a resource field: it must not be selected or returned.
+    fields: { note: "secret", body: "body" } as never,
+    listTransaction: (operation) => db.$transaction((tx) => operation(tx.post)),
+  });
+
+  const created = await adapter.create({ title: "Hello", note: "Private" });
+  assert.deepEqual(await adapter.find(created.id), {
+    id: created.id,
+    title: "Hello",
+    note: "Private",
+  });
+  const row = await db.post.findUnique({ where: { id: created.id } });
+  assert.equal(row?.secret, "Private");
 });
 
 test("throws at construction when a searchable field's fieldType isn't text-like", () => {

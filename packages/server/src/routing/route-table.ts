@@ -1,6 +1,7 @@
 import type { FieldSchema } from "@verikit/core";
 import type {
   ResolvedServerResourceConfig,
+  ServerActionHandler,
   ServerResourceConfig,
 } from "../create-server.js";
 import {
@@ -10,7 +11,7 @@ import {
   type RouteResolution,
 } from "./match-route.js";
 
-/** A registered resource's route base and pre-computed field schemas. */
+/** A registered resource's route base, pre-computed field schemas, and executable actions. */
 export interface RouteTableEntry<
   TActor = unknown,
   TConfig extends ServerResourceConfig<TActor> =
@@ -19,6 +20,112 @@ export interface RouteTableEntry<
   config: TConfig;
   baseSegments: string[];
   fields: Record<string, FieldSchema>;
+  /** Actions exposed as `POST {base}/actions/:name`: `handlers` plus deprecated `actions`. */
+  actions: ServerActionHandler<TActor>[];
+}
+
+// Configs already warned about, so `createServer()` and `generateOpenApi()` over
+// the same resources warn once rather than per call. Keyed by the `actions`
+// array, which survives `createServer()` copying each config to attach its
+// resolved adapter.
+const warnedLegacyActions = new WeakSet<object>();
+
+function warnLegacyActions(config: ServerResourceConfig<never>): void {
+  const key = config.actions!;
+  if (warnedLegacyActions.has(key)) {
+    return;
+  }
+  warnedLegacyActions.add(key);
+  console.warn(
+    `[verikit] Resource "${config.resource.name}": \`actions\` in createServer() is deprecated and will be removed in the next minor release. ` +
+      "Declare actions on the resource with defineResource({ actions }) and pass server handlers built from those declarations via `handlers` (e.g. `handlers: [publish.execute(fn)]`).",
+  );
+}
+
+function stableJson(value: unknown): string {
+  return JSON.stringify(value, (_key, nested: unknown) =>
+    nested && typeof nested === "object" && !Array.isArray(nested)
+      ? Object.fromEntries(
+          Object.entries(nested).sort(([a], [b]) => (a < b ? -1 : 1)),
+        )
+      : nested,
+  );
+}
+
+/** Top-level action schema keys whose serialized values differ, sorted. */
+function divergedSchemaKeys(actual: object, expected: object): string[] {
+  const a = actual as Record<string, unknown>;
+  const b = expected as Record<string, unknown>;
+
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])]
+    .filter((key) => stableJson(a[key]) !== stableJson(b[key]))
+    .sort();
+}
+
+/**
+ * Resolves a resource's executable actions. Every `handlers` entry must match an action declared on the resource and serialize identically to it, so the client renders exactly what the server enforces: label, description, icon, variant, scope, confirmation, form, `meta`, and string result messages. Declared actions without a handler get no route.
+ */
+function resolveActions<TActor>(
+  config: ServerResourceConfig<TActor>,
+): ServerActionHandler<TActor>[] {
+  const resourceName = config.resource.name;
+  const declared = new Map(
+    config.resource.actions.map((declaration) => [
+      declaration.name,
+      declaration,
+    ]),
+  );
+  const resolved: ServerActionHandler<TActor>[] = [];
+  const names = new Set<string>();
+
+  const add = (handler: ServerActionHandler<TActor>) => {
+    if (names.has(handler.name)) {
+      throw new Error(
+        `Resource "${resourceName}" has duplicate action "${handler.name}".`,
+      );
+    }
+    names.add(handler.name);
+    resolved.push(handler);
+  };
+
+  for (const handler of config.handlers ?? []) {
+    const declaration = declared.get(handler.name);
+
+    if (!declaration) {
+      throw new Error(
+        `Resource "${resourceName}" has a handler for undeclared action "${handler.name}". Declare it with defineResource({ actions }).`,
+      );
+    }
+
+    if (!handler.getRuntime().handler) {
+      throw new Error(
+        `Resource "${resourceName}" handler for action "${handler.name}" has no .execute() function.`,
+      );
+    }
+
+    const diverged = divergedSchemaKeys(
+      handler.toSchema(),
+      declaration.toSchema(),
+    );
+
+    if (diverged.length > 0) {
+      throw new Error(
+        `Resource "${resourceName}" handler for action "${handler.name}" does not match its declaration (differs in: ${diverged.join(", ")}). Build the handler from the declared action (e.g. \`${handler.name}.execute(fn)\`) instead of redefining it; its serialized schema (label, description, icon, variant, scope, confirmation, form, meta, and string result messages) must be identical.`,
+      );
+    }
+
+    add(handler);
+  }
+
+  if (config.actions) {
+    warnLegacyActions(config as ServerResourceConfig<never>);
+
+    for (const legacy of config.actions) {
+      add(legacy);
+    }
+  }
+
+  return resolved;
 }
 
 function resourcePath(
@@ -28,7 +135,7 @@ function resourcePath(
 }
 
 /**
- * Builds the per-resource route table once at `createServer()` time, sorted by base-segment length (longest first) so a nested custom `path` is tried before a shorter one that would otherwise swallow its prefix. Also finalizes each resource's field schemas once, since they never change per request. @throws {Error} If two resources resolve to the same base route, or a resource declares two actions with the same name.
+ * Builds the per-resource route table once at `createServer()` time, sorted by base-segment length (longest first) so a nested custom `path` is tried before a shorter one that would otherwise swallow its prefix. Also finalizes each resource's field schemas once, since they never change per request. @throws {Error} If two resources resolve to the same base route, a resource registers two actions with the same name, or a `handlers` entry is undeclared, lacks `.execute()`, or diverges from its declaration.
  */
 export function buildRouteTable<TActor>(
   resources: readonly ResolvedServerResourceConfig<TActor>[],
@@ -55,20 +162,11 @@ export function buildRouteTable<TActor>(
     }
     seenRoutes.add(routeKey);
 
-    const actionNames = new Set<string>();
-    for (const action of config.actions ?? []) {
-      if (actionNames.has(action.name)) {
-        throw new Error(
-          `Resource "${config.resource.name}" has duplicate action "${action.name}".`,
-        );
-      }
-      actionNames.add(action.name);
-    }
-
     return {
       config,
       baseSegments,
       fields: config.resource.toSchema().fields,
+      actions: resolveActions(config),
     };
   });
 

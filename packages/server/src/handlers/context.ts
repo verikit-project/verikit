@@ -10,4 +10,6 @@ export interface HandlerContext<TActor = any> {
   request: Request;
   url: URL;
   maxBodyBytes: number | false;
+  /** Passes an unexpected error a handler recovered from to `createServer({ onError })`. */
+  reportError?: (error: unknown) => void;
 }

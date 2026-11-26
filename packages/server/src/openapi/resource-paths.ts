@@ -73,6 +73,7 @@ function idParameter(): ParameterObject {
 function listParameters(
   fields: Record<string, FieldSchema>,
   defaultPageSize: number,
+  includeActions: boolean,
 ): ParameterObject[] {
   const sortableNames = Object.entries(fields)
     .filter(([, field]) => field.sortable === true)
@@ -134,12 +135,66 @@ function listParameters(
     });
   }
 
+  if (includeActions) {
+    parameters.push(
+      includeActionsParameter(
+        "Set to `actions` to report, in `meta.actions`, which actions the caller can't run on the returned records.",
+      ),
+    );
+  }
+
   return parameters;
 }
+
+function includeActionsParameter(description: string): ParameterObject {
+  return {
+    name: "include",
+    in: "query",
+    description,
+    schema: { type: "string", enum: ["actions"] },
+  };
+}
+
+const unavailableActionsSchema: OpenApiSchema = {
+  type: "object",
+  description: "Keyed by action name.",
+  additionalProperties: {
+    oneOf: [
+      {
+        type: "object",
+        properties: { reason: { type: "string", enum: ["forbidden"] } },
+        required: ["reason"],
+      },
+      {
+        type: "object",
+        properties: {
+          reason: { type: "string", enum: ["unavailable"] },
+          message: { type: "string" },
+        },
+        required: ["reason"],
+      },
+    ],
+  },
+};
+
+const unavailableOperationsSchema: OpenApiSchema = {
+  type: "object",
+  properties: Object.fromEntries(
+    ["update", "delete"].map((operation) => [
+      operation,
+      {
+        type: "object",
+        properties: { reason: { type: "string", enum: ["forbidden"] } },
+        required: ["reason"],
+      },
+    ]),
+  ),
+};
 
 function listResponses(
   hasPermissions: boolean,
   itemsRef: OpenApiSchema,
+  includeActions: boolean,
 ): Record<string, ResponseObject> {
   return {
     "200": jsonResponse("A page of records.", {
@@ -152,6 +207,22 @@ function listResponses(
             total: { type: "integer" },
             page: { type: "integer" },
             pageSize: { type: "integer" },
+            ...(includeActions && {
+              actions: {
+                type: "object",
+                description:
+                  "Present with `include=actions`: the actions the caller can't run. Only those are listed.",
+                properties: {
+                  records: {
+                    type: "object",
+                    description: "Record-scoped actions, keyed by record id.",
+                    additionalProperties: unavailableActionsSchema,
+                  },
+                  collection: unavailableActionsSchema,
+                },
+                required: ["records", "collection"],
+              },
+            }),
           },
           required: ["total", "page", "pageSize"],
         },
@@ -168,11 +239,12 @@ function listOperation(
   defaultPageSize: number,
   hasPermissions: boolean,
   responseSchemaRef: OpenApiSchema,
+  includeActions = false,
 ): OperationObject {
   return {
     operationId,
-    parameters: listParameters(fields, defaultPageSize),
-    responses: listResponses(hasPermissions, responseSchemaRef),
+    parameters: listParameters(fields, defaultPageSize, includeActions),
+    responses: listResponses(hasPermissions, responseSchemaRef, includeActions),
   };
 }
 
@@ -205,11 +277,35 @@ function findOperation(
 ): OperationObject {
   return {
     operationId,
-    parameters: [idParameter()],
+    parameters: [
+      idParameter(),
+      includeActionsParameter(
+        "Set to `actions` to report, in `meta.actions`, which record-scoped actions the caller can't run on this record, and in `meta.operations`, which built-in operations (`update`, `delete`).",
+      ),
+    ],
     responses: {
       "200": jsonResponse("The requested record.", {
         type: "object",
-        properties: { data: responseRef },
+        properties: {
+          data: responseRef,
+          meta: {
+            type: "object",
+            description: "Present with `include=actions`.",
+            properties: {
+              actions: {
+                ...unavailableActionsSchema,
+                description:
+                  "The record-scoped actions the caller can't run, keyed by action name.",
+              },
+              operations: {
+                ...unavailableOperationsSchema,
+                description:
+                  "The built-in operations the caller can't run on this record. Only those are listed.",
+              },
+            },
+            required: ["actions", "operations"],
+          },
+        },
         required: ["data"],
       }),
       "404": notFoundResponse(),
@@ -375,6 +471,8 @@ export function resourcePaths<TActor>(
     $ref: `#/components/schemas/${resourceName}`,
   };
 
+  const hasActions = entry.actions.length > 0;
+
   const paths: Record<string, PathItemObject> = {
     [resourceBase]: {
       get: listOperation(
@@ -383,6 +481,7 @@ export function resourcePaths<TActor>(
         25,
         hasPermissions,
         responseRef,
+        hasActions,
       ),
       post: createOperation(
         `create_${resourceName}`,
@@ -398,6 +497,7 @@ export function resourcePaths<TActor>(
         10,
         hasPermissions,
         responseRef,
+        hasActions,
       ),
     },
     [`${resourceBase}/{id}`]: {
@@ -407,7 +507,7 @@ export function resourcePaths<TActor>(
     },
   };
 
-  for (const action of config.actions ?? []) {
+  for (const action of entry.actions) {
     const actionSchema = action.toSchema();
     const inputRef: OpenApiSchema | undefined = actionSchema.form
       ? {

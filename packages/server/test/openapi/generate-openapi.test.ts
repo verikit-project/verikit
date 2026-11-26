@@ -220,6 +220,51 @@ test("upload routes exist only when storage is configured", () => {
   assert.equal(anyUploadPath, false);
 });
 
+test("list and search document include=actions and meta.actions only for a resource with actions; find always does", () => {
+  const document = generateOpenApiDocument(buildOptions(true), info);
+  const metaOf = (path: string) =>
+    (
+      document.paths[path]!.get!.responses["200"]!.content!["application/json"]!
+        .schema as { properties: { meta: { properties: object } } }
+    ).properties.meta.properties;
+  const parameterNames = (path: string) =>
+    document.paths[path]!.get!.parameters!.map((parameter) => parameter.name);
+
+  for (const path of ["/post", "/post/search"]) {
+    const include = document.paths[path]!.get!.parameters!.find(
+      (parameter) => parameter.name === "include",
+    );
+    assert.deepEqual(include?.schema, { type: "string", enum: ["actions"] });
+    assert.ok("actions" in metaOf(path), path);
+  }
+
+  const find = document.paths["/post/{id}"]!.get!;
+  assert.ok(find.parameters!.some((parameter) => parameter.name === "include"));
+  assert.ok(
+    "meta" in
+      (
+        find.responses["200"]!.content!["application/json"]!.schema as {
+          properties: object;
+        }
+      ).properties,
+  );
+  // Find also reports built-in operations, so it documents include=actions
+  // even for a resource with no declared actions.
+  const authorFind = document.paths["/author/{id}"]!.get!;
+  assert.ok(
+    authorFind.parameters!.some((parameter) => parameter.name === "include"),
+  );
+  for (const path of ["/post/{id}", "/author/{id}"]) {
+    assert.deepEqual(Object.keys(metaOf(path)), ["actions", "operations"]);
+  }
+
+  // No actions on `author`, and pickers never report availability.
+  for (const path of ["/author", "/post/relationships/author"]) {
+    assert.ok(!parameterNames(path).includes("include"), path);
+    assert.ok(!("actions" in metaOf(path)), path);
+  }
+});
+
 test("a belongsTo relationship gets a picker route; a hasMany relationship does not", () => {
   const document = generateOpenApiDocument(buildOptions(true), info);
 

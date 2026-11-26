@@ -7,17 +7,20 @@ export interface OpenApiRef {
 
 /**
  * Extends `JsonSchemaValue` to allow nested OpenAPI `$ref` objects in
- * `items` and `properties`.
+ * `items` and `properties`, plus schema-valued `additionalProperties` and
+ * `oneOf` for maps and unions.
  *
  * Core JSON Schema values don't support `$ref`, while OpenAPI schemas
  * routinely use references in nested positions such as array items.
  */
 export interface OpenApiSchemaObject extends Omit<
   JsonSchemaValue,
-  "items" | "properties"
+  "items" | "properties" | "additionalProperties"
 > {
   items?: OpenApiSchema;
   properties?: Record<string, OpenApiSchema>;
+  additionalProperties?: boolean | OpenApiSchema;
+  oneOf?: OpenApiSchema[];
 }
 
 /** An OpenAPI schema is either an inline JSON Schema value or a component reference. */

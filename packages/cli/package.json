@@ -1,6 +1,6 @@
 {
   "name": "@verikit/cli",
-  "version": "0.24.2",
+  "version": "0.24.4",
   "description": "Generators for Verikit apps: make:resource, make:action, and generate:schema.",
   "type": "module",
   "bin": {

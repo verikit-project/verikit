@@ -2,10 +2,13 @@ import { buildListQuery, sendRequest } from "./request.js";
 import type {
   ActionOptions,
   HeadersSource,
+  ListActionAvailability,
   ListParams,
   ListResponse,
   RequestOptions,
   ResourceClient,
+  UnavailableActions,
+  UnavailableOperations,
 } from "./types.js";
 
 interface ResourceClientDeps {
@@ -18,11 +21,17 @@ interface ResourceClientDeps {
 interface RecordEnvelope<T> {
   data: T;
   message?: string;
+  meta?: { actions?: UnavailableActions; operations?: UnavailableOperations };
 }
 
 interface ListEnvelope<T> {
   data: T[];
-  meta: { total: number; page: number; pageSize: number };
+  meta: {
+    total: number;
+    page: number;
+    pageSize: number;
+    actions?: ListActionAvailability;
+  };
 }
 
 /**
@@ -69,6 +78,7 @@ export function createResourceClient<
       total: envelope.meta.total,
       page: envelope.meta.page,
       pageSize: envelope.meta.pageSize,
+      ...(envelope.meta.actions && { actions: envelope.meta.actions }),
     };
   }
 
@@ -92,6 +102,18 @@ export function createResourceClient<
         signal: options.signal,
       })) as RecordEnvelope<TRecord>;
       return envelope.data;
+    },
+
+    async findWithActions(id, options = {}) {
+      const envelope = (await run("GET", [id], {
+        query: new URLSearchParams({ include: "actions" }),
+        signal: options.signal,
+      })) as RecordEnvelope<TRecord>;
+      return {
+        record: envelope.data,
+        actions: envelope.meta?.actions ?? {},
+        operations: envelope.meta?.operations ?? {},
+      };
     },
 
     async create(input, options = {}) {

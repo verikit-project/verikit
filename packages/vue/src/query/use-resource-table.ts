@@ -16,12 +16,16 @@ import {
   type Table,
 } from "@tanstack/vue-table";
 import { useQuery, type UseQueryReturnType } from "@tanstack/vue-query";
-import type { ListParams, ListResponse } from "@verikit/client";
+import type {
+  ListActionAvailability,
+  ListParams,
+  ListResponse,
+} from "@verikit/client";
 import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { resolveVerikitFields } from "@verikit/ui-core/form/resolve-fields";
 import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
-import { computed, ref, type Ref } from "vue";
+import { computed, ref, type ComputedRef, type Ref } from "vue";
 import { useVerikitClient } from "../client/use-verikit-client.js";
 
 // `columnFilteringFeature` is required by TanStack's global filtering feature.
@@ -46,6 +50,10 @@ export type ResourceTableFilters = NonNullable<ListParams["filters"]>;
 export interface UseResourceTableOptions {
   /** Initial page size, before the user (or caller) changes it. Defaults to 25. */
   pageSize?: number;
+  /**
+   * Also asks the server which actions the actor can't run on each page, returned as `actions`. Each action's permissions and availability guard run per record, so only set this when the actions are shown.
+   */
+  includeActions?: boolean;
 }
 
 /** State and helpers returned by {@link useResourceTable}. */
@@ -68,6 +76,8 @@ export interface UseResourceTableResult<
   filters: Ref<ResourceTableFilters>;
   /** Replaces the active per-field filters wholesale. */
   setFilters: (filters: ResourceTableFilters) => void;
+  /** The actions the actor can't run on the current page, when requested with `includeActions`. */
+  actions: ComputedRef<ListActionAvailability | undefined>;
 }
 
 /**
@@ -78,7 +88,7 @@ export function useResourceTable<
   TRecord extends RowData = Record<string, unknown>,
 >(
   resource: UseResourceTableSource,
-  { pageSize = 25 }: UseResourceTableOptions = {},
+  { pageSize = 25, includeActions = false }: UseResourceTableOptions = {},
 ): UseResourceTableResult<TRecord> {
   const client = useVerikitClient();
   const fields = resolveVerikitFields(resource);
@@ -128,6 +138,7 @@ export function useResourceTable<
         ? { field: activeSort.id, direction: activeSort.desc ? "desc" : "asc" }
         : undefined,
       ...(hasFilters ? { filters: filters.value } : {}),
+      ...(includeActions ? { includeActions } : {}),
     } as ListParams<TRecord>;
   });
 
@@ -176,5 +187,6 @@ export function useResourceTable<
     fields,
     filters,
     setFilters: handleFiltersChange,
+    actions: computed(() => list.data.value?.actions),
   };
 }

@@ -4,6 +4,23 @@ Prisma ORM adapter for VeriKit server resources.
 
 See the [VeriKit documentation](https://verikit.dev) for setup and usage.
 
+## Field and id mapping
+
+Each resource field maps to the Prisma scalar with the same name, and the id to
+a string `id` scalar, so a model that matches its resource needs neither
+`fields` nor `id`. List only the fields whose scalar has a different name, and
+pass `id` for a different scalar or a non-string key:
+
+```ts
+createPrismaAdapter(resource, {
+  model: prisma.legacyPost,
+  fields: { title: "headline" }, // every other field: same-named scalar
+  id: { field: "postId" },
+  listTransaction: (operation) =>
+    prisma.$transaction((tx) => operation(tx.legacyPost)),
+});
+```
+
 ## Consistent pagination
 
 `listTransaction` is required: `list()`'s records and count queries always run
@@ -15,8 +32,6 @@ transaction on its own, so pass one built from your `PrismaClient`:
 ```ts
 createPrismaAdapter(resource, {
   model: prisma.post,
-  fields: { title: "title" },
-  id: { field: "id" },
   listTransaction: (operation) =>
     prisma.$transaction(
       (tx) => operation(tx.post),
@@ -64,6 +79,14 @@ reuse a deleted record's ID. Provision the column before enabling the option; th
 library does not run database migrations. Adapters without conditional-write
 support return HTTP 501 for protected update/delete; explicitly `"open"` resources
 retain unconditional writes.
+
+When a revision column isn't possible, a protected resource can opt out with
+`unsafeUnconditionalWrites: true` in its `createServer()` resource config.
+Update and delete then check permissions against the record as read and write
+without a revision, so a change made in between is not detected. This is only
+safe when the update and delete rules don't depend on record fields that can
+change, such as a rule that checks only the actor's role. Adapters that support
+conditional writes keep using them.
 
 Custom adapter wrappers must forward `expectedRevision` (fourth argument to
 `update`, third to `delete`). `findForMutation` must capture record and revision

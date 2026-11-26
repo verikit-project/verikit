@@ -239,6 +239,11 @@ test("select field maps string values back to option values", () => {
 
   assert.equal(select.props.value, "1");
   assert.equal(select.props.readOnly, true);
+  // So the closed trigger shows the option's label, not its raw value.
+  assert.deepEqual(select.props.items, [
+    { value: "draft", label: "Draft" },
+    { value: "1", label: "Published" },
+  ]);
   (select.props.onValueChange as (value: string | null) => void)("1");
   (select.props.onValueChange as (value: string | null) => void)("missing");
   (select.props.onValueChange as (value: string | null) => void)(null);

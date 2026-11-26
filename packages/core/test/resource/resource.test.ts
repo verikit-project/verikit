@@ -115,6 +115,17 @@ test("actions attached via defineResource appear in toSchema by name", () => {
   });
 });
 
+test("defineResource throws on two actions sharing a name", () => {
+  assert.throws(
+    () =>
+      defineResource("post", {
+        fields: { name: text() },
+        actions: [fakeAction("publish"), fakeAction("publish")],
+      }),
+    /Resource "post" has duplicate action "publish"\./,
+  );
+});
+
 test("resource without permissions omits permissions from toSchema", () => {
   const resource = defineResource("user", { fields: { name: text() } });
 

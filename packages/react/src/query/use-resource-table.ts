@@ -16,7 +16,7 @@ import {
   type SortingState,
   type Table,
 } from "@tanstack/react-table";
-import type { ListParams } from "@verikit/client";
+import type { ListActionAvailability, ListParams } from "@verikit/client";
 import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { resolveVerikitFields } from "@verikit/ui-core/form/resolve-fields";
@@ -44,6 +44,10 @@ export type ResourceTableFilters = NonNullable<ListParams["filters"]>;
 export interface UseResourceTableOptions {
   /** Initial page size, before the user (or caller) changes it. Defaults to 25. */
   pageSize?: number;
+  /**
+   * Also asks the server which actions the actor can't run on each page, returned as `actions`. Each action's permissions and availability guard run per record, so only set this when the actions are shown.
+   */
+  includeActions?: boolean;
 }
 
 /** State and helpers returned by {@link useResourceTable}. */
@@ -66,6 +70,8 @@ export interface UseResourceTableResult<
   filters: ResourceTableFilters;
   /** Replaces the active per-field filters wholesale. */
   setFilters: (filters: ResourceTableFilters) => void;
+  /** The actions the actor can't run on the current page, when requested with `includeActions`. */
+  actions: ListActionAvailability | undefined;
 }
 
 /**
@@ -76,7 +82,7 @@ export function useResourceTable<
   TRecord extends RowData = Record<string, unknown>,
 >(
   resource: UseResourceTableSource,
-  { pageSize = 25 }: UseResourceTableOptions = {},
+  { pageSize = 25, includeActions = false }: UseResourceTableOptions = {},
 ): UseResourceTableResult<TRecord> {
   const fields = resolveVerikitFields(resource);
 
@@ -128,6 +134,7 @@ export function useResourceTable<
       ? { field: activeSort.id, direction: activeSort.desc ? "desc" : "asc" }
       : undefined,
     ...(hasFilters ? { filters } : {}),
+    ...(includeActions ? { includeActions } : {}),
   } as ListParams<TRecord>);
 
   const table = useTable({
@@ -154,5 +161,6 @@ export function useResourceTable<
     fields,
     filters,
     setFilters: handleFiltersChange,
+    actions: list.data?.actions,
   };
 }

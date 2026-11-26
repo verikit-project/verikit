@@ -9,6 +9,7 @@ test("action builder produces a schema for identity, presentation, confirmation,
     .description("Make the record visible")
     .icon("send")
     .variant("primary")
+    .scope("collection")
     .meta({ placement: "toolbar" })
     .confirmation({
       title: "Publish record",
@@ -31,6 +32,7 @@ test("action builder produces a schema for identity, presentation, confirmation,
     description: "Make the record visible",
     icon: "send",
     variant: "primary",
+    scope: "collection",
     confirmation: {
       title: "Publish record",
       message: "Publish this record now?",
@@ -92,6 +94,7 @@ test(".permissions() attaches a permissions definition without appearing in the 
     description: undefined,
     icon: undefined,
     variant: undefined,
+    scope: undefined,
     confirmation: undefined,
     form: undefined,
     result: undefined,

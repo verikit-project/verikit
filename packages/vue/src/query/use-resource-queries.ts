@@ -1,6 +1,11 @@
 import type { UseQueryOptions, UseQueryReturnType } from "@tanstack/vue-query";
 import { useQuery } from "@tanstack/vue-query";
-import type { ListParams, ListResponse } from "@verikit/client";
+import type {
+  FindWithActionsResponse,
+  ListParams,
+  ListResponse,
+} from "@verikit/client";
+import { computed, toValue, type MaybeRefOrGetter } from "vue";
 import { useVerikitClient } from "../client/use-verikit-client.js";
 import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 
@@ -46,6 +51,32 @@ export function useResourceFind<
     queryKey: resourceQueryKeys(name, client).find(id),
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       client.resource<TRecord>(name).find(id, { signal }),
+    ...options,
+  });
+}
+
+export type UseFindWithActionsResourceOptions<TRecord extends object> = Omit<
+  UseQueryOptions<FindWithActionsResponse<TRecord>, Error>,
+  "queryKey" | "queryFn"
+>;
+
+/**
+ * Fetches a single record by id along with the record-scoped actions the caller can't run on it, cached per resource name + id. `id` may be a ref or getter, refetching when it changes.
+ */
+export function useResourceFindWithActions<
+  TRecord extends object = Record<string, unknown>,
+>(
+  name: string,
+  id: MaybeRefOrGetter<string>,
+  options?: UseFindWithActionsResourceOptions<TRecord>,
+): UseQueryReturnType<FindWithActionsResponse<TRecord>, Error> {
+  const client = useVerikitClient();
+  const keys = resourceQueryKeys(name, client);
+
+  return useQuery({
+    queryKey: computed(() => keys.findWithActions(toValue(id))),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      client.resource<TRecord>(name).findWithActions(toValue(id), { signal }),
     ...options,
   });
 }

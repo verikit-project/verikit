@@ -24,6 +24,13 @@ import {
 } from "#components/dialog";
 import { Input } from "#components/input";
 import { cn } from "#lib/utils";
+import type { ActionSchemaLike } from "@verikit/core";
+import {
+  actionNeedsDialog,
+  resourceActionSchemas,
+  unavailableAction,
+} from "@verikit/ui-core/actions/resource-actions";
+import { formatFieldValue } from "@verikit/ui-core/layout/format-value";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
 import {
@@ -31,28 +38,30 @@ import {
   type UseResourceTableOptions,
   type UseResourceTableSource,
 } from "../query/use-resource-table.js";
+import {
+  isActionDenied,
+  isPermissionDenied,
+  ResourceActionDialog,
+  useRunResourceAction,
+} from "./resource-action-dialog.js";
+import { DeclaredActionButton } from "./declared-action-button.js";
 import { ResourceForm } from "./resource-form.js";
 import {
   filterableFields,
   ResourceTableFilterPanel,
 } from "./resource-table-filters.js";
 
-/**
- * True for an error whose `status` is 403 (permission denied). Duck-typed on
- * `status`, not `instanceof VerikitClientError`  the same convention that
- * class's own doc comment specifies, for callers distinguishing error cases.
- */
-function isPermissionDenied(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "status" in error &&
-    (error as { status: unknown }).status === 403
-  );
-}
+/** Which row actions a permission-denied response has hidden, keyed by record id. */
+type DeniedRowActions = Record<
+  string,
+  { update?: boolean; delete?: boolean; actions?: Record<string, true> }
+>;
 
-/** Which built-in row actions a permission-denied response has hidden, keyed by record id. */
-type DeniedRowActions = Record<string, { update?: boolean; delete?: boolean }>;
+/** A declared action awaiting confirmation or input, with the row it targets. */
+interface ActiveAction {
+  action: ActionSchemaLike;
+  recordId?: string;
+}
 
 /** Props for {@link ResourceTable}. */
 export interface ResourceTableProps<
@@ -85,6 +94,10 @@ export interface ResourceTableProps<
    */
   onEdit?: (record: TRecord) => void;
   /**
+   * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. The table asks the server which of them the actor can't run on each page: those it may not run are hidden, and those that can't run right now are disabled, with the reason as a tooltip. An action denied when run (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
+   */
+  resourceActions?: boolean;
+  /**
    * Renders per-row actions (e.g. custom edit/delete buttons). Composed
    * alongside the built-in actions when `actions` is also set, not in place
    * of them.
@@ -116,22 +129,6 @@ function headerText(header: {
   return header.column.columnDef.header as string;
 }
 
-function cellText(value: unknown): string {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  if (value instanceof Date) {
-    return value.toLocaleString();
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
-  }
-
-  return String(value);
-}
-
 function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
   if (direction === "asc") {
     return <ArrowUpIcon className="size-3.5" />;
@@ -156,13 +153,30 @@ export function ResourceTable<
   actions = false,
   onCreate,
   onEdit,
+  resourceActions = actions,
   renderActions,
   renderBulkActions,
   emptyState,
   className,
 }: ResourceTableProps<TRecord>): ReactElement {
-  const { table, isLoading, error, fields, filters, setFilters } =
-    useResourceTable<TRecord>(resource, { pageSize });
+  const recordActions = resourceActions
+    ? resourceActionSchemas(resource, "record")
+    : [];
+  const collectionActions = resourceActions
+    ? resourceActionSchemas(resource, "collection")
+    : [];
+  const {
+    table,
+    isLoading,
+    error,
+    fields,
+    filters,
+    setFilters,
+    actions: actionAvailability,
+  } = useResourceTable<TRecord>(resource, {
+    pageSize,
+    includeActions: recordActions.length > 0 || collectionActions.length > 0,
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createDenied, setCreateDenied] = useState(false);
@@ -173,6 +187,50 @@ export function ResourceTable<
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
+  const [deniedCollectionActions, setDeniedCollectionActions] = useState<
+    Record<string, true>
+  >({});
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  function denyAction(action: ActionSchemaLike, id: string | undefined): void {
+    if (id === undefined) {
+      setDeniedCollectionActions((current) => ({
+        ...current,
+        [action.name]: true,
+      }));
+      return;
+    }
+
+    setDeniedRows((current) => ({
+      ...current,
+      [id]: {
+        ...current[id],
+        actions: { ...current[id]?.actions, [action.name]: true },
+      },
+    }));
+  }
+
+  const directAction = useRunResourceAction(resource.name, {
+    onSuccess: () => setActionError(null),
+    onError: (mutationError, variables) => {
+      if (isActionDenied(mutationError, variables.recordId)) {
+        denyAction(variables.action, variables.recordId);
+      } else {
+        setActionError(mutationError.message);
+      }
+    },
+  });
+
+  function startAction(action: ActionSchemaLike, id?: string): void {
+    setActionError(null);
+
+    if (actionNeedsDialog(action)) {
+      setActiveAction({ action, recordId: id });
+    } else {
+      directAction.mutate({ action, recordId: id });
+    }
+  }
 
   const deleteMutation = useDeleteResource(resource.name, {
     onError: (mutationError, id) => {
@@ -283,11 +341,31 @@ export function ResourceTable<
     );
   }
 
+  function declaredRowActions(record: TRecord): ReactNode {
+    // Same contract-guaranteed id as `builtInRowActions`.
+    const id = recordId(record)!;
+    const denied = deniedRows[id]?.actions;
+
+    return recordActions.map((action) =>
+      denied?.[action.name] ? null : (
+        <DeclaredActionButton
+          key={action.name}
+          action={action}
+          unavailable={unavailableAction(actionAvailability, action.name, id)}
+          variant={action.variant === "danger" ? "destructive" : "ghost"}
+          disabled={directAction.isPending}
+          onClick={() => startAction(action, id)}
+        />
+      ),
+    );
+  }
+
   // Only called from a `hasActionsColumn ? ... : null` branch below, so
-  // `actions`/`renderActions` being both unset here can't happen.
+  // `actions`/`renderActions`/record actions being all unset here can't happen.
   function rowActions(record: TRecord): ReactNode {
     return (
       <div className="flex items-center justify-end gap-1">
+        {declaredRowActions(record)}
         {actions ? builtInRowActions(record) : null}
         {renderActions ? renderActions(record) : null}
       </div>
@@ -296,7 +374,8 @@ export function ResourceTable<
 
   const editId = editRecord ? recordId(editRecord) : undefined;
   const deleteId = deleteRecord ? recordId(deleteRecord) : undefined;
-  const hasActionsColumn = actions || Boolean(renderActions);
+  const hasActionsColumn =
+    actions || Boolean(renderActions) || recordActions.length > 0;
   const hasSelectionColumn = actions || Boolean(renderBulkActions);
   const hasFilterableFields = filterableFields(fields).length > 0;
   const activeFilterCount = Object.keys(filters).length;
@@ -351,17 +430,39 @@ export function ResourceTable<
             </Button>
           ) : null}
         </div>
-        {actions && !createDenied ? (
-          <Button
-            type="button"
-            size="sm"
-            onClick={() => (onCreate ? onCreate() : setCreateOpen(true))}
-          >
-            <PlusIcon />
-            New
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {collectionActions.map((action) =>
+            deniedCollectionActions[action.name] ? null : (
+              <DeclaredActionButton
+                key={action.name}
+                action={action}
+                unavailable={unavailableAction(actionAvailability, action.name)}
+                variant={
+                  action.variant === "danger" ? "destructive" : "outline"
+                }
+                disabled={directAction.isPending}
+                onClick={() => startAction(action)}
+              />
+            ),
+          )}
+          {actions && !createDenied ? (
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => (onCreate ? onCreate() : setCreateOpen(true))}
+            >
+              <PlusIcon />
+              New
+            </Button>
+          ) : null}
+        </div>
       </div>
+
+      {actionError ? (
+        <p role="alert" className="pb-3 text-sm text-destructive">
+          {actionError}
+        </p>
+      ) : null}
 
       {filtersOpen && hasFilterableFields ? (
         <div className="pb-3">
@@ -486,7 +587,7 @@ export function ResourceTable<
                   ) : null}
                   {row.getAllCells().map((cell) => (
                     <td key={cell.id} className="px-3 py-2">
-                      {cellText(cell.getValue())}
+                      {formatFieldValue(cell.getValue())}
                     </td>
                   ))}
                   {hasActionsColumn ? (
@@ -507,9 +608,9 @@ export function ResourceTable<
             Loading…
           </p>
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">
+          <div className="py-6 text-center text-sm text-muted-foreground">
             {resolvedEmptyState}
-          </p>
+          </div>
         ) : (
           rows.map((row) => (
             <div key={row.id} className="rounded-lg border border-border p-3">
@@ -533,7 +634,7 @@ export function ResourceTable<
                     {headerText({ column: cell.column })}
                   </span>
                   <span className="text-right">
-                    {cellText(cell.getValue())}
+                    {formatFieldValue(cell.getValue())}
                   </span>
                 </div>
               ))}
@@ -575,6 +676,16 @@ export function ResourceTable<
           </Button>
         </div>
       </div>
+
+      {recordActions.length > 0 || collectionActions.length > 0 ? (
+        <ResourceActionDialog
+          resourceName={resource.name}
+          action={activeAction?.action ?? null}
+          recordId={activeAction?.recordId}
+          onClose={() => setActiveAction(null)}
+          onDenied={(action) => denyAction(action, activeAction?.recordId)}
+        />
+      ) : null}
 
       {actions && !onCreate ? (
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>

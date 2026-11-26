@@ -29,5 +29,6 @@ export async function handleRelationshipPicker<TActor>(
     throw new NotFoundError();
   }
 
-  return handleList({ ...ctx, entry: target });
+  // Pickers only select records, so they never report action availability.
+  return handleList({ ...ctx, entry: target }, { actionAvailability: false });
 }

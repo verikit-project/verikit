@@ -158,6 +158,11 @@ test("boolean filter control reflects the active filter and reports Yes/No/All",
   const select = unwrapControl(controls.get("active")!);
 
   assert.equal(select.props.value, "__all__");
+  assert.deepEqual(select.props.items, [
+    { value: "__all__", label: "All" },
+    { value: "true", label: "Yes" },
+    { value: "false", label: "No" },
+  ]);
 
   (select.props.onValueChange as (value: string | null) => void)("true");
   (select.props.onValueChange as (value: string | null) => void)("false");
@@ -205,6 +210,11 @@ test("select filter control maps option values back, falling back to the raw key
 
   // An existing numeric filter value displays as its string form.
   assert.equal(select.props.value, "1");
+  assert.deepEqual(select.props.items, [
+    { value: "__all__", label: "All" },
+    { value: "draft", label: "Draft" },
+    { value: "1", label: "Published" },
+  ]);
 
   (select.props.onValueChange as (value: string | null) => void)(null);
   (select.props.onValueChange as (value: string | null) => void)("__all__");

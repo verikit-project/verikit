@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import type { BelongsToRelationshipSchema } from "@verikit/core";
-import { act } from "react";
 import { installJsdom } from "../dom-setup.js";
 import { createFakeClient, setupHarness, waitFor } from "../query/fixtures.js";
 
@@ -66,6 +65,29 @@ test("mounts and resolves with the relationship picker's records for a labeled f
     () =>
       harness.container.querySelector('[data-slot="select-value"]')
         ?.textContent === "Select…",
+  );
+
+  harness.cleanup();
+});
+
+test("shows the selected record's label, not its id, in the closed trigger", async () => {
+  const fixture = createFakeClient([
+    { id: "1", title: "Ada" },
+    { id: "2", title: "Grace" },
+  ]);
+  const harness = setupHarness(fixture.client);
+
+  await harness.render(
+    <BelongsToRelationshipField
+      relationship={relationship({ displayField: "title" })}
+      value="2"
+    />,
+  );
+
+  await waitFor(
+    () =>
+      harness.container.querySelector('[data-slot="select-value"]')
+        ?.textContent === "Grace",
   );
 
   harness.cleanup();
@@ -224,31 +246,6 @@ test("a resource form loads picker options from the owning resource's route", as
   // The server serves pickers at /{owner}/relationships/{name}, so the
   // request must go to "article", not the target "author".
   assert.deepEqual([...new Set(requested)], ["article"]);
-
-  harness.cleanup();
-});
-
-test("shows the selected record's label, not its id, before the popup opens", async () => {
-  const fixture = createFakeClient([{ id: "1", title: "Ada" }]);
-  const harness = setupHarness(fixture.client);
-
-  await harness.render(
-    <BelongsToRelationshipField
-      relationship={relationship({ displayField: "title" })}
-      value="1"
-    />,
-  );
-
-  await waitFor(() => fixture.calls.list === 1);
-  // Let the query result commit inside act(), so Select receives its items.
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 20));
-  });
-
-  assert.equal(
-    harness.container.querySelector('[data-slot="select-value"]')?.textContent,
-    "Ada",
-  );
 
   harness.cleanup();
 });

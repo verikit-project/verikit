@@ -27,6 +27,19 @@ export interface ServerErrorRoute {
   action: RouteAction;
 }
 
+/**
+ * An executable action: a declaration from `defineResource({ actions })` with `.execute()` (and optionally `.availableWhen()`, `.hooks()`, `.permissions()`) attached on the server. Form/record/result type params are erased since actions of differing shapes share one array; `runAction` recovers them per-action when the server invokes it.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above */
+export type ServerActionHandler<TActor = unknown> = ActionBuilder<
+  string,
+  any,
+  TActor,
+  any,
+  any
+>;
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 /** One resource registered with `createServer()`. */
 export interface ServerResourceConfig<TActor = unknown> {
   resource: Resource;
@@ -40,15 +53,24 @@ export interface ServerResourceConfig<TActor = unknown> {
    */
   path?: string;
   /**
-   * Named runtime actions (`@verikit/runtime`'s `action(...)`) exposed as `POST {base}/actions/:name`. Form/record/result type params are erased here since actions of differing shapes share one array; `runAction` recovers them per-action when the server invokes it.
+   * Server implementations of actions declared on `resource`, exposed as `POST {base}/actions/:name`. Build each from its client-safe declaration, e.g. `publish.execute(fn)`, so handler code never reaches client bundles. Startup fails if a handler names an undeclared action or serializes differently from its declaration: label, description, icon, variant, scope, confirmation, form, `meta`, or string result messages.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see comment above
-  actions?: ActionBuilder<string, any, TActor, any, any>[];
+  handlers?: ServerActionHandler<TActor>[];
+  /**
+   * @deprecated Declare actions with `defineResource({ actions })` and pass their server implementations via `handlers`. Still served (and logged once as deprecated) until the next minor release.
+   */
+  actions?: ServerActionHandler<TActor>[];
   /**
    * Required access control for resource operations, fields, and actions.
    * Use `"open"` to explicitly opt out of permission checks.
    */
   permissions: PermissionsBuilder<TActor, unknown> | "open";
+  /**
+   * Lets update and delete run on a resource with permissions even though its adapter can't do conditional writes (no `findForMutation`, e.g. Prisma without `versionField` or Drizzle without `versionColumn`), instead of returning 501. Adapters that can still write conditionally.
+   *
+   * Unsafe in general: permissions are checked against the record as it was read, and the write no longer fails if the record changed in between. Only set this when the update and delete rules don't depend on record fields that can change, e.g. a rule that checks only the actor's role.
+   */
+  unsafeUnconditionalWrites?: true;
 }
 
 /** A resource config after `createServer` has resolved its adapter. */
@@ -81,8 +103,11 @@ export interface CreateServerOptions<TActor = unknown> {
    */
   basePath?: string;
   /**
-   * Called for unexpected errors before they become a generic 500 response.
-   * `VerikitError`s bypass this hook; errors thrown by the hook are ignored.
+   * Called for unexpected errors before they become a generic 500 response,
+   * and for errors thrown by an action's permissions or availability guard
+   * while a list reports action availability (the action is then reported as
+   * forbidden). `VerikitError`s bypass this hook; errors thrown by the hook
+   * are ignored.
    */
   onError?: (error: unknown, request: Request, route: ServerErrorRoute) => void;
   /**
@@ -357,10 +382,29 @@ export function createServer<TActor = unknown>(
     }
 
     const { action } = resolved.resolution;
+    const resourceName = resolved.entry.config.resource.name;
+
+    function reportError(error: unknown, route: RouteAction): void {
+      try {
+        options.onError?.(error, request, {
+          resource: resourceName,
+          action: route,
+        });
+      } catch {
+        // Ignore errors from onError so a broken logger doesn't mask the original failure.
+      }
+    }
 
     try {
       const actor = (await options.context?.(request)) as TActor;
-      const ctx = { entry: resolved.entry, actor, request, url, maxBodyBytes };
+      const ctx = {
+        entry: resolved.entry,
+        actor,
+        request,
+        url,
+        maxBodyBytes,
+        reportError: (error: unknown) => reportError(error, action),
+      };
 
       switch (action.kind) {
         case "list":
@@ -423,14 +467,7 @@ export function createServer<TActor = unknown>(
         return withCors(toErrorResponse(error), responseCorsHeaders);
       }
 
-      try {
-        options.onError?.(error, request, {
-          resource: resolved.entry.config.resource.name,
-          action,
-        });
-      } catch {
-        // Ignore errors from onError so a broken logger doesn't mask the original failure.
-      }
+      reportError(error, action);
       return withCors(
         errorResponse(500, "INTERNAL_ERROR", "Internal server error."),
         responseCorsHeaders,

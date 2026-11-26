@@ -137,13 +137,54 @@ export interface ListParams<TRecord extends object = Record<string, unknown>> {
   search?: string;
   sort?: { field: StringKey<TRecord>; direction?: "asc" | "desc" };
   filters?: Partial<Record<StringKey<TRecord>, FieldFilter>>;
+  /**
+   * Also asks which of the resource's actions the caller can't run on the returned records, returned as `actions`. Each action's permissions and availability guard run per record on the server, so only ask when the actions are shown. Ignored by `relationship()`.
+   */
+  includeActions?: boolean;
 }
 
-export interface ListResponse<TRecord> {
+/** An action the caller can't run: denied by permissions, or not available right now (with the guard's reason, if it gave one). */
+export type UnavailableAction =
+  { reason: "forbidden" } | { reason: "unavailable"; message?: string };
+
+/** The actions the caller can't run, keyed by action name. Actions it can run are left out. */
+export type UnavailableActions<TActionName extends string = string> = Partial<
+  Record<TActionName, UnavailableAction>
+>;
+
+/** Which actions the caller can't run on a page of records. Only those actions are listed. */
+export interface ListActionAvailability<TActionName extends string = string> {
+  /** Record-scoped actions, keyed by record id, then action name. */
+  records: Record<string, UnavailableActions<TActionName>>;
+  /** Collection-scoped actions, keyed by action name. */
+  collection: UnavailableActions<TActionName>;
+}
+
+/** A built-in record operation whose availability `findWithActions()` reports. */
+export type RecordOperation = "update" | "delete";
+
+/** The built-in record operations the caller can't run, keyed by operation. Operations it can run are left out. */
+export type UnavailableOperations = Partial<
+  Record<RecordOperation, { reason: "forbidden" }>
+>;
+
+/** A record, with the record-scoped actions and built-in operations the caller can't run on it. */
+export interface FindWithActionsResponse<
+  TRecord,
+  TActionName extends string = string,
+> {
+  record: TRecord;
+  actions: UnavailableActions<TActionName>;
+  operations: UnavailableOperations;
+}
+
+export interface ListResponse<TRecord, TActionName extends string = string> {
   records: TRecord[];
   total: number;
   page: number;
   pageSize: number;
+  /** Present when the list was requested with `includeActions: true`. */
+  actions?: ListActionAvailability<TActionName>;
 }
 
 export interface RequestOptions {
@@ -181,11 +222,11 @@ export interface ResourceClient<
   list(
     params?: ListParams<TRecord>,
     options?: RequestOptions,
-  ): Promise<ListResponse<TRecord>>;
+  ): Promise<ListResponse<TRecord, StringKey<TActions>>>;
   search(
     params?: ListParams<TRecord>,
     options?: RequestOptions,
-  ): Promise<ListResponse<TRecord>>;
+  ): Promise<ListResponse<TRecord, StringKey<TActions>>>;
   /**
    * Lists selectable records for this resource's `belongsTo` relationship.
    * The server applies the target resource's permissions and actor-aware scope.
@@ -201,6 +242,13 @@ export interface ResourceClient<
     options?: RequestOptions,
   ): Promise<ListResponse<TTarget>>;
   find(id: string, options?: RequestOptions): Promise<TRecord>;
+  /**
+   * Like `find()`, but also asks which record-scoped actions the caller can't run on the record. The server runs each action's permissions and availability guard against it.
+   */
+  findWithActions(
+    id: string,
+    options?: RequestOptions,
+  ): Promise<FindWithActionsResponse<TRecord, StringKey<TActions>>>;
   create(input: TCreateInput, options?: RequestOptions): Promise<TRecord>;
   update(
     id: string,

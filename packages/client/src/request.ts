@@ -42,6 +42,10 @@ export function buildListQuery(params: ListParams): URLSearchParams {
     }
   }
 
+  if (params.includeActions) {
+    query.set("include", "actions");
+  }
+
   return query;
 }
 

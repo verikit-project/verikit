@@ -39,10 +39,30 @@ export interface AnyRelationshipBuilder {
 /** Map of relationship names to their builders. */
 export type RelationshipMap = Record<string, AnyRelationshipBuilder>;
 
-/** Minimal serializable shape of a finalized action, kept loose so `core` never depends on `@verikit/runtime`'s concrete `ActionSchema`. */
+/**
+ * Serializable, client-safe shape of a finalized action declaration. Defined here so `core` never depends on `@verikit/runtime`, whose `ActionSchema` extends it; handlers, availability guards, and hooks never serialize.
+ */
 export interface ActionSchemaLike {
   type: "action";
   name: string;
+  label?: string;
+  description?: string;
+  icon?: string;
+  variant?: "primary" | "secondary" | "danger";
+  /** Whether the action runs against one record (default) or the whole collection. */
+  scope?: "record" | "collection";
+  confirmation?: {
+    title?: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+  };
+  form?: Record<string, FieldSchema>;
+  result?: {
+    successMessage?: string;
+    errorMessage?: string;
+  };
+  meta?: Record<string, unknown>;
 }
 
 /**
@@ -181,6 +201,7 @@ export interface ResourceConfig<
   TFields extends FieldMap = FieldMap,
   TTable = unknown,
   TRelationships extends RelationshipMap = RelationshipMap,
+  TActions extends readonly AnyActionBuilder[] = readonly AnyActionBuilder[],
 > {
   table?: TTable;
   fields: TFields;
@@ -191,11 +212,12 @@ export interface ResourceConfig<
   access?: ResourceAccess;
   meta?: Record<string, unknown>;
   /**
-   * Runtime actions (e.g. `@verikit/runtime`'s `action(...)`) associated
-   * with this resource. Included in `toSchema()` by name, reusing each
-   * action's own `toSchema()` output.
+   * Client-safe action declarations (e.g. `@verikit/runtime`'s `action(...)`
+   * without `.execute()`). Included in `toSchema()` by name so UIs can render
+   * labels, confirmations, and forms; the server attaches handlers separately
+   * via `createServer({ resources: [{ handlers }] })`.
    */
-  actions?: readonly AnyActionBuilder[];
+  actions?: TActions;
   /**
    * Access control for this resource's operations, fields, and actions.
    *
@@ -312,6 +334,7 @@ export class Resource<
   TFields extends FieldMap = FieldMap,
   TTable = unknown,
   TRelationships extends RelationshipMap = RelationshipMap,
+  TActions extends readonly AnyActionBuilder[] = readonly AnyActionBuilder[],
 > {
   readonly name: TName;
   readonly table?: TTable;
@@ -319,7 +342,8 @@ export class Resource<
   readonly relationships: TRelationships;
   readonly access?: ResourceAccess;
   readonly meta?: Record<string, unknown>;
-  readonly actions: readonly AnyActionBuilder[];
+  /** Declared actions, typed as the exact tuple passed to `defineResource()` so client types can be inferred from it. */
+  readonly actions: TActions;
   readonly permissions?: PermissionsBuilder<unknown, unknown>;
 
   // Params erased to `any` to keep TFields/TRelationships out of contravariant
@@ -335,7 +359,7 @@ export class Resource<
    */
   constructor(
     name: TName,
-    config: ResourceConfig<TFields, TTable, TRelationships>,
+    config: ResourceConfig<TFields, TTable, TRelationships, TActions>,
     formFactory?: (
       builder: ResourceLayoutBuilder<TFields, TRelationships>,
     ) => SchemaNode[],
@@ -356,13 +380,25 @@ export class Resource<
       );
     }
 
+    const actionNames = new Set<string>();
+    for (const actionBuilder of config.actions ?? []) {
+      if (actionNames.has(actionBuilder.name)) {
+        throw new Error(
+          `Resource "${name}" has duplicate action "${actionBuilder.name}".`,
+        );
+      }
+      actionNames.add(actionBuilder.name);
+    }
+
     this.name = name;
     this.table = config.table;
     this.fields = cloneFieldMap(config.fields);
     this.relationships = cloneRelationshipMap(relationships);
     this.access = config.access ? { ...config.access } : undefined;
     this.meta = config.meta ? cloneValue(config.meta) : undefined;
-    this.actions = [...(config.actions ?? [])];
+    this.actions = [
+      ...(config.actions ?? []),
+    ] as readonly AnyActionBuilder[] as TActions;
     this.permissions = resolvePermissions<TFields>(config.permissions);
     this.formFactory = formFactory;
   }

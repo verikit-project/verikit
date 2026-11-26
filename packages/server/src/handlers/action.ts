@@ -70,7 +70,7 @@ export async function handleAction(
   name: string,
 ): Promise<Response> {
   const { entry, actor, request } = ctx;
-  const actionBuilder = entry.config.actions?.find(
+  const actionBuilder = entry.actions.find(
     (candidate) => candidate.name === name,
   );
 
