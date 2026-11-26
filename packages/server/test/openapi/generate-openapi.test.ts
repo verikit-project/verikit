@@ -404,3 +404,13 @@ test("update and delete document conditional-write conflicts", () => {
     );
   }
 });
+
+test("documents resources that rely on a server-level adapter factory", () => {
+  const tag = defineResource("tag", { fields: { name: text() } });
+  const document = generateOpenApiDocument(
+    { resources: [{ resource: tag, permissions: "open" }] },
+    info,
+  );
+
+  assert.ok(document.paths["/tag"]);
+});

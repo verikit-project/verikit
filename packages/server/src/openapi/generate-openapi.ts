@@ -23,6 +23,7 @@ export function generateOpenApiDocument<TActor = unknown>(
   info: OpenApiInfo,
 ): OpenApiDocument {
   const basePath = options.basePath ?? "";
+  // Documentation needs routes and schemas, not storage, so adapters may be unset.
   const routeTable = buildRouteTable(options.resources, basePath);
   const basePrefixLength = splitPath(basePath).length;
 

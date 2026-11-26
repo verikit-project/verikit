@@ -1915,3 +1915,68 @@ test("createServer routes multiple distinct resources independently", async () =
   assert.equal((await postsList.json()).data[0].title, "Hello");
   assert.equal((await pagesList.json()).data[0].title, "About");
 });
+
+test("a server-level adapter factory serves resources without their own adapter", async () => {
+  const resource = createPostResource();
+  const tag = defineResource("tag", { fields: { name: text() } });
+  const built: string[] = [];
+  const own = createGenericInMemoryAdapter([{ id: "t1", name: "news" }]);
+  const handler = createServer({
+    adapter: (target) => {
+      built.push(target.name);
+      return createInMemoryAdapter([post]);
+    },
+    resources: [
+      { resource, permissions: "open" },
+      { resource: tag, adapter: own, permissions: "open" },
+    ],
+  });
+
+  assert.deepEqual(built, ["post"]);
+
+  const posts = await handler(new Request("http://test/post"));
+  assert.deepEqual((await posts.json()).data, [post]);
+
+  const tags = await handler(new Request("http://test/tag"));
+  assert.deepEqual((await tags.json()).data, [{ id: "t1", name: "news" }]);
+});
+
+test("createServer rejects a resource with no adapter and no factory", () => {
+  assert.throws(
+    () =>
+      createServer({
+        resources: [{ resource: createPostResource(), permissions: "open" }],
+      }),
+    /resource "post" has no adapter/,
+  );
+});
+
+test("a protected update without conditional writes explains how to enable them", async () => {
+  const resource = createPostResource();
+  const adapter = createInMemoryAdapter([post]);
+  const handler = createServer({
+    resources: [
+      {
+        resource,
+        adapter: { ...adapter, findForMutation: undefined },
+        permissions: definePermissions().can("update", true),
+      },
+    ],
+  });
+
+  const response = await handler(
+    new Request("http://test/post/1", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "Changed" }),
+    }),
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 501);
+  assert.match(
+    body.error.message,
+    /Updating or deleting "post" requires conditional writes/,
+  );
+  assert.match(body.error.message, /column named "revision"/);
+});

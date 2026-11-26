@@ -4,6 +4,23 @@ Web-standard CRUD and action server for VeriKit resources.
 
 See the [VeriKit documentation](https://verikit.dev) for setup and usage.
 
+## Adapters
+
+Give `createServer` an `adapter` factory to store every resource the same way,
+and set `adapter` on a resource only to override it:
+
+```ts
+const api = createServer({
+  adapter: drizzleAdapter(db, { tables }),
+  resources: [
+    { resource: post, permissions: "open" },
+    { resource: legacy, adapter: legacyAdapter, permissions: "open" },
+  ],
+});
+```
+
+`createServer` throws at startup if a resource ends up with no adapter.
+
 ## Upload security
 
 `file()` and `image()` accept rules verify recognized file signatures before
@@ -41,9 +58,10 @@ migration adding a dedicated non-null integer revision column with default `0`,
 excluded from the resource field map:
 
 ```ts
-// Drizzle: revision: integer("revision").notNull().default(0)
+// Drizzle: add revision: integer("revision").notNull().default(0) to the table.
+// A column named "revision" is used automatically; to use another column:
 const adapter = createDrizzleAdapter(db, resource, {
-  versionColumn: table.revision,
+  versionColumn: table.version,
 });
 
 // Prisma model: revision Int @default(0)

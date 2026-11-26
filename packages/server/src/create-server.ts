@@ -30,7 +30,11 @@ export interface ServerErrorRoute {
 /** One resource registered with `createServer()`. */
 export interface ServerResourceConfig<TActor = unknown> {
   resource: Resource;
-  adapter: ResourceAdapter;
+  /**
+   * Storage for this resource. Optional when `createServer` has a
+   * server-level `adapter` factory; set it here to override that factory.
+   */
+  adapter?: ResourceAdapter;
   /**
    * Route segment this resource is mounted at; defaults to `resource.name` verbatim (no auto-pluralization).
    */
@@ -47,8 +51,20 @@ export interface ServerResourceConfig<TActor = unknown> {
   permissions: PermissionsBuilder<TActor, unknown> | "open";
 }
 
+/** A resource config after `createServer` has resolved its adapter. */
+export interface ResolvedServerResourceConfig<
+  TActor = unknown,
+> extends ServerResourceConfig<TActor> {
+  adapter: ResourceAdapter;
+}
+
 export interface CreateServerOptions<TActor = unknown> {
   resources: ServerResourceConfig<TActor>[];
+  /**
+   * Builds the adapter for every resource that doesn't set its own, such as
+   * `drizzleAdapter(db, { tables })` from `@verikit/drizzle`.
+   */
+  adapter?: (resource: Resource) => ResourceAdapter;
   /** Backend used by `POST /{resource}/uploads/{fileField}`. */
   storage?: FileStorage;
   /**
@@ -277,12 +293,35 @@ function preflightResponse(
 }
 
 /**
+ * Gives every resource an adapter: its own, or one from the server-level
+ * factory. @throws {Error} If a resource ends up with neither.
+ */
+function resolveAdapters<TActor>(
+  options: CreateServerOptions<TActor>,
+): ResolvedServerResourceConfig<TActor>[] {
+  return options.resources.map((config) => {
+    const adapter = config.adapter ?? options.adapter?.(config.resource);
+
+    if (!adapter) {
+      throw new Error(
+        `createServer: resource "${config.resource.name}" has no adapter. Set \`adapter\` on the resource, or pass a server-level \`adapter\` factory to createServer.`,
+      );
+    }
+
+    return { ...config, adapter };
+  });
+}
+
+/**
  * Derives a web-standard `(Request) => Promise<Response>` handler from a set of resources: CRUD, a search alias, scope-aware `belongsTo` pickers, and named-action routes, each wired through `@verikit/core` permissions/validation and `@verikit/runtime`'s `runAction`. Storage is never touched directly every operation goes through the resource's `ResourceAdapter`. @throws {Error} If two resources resolve to the same route, or a resource declares two actions with the same name checked once, at creation time.
  */
 export function createServer<TActor = unknown>(
   options: CreateServerOptions<TActor>,
 ): (request: Request) => Promise<Response> {
-  const routeTable = buildRouteTable(options.resources, options.basePath ?? "");
+  const routeTable = buildRouteTable(
+    resolveAdapters(options),
+    options.basePath ?? "",
+  );
   const maxBodyBytes = normalizeMaxBodyBytes(options.maxBodyBytes);
   const cors = normalizeCors(options.cors);
 

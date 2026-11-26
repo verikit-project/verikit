@@ -1,5 +1,8 @@
 import type { FieldSchema } from "@verikit/core";
-import type { ServerResourceConfig } from "../create-server.js";
+import type {
+  ResolvedServerResourceConfig,
+  ServerResourceConfig,
+} from "../create-server.js";
 import {
   resolveResourceAction,
   splitPath,
@@ -8,8 +11,12 @@ import {
 } from "./match-route.js";
 
 /** A registered resource's route base and pre-computed field schemas. */
-export interface RouteTableEntry<TActor = unknown> {
-  config: ServerResourceConfig<TActor>;
+export interface RouteTableEntry<
+  TActor = unknown,
+  TConfig extends ServerResourceConfig<TActor> =
+    ResolvedServerResourceConfig<TActor>,
+> {
+  config: TConfig;
   baseSegments: string[];
   fields: Record<string, FieldSchema>;
 }
@@ -24,9 +31,18 @@ function resourcePath(
  * Builds the per-resource route table once at `createServer()` time, sorted by base-segment length (longest first) so a nested custom `path` is tried before a shorter one that would otherwise swallow its prefix. Also finalizes each resource's field schemas once, since they never change per request. @throws {Error} If two resources resolve to the same base route, or a resource declares two actions with the same name.
  */
 export function buildRouteTable<TActor>(
+  resources: readonly ResolvedServerResourceConfig<TActor>[],
+  basePath: string,
+): RouteTableEntry<TActor>[];
+/** Builds a route table for configs that may not have adapters yet, e.g. for docs. */
+export function buildRouteTable<TActor>(
   resources: readonly ServerResourceConfig<TActor>[],
   basePath: string,
-): RouteTableEntry<TActor>[] {
+): RouteTableEntry<TActor, ServerResourceConfig<TActor>>[];
+export function buildRouteTable<TActor>(
+  resources: readonly ServerResourceConfig<TActor>[],
+  basePath: string,
+): RouteTableEntry<TActor, ServerResourceConfig<TActor>>[] {
   const basePrefix = splitPath(basePath);
   const seenRoutes = new Set<string>();
 

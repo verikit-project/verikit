@@ -7,14 +7,14 @@ export async function mutationSnapshot(
   id: string,
   scope: Record<string, unknown> | undefined,
 ) {
-  const { adapter, permissions } = ctx.entry.config;
+  const { adapter, permissions, resource } = ctx.entry.config;
   if (permissions === "open") {
     const record = await adapter.find(id, scope);
     return record ? { record, revision: undefined } : undefined;
   }
   if (!adapter.findForMutation) {
     throw new VerikitError(
-      "Protected mutations require an adapter configured for conditional writes.",
+      `Updating or deleting "${resource.name}" requires conditional writes, because it has permissions. Add a revision column to its table (Drizzle detects a column named "revision" automatically) or set the adapter's versionColumn/versionField.`,
       "NOT_IMPLEMENTED",
       501,
     );

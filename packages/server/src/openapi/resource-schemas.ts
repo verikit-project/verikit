@@ -3,6 +3,7 @@ import {
   resourceToJsonSchema,
   type JsonSchemaValue,
 } from "@verikit/core";
+import type { ServerResourceConfig } from "../create-server.js";
 import type { RouteTableEntry } from "../routing/route-table.js";
 
 /** Strips `resourceToJsonSchema()`'s `$schema`/`title` wrapper keys, which a `components.schemas` entry doesn't repeat. */
@@ -21,7 +22,7 @@ function asComponentSchema(
  * fields using create semantics.
  */
 export function resourceComponentSchemas<TActor>(
-  entry: RouteTableEntry<TActor>,
+  entry: RouteTableEntry<TActor, ServerResourceConfig<TActor>>,
 ): Record<string, JsonSchemaValue> {
   const { resource } = entry.config;
   const name = resource.name;

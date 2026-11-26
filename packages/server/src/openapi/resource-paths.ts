@@ -1,4 +1,5 @@
 import { fieldToJsonSchema, type FieldSchema } from "@verikit/core";
+import type { ServerResourceConfig } from "../create-server.js";
 import type { RouteTableEntry } from "../routing/route-table.js";
 import type {
   OpenApiSchema,
@@ -349,11 +350,14 @@ function uploadOperation(
  * removed `basePath`.
  */
 export function resourcePaths<TActor>(
-  entry: RouteTableEntry<TActor>,
+  entry: RouteTableEntry<TActor, ServerResourceConfig<TActor>>,
   resourceBase: string,
   options: {
     hasStorage: boolean;
-    entriesByResourceName: ReadonlyMap<string, RouteTableEntry<TActor>>;
+    entriesByResourceName: ReadonlyMap<
+      string,
+      RouteTableEntry<TActor, ServerResourceConfig<TActor>>
+    >;
   },
 ): Record<string, PathItemObject> {
   const { config, fields } = entry;
