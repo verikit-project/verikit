@@ -9,6 +9,17 @@ Define fields, validation, relationships, permissions, and actions in one place,
 then use that definition across your API, database adapter, typed client, forms,
 and tables.
 
+## Quick start
+
+```sh
+npm create verikit@latest my-app
+cd my-app
+npm run dev
+```
+
+You get a working app at http://localhost:3000: React, Hono, Drizzle, and SQLite,
+with a sample resource you can search, create, edit, and delete.
+
 ## Example
 
 ```ts
