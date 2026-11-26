@@ -1,0 +1,3 @@
+/* Lets Tailwind find the classes @verikit/react's components use:
+   @import "@verikit/react/tailwind-sources.css"; */
+@source "./dist";

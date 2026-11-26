@@ -1,0 +1,3 @@
+/* Theme plus the classes used by verikit/vue. */
+@import "@verikit/theme/globals.css";
+@import "@verikit/vue/tailwind-sources.css";

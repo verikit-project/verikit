@@ -1,0 +1,4 @@
+/* Theme plus the classes used by verikit/react and verikit/react-panel. */
+@import "@verikit/theme/globals.css";
+@import "@verikit/react/tailwind-sources.css";
+@import "@verikit/react-panel/tailwind-sources.css";

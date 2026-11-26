@@ -40,5 +40,10 @@
   ],
   "peerDependencies": {
     "tailwindcss": "^4.3.3"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
   }
 }

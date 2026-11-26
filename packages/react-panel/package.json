@@ -28,7 +28,8 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./tailwind-sources.css": "./tailwind-sources.css"
   },
   "scripts": {
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
@@ -38,7 +39,8 @@
     "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
   },
   "files": [
-    "dist"
+    "dist",
+    "tailwind-sources.css"
   ],
   "dependencies": {
     "@verikit/core": "workspace:*",
@@ -65,5 +67,16 @@
   "peerDependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
-  }
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "sideEffects": [
+    "*.css"
+  ]
 }

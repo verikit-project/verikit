@@ -37,7 +37,8 @@
     "./lib/*": {
       "types": "./dist/lib/*.d.ts",
       "default": "./dist/lib/*.js"
-    }
+    },
+    "./tailwind-sources.css": "./tailwind-sources.css"
   },
   "imports": {
     "#components/*": {
@@ -57,9 +58,13 @@
     "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
   },
   "files": [
-    "dist"
+    "dist",
+    "tailwind-sources.css"
   ],
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
+    "@tanstack/react-form": "^1.33.2",
+    "@tanstack/react-table": "^9.0.0",
     "@verikit/client": "workspace:*",
     "@verikit/core": "workspace:*",
     "@verikit/runtime": "workspace:*",
@@ -85,11 +90,22 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@base-ui/react": "^1.6.0",
-    "@tanstack/react-form": "^1.33.2",
     "@tanstack/react-query": "^5.101.4",
-    "@tanstack/react-table": "^9.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
-  }
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "sideEffects": [
+    "*.css"
+  ]
 }

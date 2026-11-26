@@ -1,0 +1,3 @@
+/* Lets Tailwind find the classes @verikit/react-panel's components use:
+   @import "@verikit/react-panel/tailwind-sources.css"; */
+@source "./dist";

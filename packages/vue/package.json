@@ -37,7 +37,8 @@
     "./lib/*": {
       "types": "./dist/lib/*.d.ts",
       "default": "./dist/lib/*.js"
-    }
+    },
+    "./tailwind-sources.css": "./tailwind-sources.css"
   },
   "imports": {
     "#components/*": {
@@ -57,11 +58,11 @@
     "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --import ./.test-dist/test/register.js --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
   },
   "files": [
-    "dist"
+    "dist",
+    "tailwind-sources.css"
   ],
   "dependencies": {
     "@tanstack/vue-form": "^1.33.5",
-    "@tanstack/vue-query": "^5.101.4",
     "@tanstack/vue-table": "^9.1.2",
     "@verikit/client": "workspace:*",
     "@verikit/core": "workspace:*",
@@ -75,6 +76,7 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@tanstack/vue-query": "^5.101.4",
     "@types/jsdom": "^28.0.3",
     "@types/node": "^26.1.1",
     "@vue/test-utils": "^2.4.11",
@@ -83,10 +85,18 @@
     "vue": "^3.5.46"
   },
   "peerDependencies": {
-    "@tanstack/vue-form": "^1.33.5",
     "@tanstack/vue-query": "^5.101.4",
-    "@tanstack/vue-table": "^9.1.2",
-    "reka-ui": "^2.10.3",
     "vue": "^3.5.0"
-  }
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/vue-query": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "sideEffects": [
+    "*.css"
+  ]
 }

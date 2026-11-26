@@ -1,0 +1,3 @@
+/* Lets Tailwind find the classes @verikit/vue's components use:
+   @import "@verikit/vue/tailwind-sources.css"; */
+@source "./dist";

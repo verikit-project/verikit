@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "rootDir": "src",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules"],
+  "references": [
+    {
+      "path": "../cli"
+    },
+    {
+      "path": "../client"
+    },
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../drizzle"
+    },
+    {
+      "path": "../prisma"
+    },
+    {
+      "path": "../react"
+    },
+    {
+      "path": "../react-panel"
+    },
+    {
+      "path": "../runtime"
+    },
+    {
+      "path": "../server"
+    },
+    {
+      "path": "../ui-core"
+    },
+    {
+      "path": "../vue"
+    }
+  ]
+}

@@ -45,6 +45,9 @@
       "path": "./packages/cli"
     },
     {
+      "path": "./packages/verikit"
+    },
+    {
       "path": "./packages/create-verikit"
     }
   ]

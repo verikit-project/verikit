@@ -306,15 +306,12 @@ importers:
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
-      '@verikit/cli':
-        specifier: workspace:*
-        version: link:../cli
-      '@verikit/core':
-        specifier: workspace:*
-        version: link:../core
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+      verikit:
+        specifier: workspace:*
+        version: link:../verikit
 
   packages/drizzle:
     dependencies:
@@ -368,6 +365,15 @@ importers:
 
   packages/react:
     dependencies:
+      '@base-ui/react':
+        specifier: ^1.6.0
+        version: 1.6.0(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tanstack/react-form':
+        specifier: ^1.33.2
+        version: 1.33.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@tanstack/react-table':
+        specifier: ^9.0.0
+        version: 9.0.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@verikit/client':
         specifier: workspace:*
         version: link:../client
@@ -396,18 +402,9 @@ importers:
         specifier: ^3.6.0
         version: 3.6.0
     devDependencies:
-      '@base-ui/react':
-        specifier: ^1.6.0
-        version: 1.6.0(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tanstack/react-form':
-        specifier: ^1.33.2
-        version: 1.33.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tanstack/react-query':
         specifier: ^5.101.4
         version: 5.101.4(react@19.2.8)
-      '@tanstack/react-table':
-        specifier: ^9.0.0
-        version: 9.0.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@types/jsdom':
         specifier: ^28.0.3
         version: 28.0.3
@@ -551,14 +548,81 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  packages/verikit:
+    dependencies:
+      '@prisma/client':
+        specifier: ^6.0.0 || ^7.0.0
+        version: 7.9.1(prisma@7.9.1(@types/node@26.1.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(better-sqlite3@13.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3)
+      '@verikit/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@verikit/client':
+        specifier: workspace:*
+        version: link:../client
+      '@verikit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verikit/drizzle':
+        specifier: workspace:*
+        version: link:../drizzle
+      '@verikit/prisma':
+        specifier: workspace:*
+        version: link:../prisma
+      '@verikit/react':
+        specifier: workspace:*
+        version: link:../react
+      '@verikit/react-panel':
+        specifier: workspace:*
+        version: link:../react-panel
+      '@verikit/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@verikit/server':
+        specifier: workspace:*
+        version: link:../server
+      '@verikit/theme':
+        specifier: workspace:*
+        version: link:../theme
+      '@verikit/ui-core':
+        specifier: workspace:*
+        version: link:../ui-core
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
+    devDependencies:
+      '@tanstack/react-query':
+        specifier: ^5.101.4
+        version: 5.101.4(react@19.2.8)
+      '@tanstack/vue-query':
+        specifier: ^5.101.4
+        version: 5.101.4(vue@3.5.46(typescript@6.0.3))
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      '@verikit/vue':
+        specifier: workspace:*
+        version: link:../vue
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@electric-sql/pglite@0.4.3)(@prisma/client@7.9.1(prisma@7.9.1(@types/node@26.1.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(better-sqlite3@13.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.2)(mysql2@3.24.6(@types/node@26.1.1))(postgres@3.4.7)(prisma@7.9.1(@types/node@26.1.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(better-sqlite3@13.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))
+      react:
+        specifier: ^19.2.8
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.8
+        version: 19.2.8(react@19.2.8)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vue:
+        specifier: ^3.5.46
+        version: 3.5.46(typescript@6.0.3)
+
   packages/vue:
     dependencies:
       '@tanstack/vue-form':
         specifier: ^1.33.5
         version: 1.33.5(vue@3.5.46(typescript@6.0.3))
-      '@tanstack/vue-query':
-        specifier: ^5.101.4
-        version: 5.101.4(vue@3.5.46(typescript@6.0.3))
       '@tanstack/vue-table':
         specifier: ^9.1.2
         version: 9.1.2(vue@3.5.46(typescript@6.0.3))
@@ -593,6 +657,9 @@ importers:
         specifier: ^3.6.0
         version: 3.6.0
     devDependencies:
+      '@tanstack/vue-query':
+        specifier: ^5.101.4
+        version: 5.101.4(vue@3.5.46(typescript@6.0.3))
       '@types/jsdom':
         specifier: ^28.0.3
         version: 28.0.3

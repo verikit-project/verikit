@@ -1,0 +1,157 @@
+{
+  "name": "verikit",
+  "version": "0.24.2",
+  "description": "Verikit in one install: define a resource once and get its API, database adapter, typed client, forms, and admin panel.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "verikit": "./dist/cli.js"
+  },
+  "keywords": [
+    "typescript",
+    "resource",
+    "framework",
+    "crud",
+    "admin",
+    "panel",
+    "drizzle",
+    "prisma",
+    "react",
+    "vue"
+  ],
+  "author": "Chidi E <hi@ceeso.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/verikit-project/verikit",
+    "directory": "packages/verikit"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./server/testing": {
+      "types": "./dist/server-testing.d.ts",
+      "default": "./dist/server-testing.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./dist/client.js"
+    },
+    "./ui-core": {
+      "types": "./dist/ui-core.d.ts",
+      "default": "./dist/ui-core.js"
+    },
+    "./drizzle": {
+      "types": "./dist/drizzle.d.ts",
+      "default": "./dist/drizzle.js"
+    },
+    "./prisma": {
+      "types": "./dist/prisma.d.ts",
+      "default": "./dist/prisma.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
+    },
+    "./react-panel": {
+      "types": "./dist/react-panel.d.ts",
+      "default": "./dist/react-panel.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "default": "./dist/vue.js"
+    },
+    "./theme.css": "./css/theme.css",
+    "./react.css": "./css/react.css",
+    "./vue.css": "./css/vue.css"
+  },
+  "sideEffects": [
+    "*.css",
+    "./dist/cli.js"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "build": "pnpm clean && tsc -b",
+    "prepack": "pnpm build",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node --test $(find ./.test-dist/test -name '*.test.js' -type f | sort)",
+    "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
+  },
+  "files": [
+    "dist",
+    "css"
+  ],
+  "dependencies": {
+    "@verikit/cli": "workspace:*",
+    "@verikit/client": "workspace:*",
+    "@verikit/core": "workspace:*",
+    "@verikit/drizzle": "workspace:*",
+    "@verikit/prisma": "workspace:*",
+    "@verikit/react": "workspace:*",
+    "@verikit/react-panel": "workspace:*",
+    "@verikit/runtime": "workspace:*",
+    "@verikit/server": "workspace:*",
+    "@verikit/theme": "workspace:*",
+    "@verikit/ui-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/vue-query": "^5.101.4",
+    "@types/node": "^26.1.1",
+    "@verikit/vue": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^6.0.3",
+    "vue": "^3.5.46"
+  },
+  "peerDependencies": {
+    "@prisma/client": "^6.0.0 || ^7.0.0",
+    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/vue-query": "^5.101.4",
+    "@verikit/vue": "workspace:^",
+    "drizzle-orm": "^0.44.0 || ^0.45.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwindcss": "^4.3.3",
+    "vue": "^3.5.0"
+  },
+  "peerDependenciesMeta": {
+    "@prisma/client": {
+      "optional": true
+    },
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "@tanstack/vue-query": {
+      "optional": true
+    },
+    "@verikit/vue": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "tailwindcss": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  }
+}
