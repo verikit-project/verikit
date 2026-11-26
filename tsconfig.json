@@ -39,6 +39,9 @@
       "path": "./packages/vue"
     },
     {
+      "path": "./packages/react-panel"
+    },
+    {
       "path": "./packages/create-verikit"
     }
   ]

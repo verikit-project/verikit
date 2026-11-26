@@ -1,0 +1,7 @@
+{
+  "entryPoints": ["packages/react-panel/src/index.ts"],
+  "out": "docs/api/react-panel",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryFileName": "react-panel",
+  "readme": "none"
+}
