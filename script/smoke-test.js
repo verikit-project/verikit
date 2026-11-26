@@ -21,6 +21,10 @@ function collectDeclaredEntryPaths(pkg) {
 
   if (typeof pkg.main === "string") targets.push(pkg.main);
   if (typeof pkg.types === "string") targets.push(pkg.types);
+  if (typeof pkg.bin === "string") targets.push(pkg.bin);
+  if (pkg.bin && typeof pkg.bin === "object") {
+    targets.push(...Object.values(pkg.bin));
+  }
 
   for (const value of Object.values(pkg.exports ?? {})) {
     if (typeof value === "string") {
@@ -42,7 +46,9 @@ function packedFileList(packageDir) {
     ["pack", "--dry-run", "--json", "--silent"],
     { cwd: packageDir, encoding: "utf8" },
   );
-  const [entry] = JSON.parse(output);
+  // npm <= 11 prints an array of entries; npm 12 an object keyed by package name.
+  const parsed = JSON.parse(output);
+  const [entry] = Array.isArray(parsed) ? parsed : Object.values(parsed);
   return new Set(entry.files.map((f) => f.path));
 }
 

@@ -37,6 +37,9 @@
     },
     {
       "path": "./packages/vue"
+    },
+    {
+      "path": "./packages/create-verikit"
     }
   ]
 }

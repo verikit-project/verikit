@@ -6,9 +6,9 @@
   "scripts": {
     "prepack": "node -e \"console.error('Workspace root is private; publish packages instead.'); process.exit(1)\"",
     "vsync": "node script/sync-version.js",
-    "build": "pnpm -r --filter @verikit/* build",
-    "test": "pnpm -r --filter @verikit/* test",
-    "test:coverage": "pnpm -r --stream --filter @verikit/* test:coverage",
+    "build": "pnpm -r --filter @verikit/* --filter create-verikit build",
+    "test": "pnpm -r --filter @verikit/* --filter create-verikit test",
+    "test:coverage": "pnpm -r --stream --filter @verikit/* --filter create-verikit test:coverage",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "format": "prettier --write .",
