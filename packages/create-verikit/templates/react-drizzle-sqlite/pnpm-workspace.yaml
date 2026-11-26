@@ -7,4 +7,5 @@ allowBuilds:
 # This app pins the Verikit release it was created with, so let pnpm install
 # it even when it's newer than pnpm's minimum release age.
 minimumReleaseAgeExclude:
+  - verikit
   - "@verikit/*"

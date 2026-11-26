@@ -1,28 +1,23 @@
-import { createDrizzleAdapter } from "@verikit/drizzle";
-import { createServer } from "@verikit/server";
 import { Hono } from "hono";
+import { drizzleAdapter } from "verikit/drizzle";
+import { createServer } from "verikit/server";
 import { actions } from "../actions/index.ts";
 import { db } from "../db/client.ts";
 import { tables } from "../db/schema.ts";
 import { resources } from "../resources/index.ts";
 import { permissions } from "./permissions.ts";
 
-// Every resource in resources/ is served at /api/<resource name>.
+// Every resource in resources/ is served at /api/<resource name> and stored
+// in its generated table. The tables' `revision` column gives resources with
+// permissions safe concurrent updates automatically.
 const api = createServer({
   basePath: "/api",
-  resources: resources.map((resource) => {
-    const table = tables[resource.name];
-
-    return {
-      resource,
-      adapter: createDrizzleAdapter(db, resource, {
-        table,
-        versionColumn: table.revision,
-      }),
-      actions: actions[resource.name],
-      permissions: permissions[resource.name],
-    };
-  }),
+  adapter: drizzleAdapter(db, { tables }),
+  resources: resources.map((resource) => ({
+    resource,
+    actions: actions[resource.name],
+    permissions: permissions[resource.name],
+  })),
 });
 
 export const app = new Hono();

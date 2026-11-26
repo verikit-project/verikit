@@ -1,5 +1,5 @@
-import { createClient } from "@verikit/client";
-import { VerikitProvider } from "@verikit/react";
+import { createClient } from "verikit/client";
+import { VerikitProvider } from "verikit/react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App.tsx";

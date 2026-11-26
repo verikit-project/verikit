@@ -47,7 +47,7 @@ Creates `actions/post/publish.ts`, which runs on the server and is served at
 | `db/custom-schema.ts`   | Extra tables of your own (optional; re-exported by `db/schema.ts`) | Yes      |
 | `db/migrations/`        | SQL migrations, applied on startup                                 | Generated |
 | `server/app.ts`         | Hono app serving every resource at `/api/<resource>`               | Rarely   |
-| `src/App.tsx`           | The admin panel (`@verikit/react-panel`)                           | Yes      |
+| `src/App.tsx`           | The admin panel (`verikit/react-panel`)                           | Yes      |
 
 ## Scripts
 

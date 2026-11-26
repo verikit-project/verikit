@@ -113,7 +113,13 @@ describe("scaffold", () => {
       readFileSync(path.join(target, "package.json"), "utf8"),
     );
     assert.equal(pkg.name, "my-app");
-    assert.equal(pkg.dependencies["@verikit/core"], "^1.2.3");
+    assert.equal(pkg.dependencies.verikit, "^1.2.3");
+    assert.equal(
+      Object.keys(pkg.dependencies).some((name: string) =>
+        name.startsWith("@verikit/"),
+      ),
+      false,
+    );
     assert.ok(pkg.scripts.dev);
   });
 });

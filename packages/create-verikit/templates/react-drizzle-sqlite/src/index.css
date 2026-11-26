@@ -1,5 +1,2 @@
-@import "@verikit/theme/globals.css";
-
-/* Tailwind skips node_modules by default; scan Verikit's components too. */
-@source "../node_modules/@verikit/react/dist";
-@source "../node_modules/@verikit/react-panel/dist";
+/* Verikit's theme plus the classes its React components and panel use. */
+@import "verikit/react.css";

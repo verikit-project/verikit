@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { assertUniqueFields, parseFieldSpec } from "./field-spec.js";
+import { META_IMPORTS, SCOPED_IMPORTS, type ImportSources } from "./imports.js";
 import { loadResources, REGISTRY_FILE } from "./load-resources.js";
 import { camelCase, invalidIdentifier, kebabCase } from "./names.js";
 import {
@@ -23,6 +24,8 @@ export interface ProjectConfig {
   actionsDir: string;
   schemaFile: string;
   permissionsFile: string;
+  /** `verikit` when the app depends on the meta-package, else the scoped packages. */
+  imports: ImportSources;
 }
 
 const DEFAULTS = {
@@ -36,10 +39,17 @@ const DEFAULTS = {
 /** Reads the optional `"verikit"` key of `root/package.json`. */
 export function readConfig(root: string): ProjectConfig {
   const packageJson = path.join(root, "package.json");
-  const raw = existsSync(packageJson)
-    ? ((JSON.parse(readFileSync(packageJson, "utf8")) as { verikit?: unknown })
-        .verikit ?? {})
+  const manifest = existsSync(packageJson)
+    ? (JSON.parse(readFileSync(packageJson, "utf8")) as {
+        verikit?: unknown;
+        dependencies?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+      })
     : {};
+  const raw = manifest.verikit ?? {};
+  const usesMeta = [manifest.dependencies, manifest.devDependencies].some(
+    (deps) => deps !== undefined && Object.hasOwn(deps, "verikit"),
+  );
   const config = { ...DEFAULTS, ...(raw as Partial<typeof DEFAULTS>) };
 
   if (config.dialect !== "sqlite" && config.dialect !== "postgresql") {
@@ -55,6 +65,7 @@ export function readConfig(root: string): ProjectConfig {
     actionsDir: path.resolve(root, config.actions),
     schemaFile: path.resolve(root, config.schema),
     permissionsFile: path.resolve(root, config.permissions),
+    imports: usesMeta ? META_IMPORTS : SCOPED_IMPORTS,
   };
 }
 
@@ -104,7 +115,10 @@ export async function generate(
     ],
     [
       path.join(config.actionsDir, REGISTRY_FILE),
-      renderActionRegistry(findActions(config.actionsDir, resources)),
+      renderActionRegistry(
+        findActions(config.actionsDir, resources),
+        config.imports,
+      ),
     ],
     [config.schemaFile, schema.source],
   ];
@@ -232,7 +246,7 @@ export async function makeResource(
   writeNewFile(
     config,
     path.join(config.resourcesDir, `${kebabCase(name)}.ts`),
-    renderResource(name, specs, targets),
+    renderResource(name, specs, targets, config.imports),
     force,
     report,
   );
@@ -286,7 +300,7 @@ export async function makeAction(
       kebabCase(resource.name),
       `${kebabCase(name)}.ts`,
     ),
-    renderAction(resource.name, name),
+    renderAction(resource.name, name, config.imports),
     force,
     report,
   );

@@ -189,6 +189,48 @@ describe("make:resource and generate:schema", () => {
   });
 });
 
+describe("apps that install the verikit meta-package", () => {
+  it("generate imports from verikit", async () => {
+    const root = project({
+      "package.json": JSON.stringify({
+        type: "module",
+        dependencies: { verikit: "^1.0.0" },
+      }),
+      // Stands in for the real meta-package, which re-exports these.
+      "node_modules/verikit/package.json": JSON.stringify({
+        name: "verikit",
+        type: "module",
+        exports: { ".": "./index.js", "./server": "./server.js" },
+      }),
+      "node_modules/verikit/index.js":
+        'export * from "@verikit/core";\nexport * from "@verikit/runtime";\n',
+      "node_modules/verikit/server.js": 'export * from "@verikit/server";\n',
+    });
+    const config = readConfig(root);
+
+    await makeResource(config, "post", ["title:text"]);
+    await makeAction(config, "post", "publish");
+
+    assert.match(read(root, "resources/post.ts"), /from "verikit";/);
+    assert.match(
+      read(root, "actions/post/publish.ts"),
+      /import \{ action \} from "verikit";/,
+    );
+    assert.match(read(root, "actions/index.ts"), /from "verikit\/server";/);
+
+    const { actions } = await importFrom(root, "actions/index.ts");
+    assert.equal(actions.post[0].name, "publish");
+  });
+
+  it("checks devDependencies too", () => {
+    const root = project({
+      "package.json": JSON.stringify({ devDependencies: { verikit: "*" } }),
+    });
+    assert.equal(readConfig(root).imports.core, "verikit");
+    assert.equal(readConfig(project()).imports.core, "@verikit/core");
+  });
+});
+
 describe("make:action", () => {
   it("creates a registered action that loads", async () => {
     const root = project();

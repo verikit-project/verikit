@@ -1,4 +1,5 @@
 import type { FieldSpec } from "./field-spec.js";
+import { SCOPED_IMPORTS, type ImportSources } from "./imports.js";
 import { sentenceCase } from "./names.js";
 
 const BUILDERS: Record<
@@ -80,11 +81,12 @@ export function renderResource(
   resourceName: string,
   specs: readonly FieldSpec[],
   targets: Readonly<Record<string, RelationTarget>> = {},
+  imports: ImportSources = SCOPED_IMPORTS,
 ): string {
-  const imports = new Set(["defineResource"]);
+  const names = new Set(["defineResource"]);
   const lines = specs.map((spec) => {
     const field = fieldLine(spec);
-    field.imports.forEach((name) => imports.add(name));
+    field.imports.forEach((name) => names.add(name));
     return `    ${field.line}`;
   });
   const relations = specs.filter((spec) => spec.type === "belongsTo");
@@ -99,7 +101,7 @@ export function renderResource(
     spec.target === resourceName ? self : targets[spec.target!]!;
 
   if (relations.length > 0) {
-    imports.add("belongsTo");
+    names.add("belongsTo");
   }
 
   const fields =
@@ -133,7 +135,7 @@ export function renderResource(
     .map(([file, name]) => `import { ${name} } from "./${file}";\n`)
     .join("");
 
-  return `import { ${[...imports].sort().join(", ")} } from "@verikit/core";
+  return `import { ${[...names].sort().join(", ")} } from "${imports.core}";
 ${targetImports}
 export const ${resourceName} = defineResource(${JSON.stringify(resourceName)}, {
 ${fields}${relationships}
@@ -142,8 +144,12 @@ ${fields}${relationships}
 }
 
 /** Source for `actions/<resource>/<action>.ts`. `actionName` is already camelCase. */
-export function renderAction(resourceName: string, actionName: string): string {
-  return `import { action } from "@verikit/runtime";
+export function renderAction(
+  resourceName: string,
+  actionName: string,
+  imports: ImportSources = SCOPED_IMPORTS,
+): string {
+  return `import { action } from "${imports.runtime}";
 
 // Runs on the server only, so it can use the database and secrets.
 // Call it from the browser with:

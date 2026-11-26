@@ -15,23 +15,14 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@base-ui/react": "^1.6.0",
     "@hono/node-server": "^2.0.0",
-    "@tanstack/react-form": "^1.33.2",
     "@tanstack/react-query": "^5.101.4",
-    "@tanstack/react-table": "^9.0.0",
-    "@verikit/client": "^{{verikitVersion}}",
-    "@verikit/core": "^{{verikitVersion}}",
-    "@verikit/drizzle": "^{{verikitVersion}}",
-    "@verikit/react": "^{{verikitVersion}}",
-    "@verikit/react-panel": "^{{verikitVersion}}",
-    "@verikit/server": "^{{verikitVersion}}",
-    "@verikit/theme": "^{{verikitVersion}}",
     "better-sqlite3": "^13.0.2",
     "drizzle-orm": "^0.45.0",
     "hono": "^4.9.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "verikit": "^{{verikitVersion}}"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.0",
@@ -39,7 +30,6 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@verikit/cli": "^{{verikitVersion}}",
     "@vitejs/plugin-react": "^6.0.0",
     "drizzle-kit": "^0.31.0",
     "shadcn": "^4.0.0",

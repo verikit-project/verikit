@@ -1,4 +1,4 @@
-import { boolean, defineResource, text, textarea } from "@verikit/core";
+import { boolean, defineResource, text, textarea } from "verikit";
 
 // One definition drives the database table (db/schema.ts, generated), the
 // REST API (server/app.ts), validation, and the admin panel (src/App.tsx).

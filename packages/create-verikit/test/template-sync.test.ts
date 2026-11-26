@@ -8,8 +8,8 @@ import { scaffold } from "../src/scaffold.js";
 import { PACKAGE_ROOT, TEMPLATES_DIR } from "./helpers.js";
 
 it("ships generated files that match `verikit generate:schema`", () => {
-  // Inside this package, so the app's resources can import @verikit/core
-  // from its devDependencies.
+  // Inside this package, so the app's resources can import verikit from
+  // its devDependencies.
   const app = path.join(PACKAGE_ROOT, ".test-dist", `sync-${process.pid}`);
   after(() => rmSync(app, { recursive: true, force: true }));
   scaffold(path.join(TEMPLATES_DIR, "react-drizzle-sqlite"), app, {
@@ -17,12 +17,10 @@ it("ships generated files that match `verikit generate:schema`", () => {
     verikitVersion: "0.0.0",
   });
 
+  // The template depends on the verikit meta-package, whose bin runs the CLI.
   const cli = path.join(
-    path.dirname(
-      createRequire(import.meta.url).resolve("@verikit/cli/package.json"),
-    ),
-    "dist",
-    "index.js",
+    path.dirname(createRequire(import.meta.url).resolve("verikit")),
+    "cli.js",
   );
   const result = spawnSync(
     process.execPath,

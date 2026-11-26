@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
+import { SCOPED_IMPORTS, type ImportSources } from "./imports.js";
 import type { LoadedResource } from "./load-resources.js";
 import { moduleFiles } from "./load-resources.js";
 import { camelCase, invalidIdentifier, kebabCase } from "./names.js";
@@ -88,7 +89,10 @@ export function findActions(
 }
 
 /** Source for `actions/index.ts`: each resource's actions for `createServer`. */
-export function renderActionRegistry(actions: readonly ActionFile[]): string {
+export function renderActionRegistry(
+  actions: readonly ActionFile[],
+  imports: ImportSources = SCOPED_IMPORTS,
+): string {
   const alias = (action: ActionFile) =>
     camelCase(`${action.resource} ${action.exportName}`);
   const importLines = actions
@@ -110,7 +114,7 @@ export function renderActionRegistry(actions: readonly ActionFile[]): string {
     .map(([resource, names]) => `  ${resource}: [${names.join(", ")}],\n`)
     .join("");
 
-  return `${GENERATED_HEADER("actions/*/*.ts")}import type { ServerResourceConfig } from "@verikit/server";
+  return `${GENERATED_HEADER("actions/*/*.ts")}import type { ServerResourceConfig } from "${imports.server}";
 ${importLines}
 /** Server-side actions, by resource name. */
 export const actions: Partial<

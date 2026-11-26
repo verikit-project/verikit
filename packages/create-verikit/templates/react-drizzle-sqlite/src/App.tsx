@@ -1,4 +1,4 @@
-import { Panel } from "@verikit/react-panel";
+import { Panel } from "verikit/react-panel";
 import { resources } from "../resources/index.ts";
 
 // To set a resource's label, icon, or navigation group, pass an object
