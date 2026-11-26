@@ -5,6 +5,7 @@ import {
   boolean,
   defineResource,
   from,
+  number,
   text,
 } from "@verikit/core";
 import { UniqueConstraintError } from "@verikit/server";
@@ -17,6 +18,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import {
   createDrizzleAdapter,
+  drizzleAdapter,
   type AnyDrizzleDatabase,
 } from "../src/create-drizzle-adapter.js";
 import {
@@ -838,7 +840,9 @@ test("Drizzle rejects invalid revision configuration and tokens", async () => {
     adapter.update("1", {}, undefined, -1),
     /valid revision/,
   );
-  const unversioned = createDrizzleAdapter(db, resource);
+  const unversioned = createDrizzleAdapter(db, resource, {
+    versionColumn: false,
+  });
   assert.equal(unversioned.findForMutation, undefined);
   await assert.rejects(unversioned.delete("1", undefined, 0), /versionColumn/);
 });
@@ -853,4 +857,80 @@ test("Drizzle rejects invalid stored revisions rather than falling back to an un
   );
   db.run(sql`UPDATE versioned_posts SET revision = -1`);
   await assert.rejects(adapter.findForMutation!(created.id), /valid revision/);
+});
+
+test("uses a revision column for conditional writes automatically", async () => {
+  const { db, resource } = versionedAdapter();
+  const adapter = createDrizzleAdapter(db, resource);
+  const created = await adapter.create({ title: "Auto", tenant: "a" });
+  const before = await adapter.findForMutation!(created.id, undefined);
+
+  await adapter.update(
+    created.id,
+    { title: "Changed" },
+    undefined,
+    before!.revision,
+  );
+  const after = await adapter.findForMutation!(created.id, undefined);
+  assert.equal(after!.revision, before!.revision + 1);
+  await assert.rejects(
+    adapter.update(created.id, { title: "Stale" }, undefined, before!.revision),
+    ConflictError,
+  );
+});
+
+test("doesn't treat a revision column mapped to a field as the version column", () => {
+  const { db } = versionedAdapter();
+  const resource = defineResource("versioned", {
+    table: versionedPosts,
+    fields: { title: text(), revision: number() },
+  });
+
+  assert.equal(createDrizzleAdapter(db, resource).findForMutation, undefined);
+});
+
+test("explains an auto-detected revision column that can't be used", () => {
+  const db = createTestDb();
+  const loose = sqliteTable("loose_posts", {
+    id: integer("id").primaryKey(),
+    title: sqliteText("title"),
+    revision: integer("revision"),
+  });
+  const resource = defineResource("loose", {
+    table: loose,
+    fields: { title: text() },
+  });
+
+  assert.throws(
+    () => createDrizzleAdapter(db, resource),
+    /"loose"'s "revision" column is used for conditional writes automatically[\s\S]*versionColumn: false/,
+  );
+  assert.equal(
+    createDrizzleAdapter(db, resource, { versionColumn: false })
+      .findForMutation,
+    undefined,
+  );
+});
+
+test("drizzleAdapter builds adapters from a tables map or the resource's own table", async () => {
+  const db = createTestDb();
+  const factory = drizzleAdapter(db, { tables: { post: posts } });
+  const tableless = defineResource("post", {
+    fields: { title: text().required() },
+  });
+
+  const created = await factory(tableless).create({ title: "From the map" });
+  assert.equal(created.title, "From the map");
+
+  const tag = await factory(createTagResource()).create({ name: "news" });
+  assert.equal(tag.name, "news");
+
+  assert.throws(
+    () => factory(defineResource("toString", { fields: {} })),
+    /no table for resource "toString"/,
+  );
+  assert.throws(
+    () => drizzleAdapter(db)(tableless),
+    /no table for resource "post"/,
+  );
 });

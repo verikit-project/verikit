@@ -48,8 +48,13 @@ export type AnyDrizzleDatabase =
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
 export interface DrizzleAdapterOptions {
-  /** Dedicated NOT NULL integer revision column, excluded from resource fields. All external writers must increment it. */
-  versionColumn?: Column;
+  /**
+   * Dedicated NOT NULL integer revision column, excluded from resource fields.
+   * All external writers must increment it. Defaults to the table's
+   * `revision` column when it has one that no field maps to; pass `false` to
+   * turn that off.
+   */
+  versionColumn?: Column | false;
 }
 
 /**
@@ -65,6 +70,54 @@ export interface DrizzleAdapterTableOptions extends DrizzleAdapterOptions {
 export interface DrizzleResourceRecord extends Record<string, unknown> {
   /** String form of the table's single primary key, suitable for resource URLs. */
   id: string;
+}
+
+/**
+ * The table's `revision` column, unless a resource field already maps to it.
+ */
+function detectRevisionColumn(
+  table: Table,
+  columnsByField: ReadonlyMap<string, { column: Column }>,
+): Column | undefined {
+  const candidate = getTableColumns(table).revision;
+
+  return candidate &&
+    ![...columnsByField.values()].some(({ column }) => column === candidate)
+    ? candidate
+    : undefined;
+}
+
+/** Options for {@link drizzleAdapter}. */
+export interface DrizzleAdapterFactoryOptions {
+  /**
+   * Tables by resource name, for resources defined without `table`, such as
+   * the `tables` map that `verikit generate:schema` writes.
+   */
+  tables?: Readonly<Record<string, Table>>;
+}
+
+/**
+ * Builds adapters for every resource, for `createServer({ adapter })`. Each
+ * resource uses its table from `tables`, or its own `table`. A `revision`
+ * column is used for conditional writes automatically.
+ */
+export function drizzleAdapter(
+  db: AnyDrizzleDatabase,
+  { tables = {} }: DrizzleAdapterFactoryOptions = {},
+): (resource: Resource) => ResourceAdapter<DrizzleResourceRecord> {
+  return (resource) => {
+    const table = Object.hasOwn(tables, resource.name)
+      ? tables[resource.name]
+      : (resource.table as Table | undefined);
+
+    if (!table) {
+      throw new Error(
+        `@verikit/drizzle: no table for resource "${resource.name}". Add it to drizzleAdapter's \`tables\` (the generated \`tables\` map does this), or set \`table\` on the resource.`,
+      );
+    }
+
+    return createDrizzleAdapter(db, resource, { table });
+  };
 }
 
 /**
@@ -110,7 +163,11 @@ export function createDrizzleAdapter(
   const schema = resource.toSchema();
   const idColumn = resolveIdColumn(table, resource.name);
   const columnsByField = resolveFieldColumns(table, schema.fields);
-  const versionColumn = options.versionColumn;
+  const detected =
+    options.versionColumn === undefined
+      ? detectRevisionColumn(table, columnsByField)
+      : undefined;
+  const versionColumn = options.versionColumn || detected;
   const versionKey = Object.entries(getTableColumns(table)).find(
     ([, column]) => column === versionColumn,
   )?.[0];
@@ -125,7 +182,9 @@ export function createDrizzleAdapter(
       ))
   ) {
     throw new Error(
-      "versionColumn must be a dedicated NOT NULL numeric column of the resource table.",
+      detected
+        ? `@verikit/drizzle: resource "${resource.name}"'s "revision" column is used for conditional writes automatically, so it must be a NOT NULL integer column, e.g. integer("revision").notNull().default(0). Fix the column, or pass versionColumn: false.`
+        : "versionColumn must be a dedicated NOT NULL numeric column of the resource table.",
     );
   }
   function revisionCondition(expectedRevision: number | undefined) {
