@@ -18,7 +18,13 @@ npm run dev
 ```
 
 You get a working app at http://localhost:3000: React, Hono, Drizzle, and SQLite,
-with a sample resource you can search, create, edit, and delete.
+with a sample resource you can search, create, edit, and delete. Add more from the
+command line; the database table, migration, API, and admin pages follow:
+
+```sh
+npx verikit make:resource Tag name:text color:select:red,green,blue
+npm run db:generate
+```
 
 ## Example
 
