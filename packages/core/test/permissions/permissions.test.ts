@@ -542,6 +542,40 @@ test("validateWritableFields reports a permission issue instead of running valid
   });
 });
 
+test("validateWritableFields applies defaults to omitted fields the actor can't write", async () => {
+  const permissions = definePermissions<Actor, Post>()
+    .field("title", { write: true })
+    .field("status", { write: false })
+    .field("salary", { write: false });
+
+  const created = await validateWritableFields(
+    {
+      title: text().required().toSchema("title"),
+      status: text().default("draft").toSchema("status"),
+    },
+    { title: "Hello" },
+    permissions,
+    { actor: { role: "viewer" } },
+  );
+
+  assert.deepEqual(created, {
+    success: true,
+    value: { title: "Hello", status: "draft" },
+  });
+
+  // An omitted required field is reported as missing, not as a permission
+  // problem, since the client didn't try to write it.
+  const missing = await validateWritableFields(
+    { salary: text().required().toSchema("salary") },
+    {},
+    permissions,
+    { actor: { role: "viewer" } },
+  );
+
+  assert.equal(missing.success, false);
+  assert.doesNotMatch(JSON.stringify(missing), /You do not have permission/);
+});
+
 test("validateWritableFields surfaces the denying rule's custom reason", async () => {
   const permissions = definePermissions<Actor, Post>().field("salary", {
     write: () => ({ allowed: false, reason: "Only admins can edit salary." }),

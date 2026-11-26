@@ -13,7 +13,7 @@ function defaultDeniedMessage(field: string): string {
 /**
  * Validates values against a resource's field schemas the
  *  same way `validateResourceAsync` does,
- * but first checks write access for each field via `checkFieldAccess`. A field the actor cannot write to is reported as a single validation issue (using the denying rule's `reason` if it provided one) instead of being run through its normal constraint and attached-validator checks being unwritable takes precedence over whether the given value would otherwise be valid.
+ * but first checks write access, via `checkFieldAccess`, for each field present in `values`. Omitted fields skip that check: they're validated only to apply their schema default or report them as missing. A field the actor cannot write to is reported as a single validation issue (using the denying rule's `reason` if it provided one) instead of being run through its normal constraint and attached-validator checks being unwritable takes precedence over whether the given value would otherwise be valid.
  */
 export async function validateWritableFields<TActor, TRecord>(
   fields: Record<string, FieldSchema>,
@@ -27,6 +27,12 @@ export async function validateWritableFields<TActor, TRecord>(
     Object.entries(fields)
       .filter(([name, schema]) => shouldValidateField(name, schema, values))
       .map(async ([name, schema]): Promise<[string, ValidationResult]> => {
+        // Only values the client sent need write access. An omitted field is
+        // validated just to apply its schema default or report it missing.
+        if (!Object.hasOwn(values, name)) {
+          return [name, await validateFieldAsync(schema, values[name])];
+        }
+
         try {
           const access = await checkFieldAccess(
             runtime,
