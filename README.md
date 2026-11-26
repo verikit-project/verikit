@@ -35,7 +35,12 @@ export const post = defineResource("post", {
 
 That one definition is what `@verikit/server` exposes over REST, `@verikit/drizzle` or
 `@verikit/prisma` backs with a database, `@verikit/client` consumes through a typed client, and
-`@verikit/react` renders as tables and forms.
+`@verikit/react` renders as tables and forms. `@verikit/react-panel` turns a list of
+resources into a full admin panel with navigation and list, create, and edit pages:
+
+```tsx
+<Panel title="Acme" resources={[post, user]} />
+```
 
 ## Docs
 
