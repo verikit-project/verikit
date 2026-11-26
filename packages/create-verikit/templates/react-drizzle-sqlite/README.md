@@ -16,14 +16,14 @@ The database (`data/app.db`) is created, migrated, and seeded on first run.
 | `db/schema.ts`       | Drizzle tables backing the resources.                                  |
 | `db/migrations/`     | Generated SQL migrations, applied on startup.                          |
 | `server/app.ts`      | Hono app exposing resources at `/api/<resource>`.                      |
-| `src/App.tsx`        | The admin UI: sidebar plus a table with create/edit/delete for each resource. |
+| `src/App.tsx`        | The admin panel (`@verikit/react-panel`): list, create, and edit pages for each resource. |
 
 ## Add a resource
 
 1. Add a table to `db/schema.ts` (include `revision: integer("revision").notNull().default(0)`).
 2. Run `npm run db:generate` to create its migration.
 3. Define the resource in `resources/`, with `table:` pointing at the new table.
-4. Register it in `server/app.ts` and add it to `navigation` in `resources/index.ts`.
+4. Register it in `server/app.ts` and add it to `panelResources` in `resources/index.ts`. It appears in the navigation at `/<plural-name>`.
 
 ## Scripts
 

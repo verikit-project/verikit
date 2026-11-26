@@ -24,11 +24,13 @@
     "@verikit/core": "^{{verikitVersion}}",
     "@verikit/drizzle": "^{{verikitVersion}}",
     "@verikit/react": "^{{verikitVersion}}",
+    "@verikit/react-panel": "^{{verikitVersion}}",
     "@verikit/server": "^{{verikitVersion}}",
     "@verikit/theme": "^{{verikitVersion}}",
     "better-sqlite3": "^13.0.2",
     "drizzle-orm": "^0.45.0",
     "hono": "^4.9.0",
+    "lucide-react": "^1.26.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

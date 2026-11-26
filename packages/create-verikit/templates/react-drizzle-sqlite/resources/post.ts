@@ -7,7 +7,9 @@ export const post = defineResource("post", {
   table: posts,
   fields: {
     title: text().label("Title").required().searchable(),
-    body: textarea().label("Body").searchable(),
+    // The column allows NULL, so the field must too: `.optional()` alone
+    // rejects the null that empty rows come back with.
+    body: textarea().label("Body").nullable().searchable(),
     published: boolean().label("Published").default(false),
   },
 });
