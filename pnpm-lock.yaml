@@ -250,6 +250,27 @@ importers:
         specifier: ^8.74.0
         version: 8.74.0(eslint@10.15.0(jiti@2.7.0))(typescript@6.0.3)
 
+  packages/cli:
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      '@verikit/core':
+        specifier: workspace:*
+        version: link:../core
+      '@verikit/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@verikit/server':
+        specifier: workspace:*
+        version: link:../server
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@electric-sql/pglite@0.4.3)(@prisma/client@7.9.1(prisma@7.9.1(@types/node@26.1.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(better-sqlite3@13.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3))(@types/better-sqlite3@7.6.13)(better-sqlite3@13.0.2)(mysql2@3.24.6(@types/node@26.1.1))(postgres@3.4.7)(prisma@7.9.1(@types/node@26.1.1)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(better-sqlite3@13.0.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   packages/client:
     devDependencies:
       '@types/node':
@@ -285,6 +306,12 @@ importers:
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
+      '@verikit/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@verikit/core':
+        specifier: workspace:*
+        version: link:../core
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

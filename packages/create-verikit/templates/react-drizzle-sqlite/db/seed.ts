@@ -19,7 +19,7 @@ export function seed(): void {
       },
       {
         title: "Add a field",
-        body: "Add a column in db/schema.ts and a field in resources/post.ts, then run npm run db:generate.",
+        body: "Add a field in resources/post.ts, then run npm run db:generate. Or create a resource: npx verikit make:resource Tag name:text",
         published: true,
       },
       {

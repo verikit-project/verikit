@@ -7,11 +7,11 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "node --watch-path=server --watch-path=resources --watch-path=db server/dev.ts",
+    "dev": "node --watch-path=server --watch-path=resources --watch-path=actions --watch-path=db server/dev.ts",
     "build": "vite build",
     "start": "node server/index.ts",
-    "typecheck": "tsc",
-    "db:generate": "drizzle-kit generate",
+    "typecheck": "verikit generate:schema --check && tsc",
+    "db:generate": "verikit generate:schema && drizzle-kit generate",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
@@ -30,7 +30,6 @@
     "better-sqlite3": "^13.0.2",
     "drizzle-orm": "^0.45.0",
     "hono": "^4.9.0",
-    "lucide-react": "^1.26.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -40,6 +39,7 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@verikit/cli": "^{{verikitVersion}}",
     "@vitejs/plugin-react": "^6.0.0",
     "drizzle-kit": "^0.31.0",
     "shadcn": "^4.0.0",

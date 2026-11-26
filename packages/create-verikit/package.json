@@ -38,6 +38,8 @@
   ],
   "devDependencies": {
     "@types/node": "^26.1.1",
+    "@verikit/cli": "workspace:*",
+    "@verikit/core": "workspace:*",
     "typescript": "^6.0.3"
   }
 }
