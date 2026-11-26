@@ -1,0 +1,10 @@
+# Only read by pnpm. These install scripts aren't needed: better-sqlite3 ships
+# prebuilt binaries, and esbuild works without its postinstall check.
+allowBuilds:
+  better-sqlite3: false
+  esbuild: false
+
+# This app pins the Verikit release it was created with, so let pnpm install
+# it even when it's newer than pnpm's minimum release age.
+minimumReleaseAgeExclude:
+  - "@verikit/*"
