@@ -26,10 +26,21 @@ npx verikit make:resource Tag name:text color:select:red,green,blue
 npm run db:generate
 ```
 
+## Add to an existing app
+
+```sh
+npm install verikit
+```
+
+One package, with your framework and ORM installed alongside it (React:
+`react react-dom @tanstack/react-query`; Drizzle: `drizzle-orm`). See
+[packages/verikit](packages/verikit/README.md) for the full list. The scoped
+`@verikit/*` packages are still published for finer-grained installs.
+
 ## Example
 
 ```ts
-import { boolean, defineResource, text } from "@verikit/core";
+import { boolean, defineResource, text } from "verikit";
 
 export const post = defineResource("post", {
   fields: {
@@ -39,13 +50,23 @@ export const post = defineResource("post", {
 });
 ```
 
-That one definition is what `@verikit/server` exposes over REST, `@verikit/drizzle` or
-`@verikit/prisma` backs with a database, `@verikit/client` consumes through a typed client, and
-`@verikit/react` renders as tables and forms. `@verikit/react-panel` turns a list of
+That one definition is what `verikit/server` exposes over REST, `verikit/drizzle` or
+`verikit/prisma` backs with a database, `verikit/client` consumes through a typed client, and
+`verikit/react` renders as tables and forms. `verikit/react-panel` turns a list of
 resources into a full admin panel with navigation and list, create, and edit pages:
 
 ```tsx
 <Panel title="Acme" resources={[post, user]} />
+```
+
+One adapter factory stores every resource, and a `revision` column gives
+resources with permissions safe concurrent updates automatically:
+
+```ts
+const api = createServer({
+  adapter: drizzleAdapter(db, { tables }),
+  resources: [{ resource: post, permissions: "open" }],
+});
 ```
 
 ## Docs
