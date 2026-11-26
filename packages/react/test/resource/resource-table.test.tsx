@@ -374,6 +374,50 @@ test("actions renders a New button plus Edit/Delete row actions", async () => {
   harness.cleanup();
 });
 
+test("onCreate and onEdit replace the create and edit dialogs", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+  let created = 0;
+  const edited: FakeRecord[] = [];
+
+  await harness.render(
+    <ResourceTable<FakeRecord>
+      resource={postResource}
+      actions
+      onCreate={() => {
+        created += 1;
+      }}
+      onEdit={(record) => {
+        edited.push(record);
+      }}
+    />,
+  );
+  await waitFor(() =>
+    Boolean(harness.container.textContent?.includes("Hello")),
+  );
+
+  act(() => {
+    findButtonByText("New").click();
+  });
+  act(() => {
+    (
+      harness.container.querySelector('[aria-label="Edit"]') as HTMLElement
+    ).click();
+  });
+  // Give a dialog a chance to (wrongly) open before asserting it didn't.
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(created, 1);
+  assert.deepEqual(
+    edited.map((record) => record.id),
+    ["1"],
+  );
+  assert.equal(document.querySelector('input[name="title"]'), null);
+  assert.equal(document.querySelector('[role="dialog"]'), null);
+
+  harness.cleanup();
+});
+
 test("the New button opens a create dialog; submitting creates a record and closes it", async () => {
   const fixture = createFakeClient([]);
   const harness = setupHarness(fixture.client);

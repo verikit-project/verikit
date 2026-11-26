@@ -74,6 +74,17 @@ export interface ResourceTableProps<
    */
   actions?: boolean;
   /**
+   * Replaces the built-in create dialog: the New button calls this instead
+   * (for example, to navigate to a create page). Only used with `actions`.
+   */
+  onCreate?: () => void;
+  /**
+   * Replaces the built-in edit dialog: each row's Edit button calls this with
+   * its record instead (for example, to navigate to an edit page). Only used
+   * with `actions`.
+   */
+  onEdit?: (record: TRecord) => void;
+  /**
    * Renders per-row actions (e.g. custom edit/delete buttons). Composed
    * alongside the built-in actions when `actions` is also set, not in place
    * of them.
@@ -143,6 +154,8 @@ export function ResourceTable<
   resource,
   pageSize,
   actions = false,
+  onCreate,
+  onEdit,
   renderActions,
   renderBulkActions,
   emptyState,
@@ -250,7 +263,7 @@ export function ResourceTable<
             variant="ghost"
             size="icon-sm"
             aria-label="Edit"
-            onClick={() => setEditRecord(record)}
+            onClick={() => (onEdit ? onEdit(record) : setEditRecord(record))}
           >
             <PencilIcon />
           </Button>
@@ -339,7 +352,11 @@ export function ResourceTable<
           ) : null}
         </div>
         {actions && !createDenied ? (
-          <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => (onCreate ? onCreate() : setCreateOpen(true))}
+          >
             <PlusIcon />
             New
           </Button>
@@ -559,7 +576,7 @@ export function ResourceTable<
         </div>
       </div>
 
-      {actions ? (
+      {actions && !onCreate ? (
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogContent>
             <DialogHeader>
@@ -575,7 +592,7 @@ export function ResourceTable<
         </Dialog>
       ) : null}
 
-      {actions ? (
+      {actions && !onEdit ? (
         <Dialog
           open={editRecord !== null}
           onOpenChange={(open) => {
