@@ -3,6 +3,7 @@ export type PanelRoute =
   | { kind: "home" }
   | { kind: "list"; resource: string }
   | { kind: "create"; resource: string }
+  | { kind: "view"; resource: string; id: string }
   | { kind: "edit"; resource: string; id: string }
   | { kind: "notFound" };
 
@@ -26,8 +27,10 @@ function decodeSegments(path: string): string[] | undefined {
 
 /**
  * Matches `pathname` against the panel's routes:
- * `{base}`, `{base}/{resource}`, `{base}/{resource}/create`, and
- * `{base}/{resource}/{id}/edit`.
+ * `{base}`, `{base}/{resource}`, `{base}/{resource}/create`,
+ * `{base}/{resource}/{id}`, and `{base}/{resource}/{id}/edit`. A record whose
+ * id is literally `create` has no view page (that path is the create page),
+ * but its edit page still works.
  */
 export function matchPanelRoute(
   pathname: string,
@@ -60,8 +63,10 @@ export function matchPanelRoute(
     return { kind: "list", resource };
   }
 
-  if (segments.length === 2 && second === "create") {
-    return { kind: "create", resource };
+  if (segments.length === 2) {
+    return second === "create"
+      ? { kind: "create", resource }
+      : { kind: "view", resource, id: second! };
   }
 
   if (segments.length === 3 && third === "edit") {

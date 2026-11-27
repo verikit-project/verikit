@@ -14,6 +14,21 @@ export interface ResourceQueryKeys {
     relationshipName: string,
     params?: ListParams,
   ) => readonly [string, string, string, "relationship", string, ListParams];
+  /**
+   * A relationship picker's pages, loaded one after another. Kept apart from
+   * `relationship` because its cached data holds every loaded page.
+   */
+  relationshipPages: (
+    relationshipName: string,
+    params?: ListParams,
+  ) => readonly [
+    string,
+    string,
+    string,
+    "relationshipPages",
+    string,
+    ListParams,
+  ];
 }
 
 const clientNamespaces = new WeakMap<VerikitClient, string>();
@@ -50,6 +65,15 @@ export function resourceQueryKeys(
         namespace,
         name,
         "relationship",
+        relationshipName,
+        params,
+      ] as const,
+    relationshipPages: (relationshipName: string, params: ListParams = {}) =>
+      [
+        "verikit",
+        namespace,
+        name,
+        "relationshipPages",
         relationshipName,
         params,
       ] as const,

@@ -45,6 +45,10 @@
     "./query/*": {
       "types": "./dist/query/*.d.ts",
       "default": "./dist/query/*.js"
+    },
+    "./routing/*": {
+      "types": "./dist/routing/*.d.ts",
+      "default": "./dist/routing/*.js"
     }
   },
   "scripts": {

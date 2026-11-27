@@ -4,7 +4,7 @@ import {
   matchPanelRoute,
   normalizeBasePath,
   panelHref,
-} from "../src/routing/routes.js";
+} from "../../src/routing/routes.js";
 
 const paths = new Set(["posts", "blog-posts"]);
 
@@ -34,9 +34,19 @@ describe("matchPanelRoute", () => {
       kind: "create",
       resource: "posts",
     });
+    assert.deepEqual(matchPanelRoute("/admin/posts/a%2Fb", "/admin", paths), {
+      kind: "view",
+      resource: "posts",
+      id: "a/b",
+    });
     assert.deepEqual(
       matchPanelRoute("/admin/posts/a%2Fb/edit", "/admin", paths),
       { kind: "edit", resource: "posts", id: "a/b" },
+    );
+    // "create" is the create page, but a record with that id can still be edited.
+    assert.deepEqual(
+      matchPanelRoute("/admin/posts/create/edit", "/admin", paths),
+      { kind: "edit", resource: "posts", id: "create" },
     );
   });
 
@@ -53,7 +63,6 @@ describe("matchPanelRoute", () => {
       "/other",
       "/administrator",
       "/admin/unknown",
-      "/admin/posts/1",
       "/admin/posts/1/view",
       "/admin/posts/1/edit/more",
       "/admin/posts/%E0%A4%A",

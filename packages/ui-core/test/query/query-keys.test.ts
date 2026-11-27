@@ -39,6 +39,22 @@ test("resourceQueryKeys builds the documented all/list/find shape", () => {
     "author",
     { page: 2 },
   ]);
+  assert.deepEqual(keys.relationshipPages("author"), [
+    "verikit",
+    "test",
+    "posts",
+    "relationshipPages",
+    "author",
+    {},
+  ]);
+  assert.deepEqual(keys.relationshipPages("author", { search: "a" }), [
+    "verikit",
+    "test",
+    "posts",
+    "relationshipPages",
+    "author",
+    { search: "a" },
+  ]);
 });
 
 test("client identities isolate all query kinds and remain stable", () => {
