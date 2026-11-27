@@ -304,9 +304,6 @@ importers:
       drizzle-kit:
         specifier: ^0.31.0
         version: 0.31.11
-      shadcn:
-        specifier: ^4.0.0
-        version: 4.23.0
       tailwindcss:
         specifier: ^4.1.0
         version: 4.3.3
@@ -589,9 +586,6 @@ importers:
 
   packages/theme:
     dependencies:
-      shadcn:
-        specifier: ^4.21.4
-        version: 4.23.0
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3

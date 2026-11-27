@@ -40,7 +40,7 @@ ones you use:
 | Vue                 | `@verikit/vue vue @tanstack/vue-query`                         |
 | Drizzle             | `drizzle-orm` and a driver, e.g. `better-sqlite3`              |
 | Prisma              | `@prisma/client`                                               |
-| The Tailwind theme  | `tailwindcss` (and `shadcn`, which the theme's CSS imports)    |
+| The Tailwind theme  | `tailwindcss`                                                  |
 
 The React UI ships with this package; Vue is separate so React apps don't
 download it. Vue apps still download the React UI packages, so a Vue app that

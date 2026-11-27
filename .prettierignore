@@ -4,3 +4,5 @@ node_modules
 pnpm-lock.yaml
 *.tsbuildinfo
 *.md
+# Vendored verbatim from shadcn; keep it identical to upstream for easy updates.
+packages/theme/shadcn.css
