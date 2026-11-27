@@ -9,3 +9,9 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - verikit
   - "@verikit/*"
+
+# drizzle-kit's legacy loader pins esbuild 0.18 (GHSA-67mh-4wv8-2f99); use the
+# patched esbuild drizzle-kit itself depends on. package.json has the same
+# override for npm.
+overrides:
+  "@esbuild-kit/core-utils>esbuild": "^0.25.4"
