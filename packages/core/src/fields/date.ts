@@ -1,4 +1,4 @@
-import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
+import { FieldBuilder } from "./base.js";
 import {
   DateRangeConstraints,
   withMaxDate,
@@ -25,6 +25,9 @@ export interface DateTimeFieldSchema extends DateRangeConstraints {
 export class DateFieldBuilder<
   TValue = Date | string | null | undefined,
 > extends FieldBuilder<TValue, DateFieldSchema> {
+  /** Type-only; see `FieldBuilder.$kind`. @internal */
+  declare readonly $kind: DateFieldBuilder<this["$arg"]>;
+
   constructor(
     state: Omit<DateFieldSchema, "type" | "name"> = {
       fieldType: "date",
@@ -34,17 +37,13 @@ export class DateFieldBuilder<
   }
 
   /** Sets the earliest allowed date. */
-  min(
-    value: Date | string,
-  ): FieldBuilderWithValue<this, TValue, DateFieldSchema> {
-    return this.withState(withMinDate(this.state, value));
+  min(value: Date | string): this {
+    return this.withPatch(withMinDate(this.state, value));
   }
 
   /** Sets the latest allowed date. */
-  max(
-    value: Date | string,
-  ): FieldBuilderWithValue<this, TValue, DateFieldSchema> {
-    return this.withState(withMaxDate(this.state, value));
+  max(value: Date | string): this {
+    return this.withPatch(withMaxDate(this.state, value));
   }
 }
 
@@ -54,6 +53,9 @@ export class DateFieldBuilder<
 export class DateTimeFieldBuilder<
   TValue = Date | string | null | undefined,
 > extends FieldBuilder<TValue, DateTimeFieldSchema> {
+  /** Type-only; see `FieldBuilder.$kind`. @internal */
+  declare readonly $kind: DateTimeFieldBuilder<this["$arg"]>;
+
   constructor(
     state: Omit<DateTimeFieldSchema, "type" | "name"> = {
       fieldType: "datetime",
@@ -63,17 +65,13 @@ export class DateTimeFieldBuilder<
   }
 
   /** Sets the earliest allowed date-time. */
-  min(
-    value: Date | string,
-  ): FieldBuilderWithValue<this, TValue, DateTimeFieldSchema> {
-    return this.withState(withMinDate(this.state, value));
+  min(value: Date | string): this {
+    return this.withPatch(withMinDate(this.state, value));
   }
 
   /** Sets the latest allowed date-time. */
-  max(
-    value: Date | string,
-  ): FieldBuilderWithValue<this, TValue, DateTimeFieldSchema> {
-    return this.withState(withMaxDate(this.state, value));
+  max(value: Date | string): this {
+    return this.withPatch(withMaxDate(this.state, value));
   }
 }
 

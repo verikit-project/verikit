@@ -185,13 +185,15 @@ export type FieldBuilderState<TSchema extends FieldSchema = FieldSchema> = Omit<
 >;
 
 /**
- * Preserves the current concrete builder shape while replacing its inferred value type. This keeps subclass methods available after base modifiers like `.label()`, `.required()`, or `.nullable()`.
+ * The same concrete builder (e.g. `TextFieldBuilder`) with its inferred value type replaced, so subclass methods stay available after modifiers like `.required()` or `.nullable()`, in any order. Each builder declares how to rebuild itself through its type-only `$kind` property; `TSchema` is kept for compatibility.
  */
 export type FieldBuilderWithValue<
   TBuilder,
   TValue,
-  TSchema extends FieldSchema,
-> = Omit<TBuilder, "$value"> & FieldBuilder<TValue, TSchema>;
+  TSchema extends FieldSchema = FieldSchema,
+> = TBuilder extends { readonly $kind: FieldBuilder<unknown, TSchema> }
+  ? (TBuilder & { readonly $arg: TValue })["$kind"]
+  : FieldBuilder<TValue, TSchema>;
 
 type BuilderConstructor<TBuilder, TSchema extends FieldSchema> = new (
   state: FieldBuilderState<TSchema>,
@@ -261,6 +263,16 @@ export class FieldBuilder<
   readonly $value!: TValue;
 
   /**
+   * Type-only: the value type `$kind` is rebuilt with. Never set. @internal
+   */
+  declare readonly $arg: unknown;
+
+  /**
+   * Type-only: this builder with its value type replaced by `$arg`, read by `FieldBuilderWithValue`. Subclasses redeclare it as their own class so their methods survive a value change. Never set. @internal
+   */
+  declare readonly $kind: FieldBuilder<this["$arg"], TSchema>;
+
+  /**
    * Internal mutable state of the builder. Exposed as protected so subclasses can access and extend state.
    */
   protected readonly state: FieldBuilderState<TSchema>;
@@ -294,6 +306,15 @@ export class FieldBuilder<
   }
 
   /**
+   * Like `withState`, for modifiers that don't change the value type: returns
+   * exactly `this` type, so a value narrowed earlier in the chain (e.g. by
+   * `.required()`) stays narrowed.
+   */
+  protected withPatch(patch: Partial<TSchema>): this {
+    return this.withState(patch) as unknown as this;
+  }
+
+  /**
    * Returns builder state without finalizing via `toSchema(name)`; used internally to compose builders (e.g. `from(column).as(field)`). @internal
    */
   getState(): FieldBuilderState<TSchema> {
@@ -304,49 +325,49 @@ export class FieldBuilder<
    * Returns a sourced copy of this builder while preserving the concrete builder type; used by `from(column).as(field)`. @internal
    */
   withSource(source: FieldSource): this {
-    return this.withState({ source } as Partial<TSchema>) as this;
+    return this.withPatch({ source } as Partial<TSchema>);
   }
 
   /** Sets the field's display label. */
-  label(label: string): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ label } as Partial<TSchema>);
+  label(label: string): this {
+    return this.withPatch({ label } as Partial<TSchema>);
   }
 
   /** Sets help text describing the field's purpose. */
-  description(
-    description: string,
-  ): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ description } as Partial<TSchema>);
+  description(description: string): this {
+    return this.withPatch({ description } as Partial<TSchema>);
   }
 
   /** Sets placeholder text for empty form inputs. */
-  placeholder(
-    placeholder: string,
-  ): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ placeholder } as Partial<TSchema>);
+  placeholder(placeholder: string): this {
+    return this.withPatch({ placeholder } as Partial<TSchema>);
   }
 
   /**
    * Marks the field required, narrowing TValue and forcing nullable: false.
    */
-  required(): FieldBuilderWithValue<this, NonNullable<TValue>, TSchema> {
-    return this.withState<NonNullable<TValue>>({
+  required(): FieldBuilderWithValue<
+    this,
+    NonNullable<this["$value"]>,
+    TSchema
+  > {
+    return this.withState<NonNullable<this["$value"]>>({
       nullable: false,
       required: true,
     } as Partial<TSchema>);
   }
 
   /** Marks the field optional (TValue | undefined); does not allow null. */
-  optional(): FieldBuilderWithValue<this, TValue | undefined, TSchema> {
-    return this.withState<TValue | undefined>({
+  optional(): FieldBuilderWithValue<this, this["$value"] | undefined, TSchema> {
+    return this.withState<this["$value"] | undefined>({
       required: false,
       nullable: false,
     } as Partial<TSchema>);
   }
 
   /** Allows null (TValue | null); also sets required: false. */
-  nullable(): FieldBuilderWithValue<this, TValue | null, TSchema> {
-    return this.withState<TValue | null>({
+  nullable(): FieldBuilderWithValue<this, this["$value"] | null, TSchema> {
+    return this.withState<this["$value"] | null>({
       nullable: true,
       required: false,
     } as Partial<TSchema>);
@@ -356,51 +377,48 @@ export class FieldBuilder<
    * Sets a form-level fallback value (not a database DEFAULT) and excludes undefined from TValue.
    */
   default(
-    value: Exclude<TValue, undefined>,
-  ): FieldBuilderWithValue<this, Exclude<TValue, undefined>, TSchema> {
-    return this.withState<Exclude<TValue, undefined>>({
+    value: Exclude<this["$value"], undefined>,
+  ): FieldBuilderWithValue<this, Exclude<this["$value"], undefined>, TSchema> {
+    return this.withState<Exclude<this["$value"], undefined>>({
       defaultValue: value,
     } as Partial<TSchema>);
   }
 
   /** Marks the field searchable in list/table queries. */
-  searchable(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ searchable: true } as Partial<TSchema>);
+  searchable(): this {
+    return this.withPatch({ searchable: true } as Partial<TSchema>);
   }
 
   /** Marks the field sortable in table columns. */
-  sortable(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ sortable: true } as Partial<TSchema>);
+  sortable(): this {
+    return this.withPatch({ sortable: true } as Partial<TSchema>);
   }
 
   /** Marks the field safe for server-side structured list filtering. */
-  filterable(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ filterable: true } as Partial<TSchema>);
+  filterable(): this {
+    return this.withPatch({ filterable: true } as Partial<TSchema>);
   }
 
   /** Hides the field from forms and tables. */
-  hidden(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ hidden: true } as Partial<TSchema>);
+  hidden(): this {
+    return this.withPatch({ hidden: true } as Partial<TSchema>);
   }
 
   /** Hides the field from forms only; it still appears as a table column. */
-  formHidden(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ formHidden: true } as Partial<TSchema>);
+  formHidden(): this {
+    return this.withPatch({ formHidden: true } as Partial<TSchema>);
   }
 
   /** Hides the field from table columns only; it still appears in forms. */
-  tableHidden(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ tableHidden: true } as Partial<TSchema>);
+  tableHidden(): this {
+    return this.withPatch({ tableHidden: true } as Partial<TSchema>);
   }
 
   /**
    * Conditionally shows this field based on a sibling field's value.
    * See `FieldSchema.condition`.
    */
-  visibleWhen(
-    field: string,
-    value?: Primitive | readonly Primitive[],
-  ): FieldBuilderWithValue<this, TValue, TSchema> {
+  visibleWhen(field: string, value?: Primitive | readonly Primitive[]): this {
     const condition: FieldCondition =
       value === undefined
         ? { field }
@@ -408,15 +426,15 @@ export class FieldBuilder<
           ? { field, in: value }
           : { field, equals: value as Primitive };
 
-    return this.withState({ condition } as Partial<TSchema>);
+    return this.withPatch({ condition } as Partial<TSchema>);
   }
 
   /**
    * Makes the field display-only in forms, and unconditionally excludes its
    * value from create/update submissions (regardless of write permissions).
    */
-  readOnly(): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({ readOnly: true } as Partial<TSchema>);
+  readOnly(): this {
+    return this.withPatch({ readOnly: true } as Partial<TSchema>);
   }
 
   /**
@@ -424,8 +442,8 @@ export class FieldBuilder<
    * optional custom message for adapters to use when that constraint is
    * violated. See `FieldSchema.unique`.
    */
-  unique(message?: string): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({
+  unique(message?: string): this {
+    return this.withPatch({
       unique: true,
       ...(message !== undefined && { uniqueMessage: message }),
     } as Partial<TSchema>);
@@ -441,10 +459,8 @@ export class FieldBuilder<
   }
 
   /** Merges adapter-specific metadata into any existing `meta`. */
-  meta(
-    meta: Record<string, unknown>,
-  ): FieldBuilderWithValue<this, TValue, TSchema> {
-    return this.withState({
+  meta(meta: Record<string, unknown>): this {
+    return this.withPatch({
       meta: {
         ...this.state.meta,
         ...meta,

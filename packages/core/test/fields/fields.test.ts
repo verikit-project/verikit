@@ -708,3 +708,54 @@ test("shared field-constraint helpers are reachable from the public fields barre
     assert.equal(typeof barrel[name], "function", `${name} should be exported`);
   }
 });
+
+/** True only when `A` and `B` are the same type. */
+type Same<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? true
+    : false;
+
+/** Asserts at compile time that a builder infers exactly `TExpected`. */
+function expectValue<TExpected>() {
+  return <TField>(_field: TField, same: Same<InferField<TField>, TExpected>) =>
+    assert.equal(same, true);
+}
+
+test("modifiers keep a narrowed value type whatever order they're chained in", () => {
+  expectValue<string>()(text().required().searchable().sortable(), true);
+  expectValue<string>()(text().searchable().sortable().required(), true);
+  expectValue<string>()(text().required().label("Title").min(1).max(3), true);
+  expectValue<number>()(
+    number().required().min(1).sortable().filterable(),
+    true,
+  );
+  expectValue<string>()(email().required().max(9).searchable(), true);
+  expectValue<string>()(textarea().required().searchable(), true);
+  expectValue<Date | string>()(date().required().sortable(), true);
+  expectValue<string[]>()(image().required().multiple().maxSize(1), true);
+  expectValue<string[]>()(
+    file().required().multiple().accept(["text/plain"]),
+    true,
+  );
+  expectValue<"a" | "b">()(
+    select().options(["a", "b"]).required().filterable(),
+    true,
+  );
+  // `.default()` only rules out undefined.
+  expectValue<string | null>()(text().default("x").sortable().label("X"), true);
+  // Widening after narrowing follows the latest modifier.
+  expectValue<string | null>()(text().required().nullable().label("x"), true);
+  expectValue<string | undefined>()(
+    text().required().optional().sortable(),
+    true,
+  );
+
+  // Subclass methods are still there after a value change.
+  assert.ok(text().required().searchable() instanceof TextFieldBuilder);
+  assert.equal(
+    text().required().label("Title").min(1).toSchema("title").minLength,
+    1,
+  );
+  // @ts-expect-error a required field's default can't be null.
+  assert.throws(() => text().required().default(null));
+});

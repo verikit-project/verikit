@@ -1,4 +1,4 @@
-import { FieldBuilder, FieldBuilderWithValue, FieldSchema } from "./base.js";
+import { FieldBuilder, FieldSchema } from "./base.js";
 
 /**
  * Schema describing a numeric field. `min`, `max`, and `step` provide hints for UI adapters.
@@ -38,6 +38,9 @@ function assertValidNumberRange(
 export class NumberFieldBuilder<
   TValue = number | null | undefined,
 > extends FieldBuilder<TValue, NumberFieldSchema> {
+  /** Type-only; see `FieldBuilder.$kind`. @internal */
+  declare readonly $kind: NumberFieldBuilder<this["$arg"]>;
+
   constructor(
     state: Omit<NumberFieldSchema, "type" | "name"> = {
       fieldType: "number",
@@ -47,28 +50,28 @@ export class NumberFieldBuilder<
   }
 
   /** Sets the smallest allowed value. */
-  min(value: number): FieldBuilderWithValue<this, TValue, NumberFieldSchema> {
+  min(value: number): this {
     assertFiniteNumber("min", value);
     assertValidNumberRange(this.state, { min: value });
 
-    return this.withState({ min: value });
+    return this.withPatch({ min: value });
   }
 
   /** Sets the largest allowed value. */
-  max(value: number): FieldBuilderWithValue<this, TValue, NumberFieldSchema> {
+  max(value: number): this {
     assertFiniteNumber("max", value);
     assertValidNumberRange(this.state, { max: value });
 
-    return this.withState({ max: value });
+    return this.withPatch({ max: value });
   }
 
   /** Sets the increment used by numeric input controls. */
-  step(value: number): FieldBuilderWithValue<this, TValue, NumberFieldSchema> {
+  step(value: number): this {
     if (!Number.isFinite(value) || value <= 0) {
       throw new Error("step must be a positive finite number.");
     }
 
-    return this.withState({ step: value });
+    return this.withPatch({ step: value });
   }
 }
 

@@ -1,4 +1,4 @@
-import { FieldBuilder, FieldBuilderWithValue } from "./base.js";
+import { FieldBuilder } from "./base.js";
 import {
   StringLengthConstraints,
   withMaxLength,
@@ -16,6 +16,9 @@ export interface TextFieldSchema extends StringLengthConstraints {
 export class TextFieldBuilder<
   TValue = string | null | undefined,
 > extends FieldBuilder<TValue, TextFieldSchema> {
+  /** Type-only; see `FieldBuilder.$kind`. @internal */
+  declare readonly $kind: TextFieldBuilder<this["$arg"]>;
+
   constructor(
     state: Omit<TextFieldSchema, "type" | "name"> = {
       fieldType: "text",
@@ -25,13 +28,13 @@ export class TextFieldBuilder<
   }
 
   /** Sets the minimum number of characters allowed. */
-  min(length: number): FieldBuilderWithValue<this, TValue, TextFieldSchema> {
-    return this.withState(withMinLength(this.state, length));
+  min(length: number): this {
+    return this.withPatch(withMinLength(this.state, length));
   }
 
   /** Sets the maximum number of characters allowed. */
-  max(length: number): FieldBuilderWithValue<this, TValue, TextFieldSchema> {
-    return this.withState(withMaxLength(this.state, length));
+  max(length: number): this {
+    return this.withPatch(withMaxLength(this.state, length));
   }
 }
 

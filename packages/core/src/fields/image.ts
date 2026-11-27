@@ -21,6 +21,9 @@ export interface ImageFieldSchema extends FileConstraints {
 export class ImageFieldBuilder<
   TValue = string | null | undefined,
 > extends FieldBuilder<TValue, ImageFieldSchema> {
+  /** Type-only; see `FieldBuilder.$kind`. @internal */
+  declare readonly $kind: ImageFieldBuilder<this["$arg"]>;
+
   constructor(
     state: Omit<ImageFieldSchema, "type" | "name"> = {
       fieldType: "image",
@@ -31,36 +34,40 @@ export class ImageFieldBuilder<
   }
 
   /** Restricts accepted image MIME types or extensions. */
-  accept(
-    types: readonly string[],
-  ): FieldBuilderWithValue<this, TValue, ImageFieldSchema> {
-    return this.withState(withAccept(this.state, types));
+  accept(types: readonly string[]): this {
+    return this.withPatch(withAccept(this.state, types));
   }
 
   /** Sets the maximum accepted upload size in bytes. */
-  maxSize(
-    bytes: number,
-  ): FieldBuilderWithValue<this, TValue, ImageFieldSchema> {
-    return this.withState(withMaxSize(this.state, bytes));
+  maxSize(bytes: number): this {
+    return this.withPatch(withMaxSize(this.state, bytes));
   }
 
   /** Restricts the field back to a single uploaded image. */
   multiple(
     enabled: false,
-  ): FieldBuilderWithValue<this, ToSingleFileValue<TValue>, ImageFieldSchema>;
+  ): FieldBuilderWithValue<
+    this,
+    ToSingleFileValue<this["$value"]>,
+    ImageFieldSchema
+  >;
   /** Allows one or many uploaded images, widening the value to an array. */
   multiple(
     enabled?: true,
-  ): FieldBuilderWithValue<this, ToMultipleFileValue<TValue>, ImageFieldSchema>;
+  ): FieldBuilderWithValue<
+    this,
+    ToMultipleFileValue<this["$value"]>,
+    ImageFieldSchema
+  >;
   multiple(
     enabled = true,
   ): FieldBuilderWithValue<
     this,
-    ToMultipleFileValue<TValue> | ToSingleFileValue<TValue>,
+    ToMultipleFileValue<this["$value"]> | ToSingleFileValue<this["$value"]>,
     ImageFieldSchema
   > {
     return this.withState<
-      ToMultipleFileValue<TValue> | ToSingleFileValue<TValue>
+      ToMultipleFileValue<this["$value"]> | ToSingleFileValue<this["$value"]>
     >(withMultiple(this.state, enabled));
   }
 }
