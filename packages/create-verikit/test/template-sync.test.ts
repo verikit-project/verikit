@@ -20,7 +20,9 @@ it("ships generated files that match `verikit generate:schema`", () => {
   // The template depends on the verikit meta-package, whose bin runs the CLI.
   const cli = path.join(
     path.dirname(createRequire(import.meta.url).resolve("verikit")),
-    "cli.js",
+    "..",
+    "bin",
+    "verikit.js",
   );
   const result = spawnSync(
     process.execPath,

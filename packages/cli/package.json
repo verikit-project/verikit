@@ -4,7 +4,7 @@
   "description": "Generators for Verikit apps: make:resource, make:action, and generate:schema.",
   "type": "module",
   "bin": {
-    "verikit": "./dist/index.js"
+    "verikit": "./bin/verikit.js"
   },
   "keywords": [
     "typescript",
@@ -33,6 +33,7 @@
     "test:coverage": "rm -rf .test-dist coverage && tsc -p tsconfig.test.json && node --test --experimental-test-coverage --test-coverage-include='.test-dist/src/**/*.js' --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 $(find ./.test-dist/test -name '*.test.js' -type f | sort)"
   },
   "files": [
+    "bin",
     "dist"
   ],
   "devDependencies": {

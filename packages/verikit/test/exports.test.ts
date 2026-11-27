@@ -73,7 +73,7 @@ describe("bin", () => {
   it("runs the verikit CLI", () => {
     const result = spawnSync(
       process.execPath,
-      [path.join(ROOT, ".test-dist", "src", "cli.js"), "--help"],
+      [path.join(ROOT, "bin", "verikit.js"), "--help"],
       { encoding: "utf8" },
     );
 
