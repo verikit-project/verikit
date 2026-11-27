@@ -97,6 +97,17 @@ function cloneState<
 }
 
 /**
+ * A permissions builder for any actor and record type, accepted where one is
+ * stored without knowing either: `defineResource({ permissions })` and
+ * `createServer()`'s resource config. This lets a typed
+ * `definePermissions<Actor, PostRecord>()` be passed there; its rules still
+ * receive the real actor and record at runtime. (A record type in rule
+ * parameters can't be widened to `unknown`, so the types are erased instead.)
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberate type erasure, see above
+export type AnyPermissionsBuilder = PermissionsBuilder<any, any>;
+
+/**
  * Immutable fluent builder describing resource-level operations,
  *  per-field read/write access, and named runtime actions. This builder only assembles rules;
  * it does not evaluate them. Evaluating a rule against a `PermissionContext` (and wiring that into `validateResource` or `runAction`) is left to a runtime helper.

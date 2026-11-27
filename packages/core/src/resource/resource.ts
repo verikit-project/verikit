@@ -3,7 +3,10 @@ import {
   introspectPermissions,
   PermissionsIntrospection,
 } from "../permissions/introspect-permissions.js";
-import type { PermissionsBuilder } from "../permissions/permissions-builder.js";
+import type {
+  AnyPermissionsBuilder,
+  PermissionsBuilder,
+} from "../permissions/permissions-builder.js";
 import type { BelongsToManyRelationshipBuilder } from "../relationships/belongs-to-many.js";
 import type { BelongsToManyRelationshipSchema } from "../relationships/belongs-to-many.js";
 import type { BelongsToRelationshipBuilder } from "../relationships/belongs-to.js";
@@ -225,10 +228,8 @@ export interface ResourceConfig<
    * Only rule *presence* (static allow/deny/dynamic) serializes; implementations never do.
    */
   permissions?:
-    | PermissionsBuilder<unknown, unknown>
-    | ((
-        field: FieldReferenceFactory<TFields>,
-      ) => PermissionsBuilder<unknown, unknown>);
+    | AnyPermissionsBuilder
+    | ((field: FieldReferenceFactory<TFields>) => AnyPermissionsBuilder);
 }
 
 /**
@@ -315,10 +316,8 @@ function resolveRelationships<
 
 function resolvePermissions<TFields extends FieldMap>(
   permissions:
-    | PermissionsBuilder<unknown, unknown>
-    | ((
-        field: FieldReferenceFactory<TFields>,
-      ) => PermissionsBuilder<unknown, unknown>)
+    | AnyPermissionsBuilder
+    | ((field: FieldReferenceFactory<TFields>) => AnyPermissionsBuilder)
     | undefined,
 ): PermissionsBuilder<unknown, unknown> | undefined {
   return typeof permissions === "function"

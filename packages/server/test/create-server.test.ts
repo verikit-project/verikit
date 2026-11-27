@@ -1980,3 +1980,41 @@ test("a protected update without conditional writes explains how to enable them"
   );
   assert.match(body.error.message, /column named "revision"/);
 });
+
+test("createServer accepts permissions typed with a record, and still checks the actor type", async () => {
+  interface Actor {
+    role: "admin" | "viewer";
+  }
+  interface PostRecord {
+    id: string;
+    title: string;
+  }
+  const post = defineResource("post", { fields: { title: text().required() } });
+  const typed = definePermissions<Actor, PostRecord>()
+    .can("list", ({ actor }) => actor.role === "admin")
+    .field("title", { read: true });
+
+  const handler = createServer<Actor>({
+    context: () => ({ role: "admin" }),
+    resources: [
+      {
+        resource: post,
+        adapter: createGenericInMemoryAdapter([{ id: "1", title: "Hello" }]),
+        permissions: typed,
+      },
+    ],
+  });
+  const response = await handler(new Request("https://x/post"));
+  assert.deepEqual((await response.json()).data, [{ id: "1", title: "Hello" }]);
+
+  createServer<{ userId: number }>({
+    resources: [
+      {
+        resource: post,
+        adapter: createGenericInMemoryAdapter([]),
+        // @ts-expect-error the rules' actor type must match the server's
+        permissions: typed,
+      },
+    ],
+  });
+});

@@ -62,9 +62,12 @@ export interface ServerResourceConfig<TActor = unknown> {
   actions?: ServerActionHandler<TActor>[];
   /**
    * Required access control for resource operations, fields, and actions.
-   * Use `"open"` to explicitly opt out of permission checks.
+   * Use `"open"` to explicitly opt out of permission checks. A typed
+   * `definePermissions<Actor, Record>()` is accepted: the actor is checked
+   * against the server's, and the record type is the rules' own business.
    */
-  permissions: PermissionsBuilder<TActor, unknown> | "open";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- record type erased, see `AnyPermissionsBuilder`
+  permissions: PermissionsBuilder<TActor, any> | "open";
   /**
    * Lets update and delete run on a resource with permissions even though its adapter can't do conditional writes (no `findForMutation`, e.g. Prisma without `versionField` or Drizzle without `versionColumn`), instead of returning 501. Adapters that can still write conditionally.
    *

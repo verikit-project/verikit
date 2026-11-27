@@ -621,3 +621,28 @@ test("repeater and action names must be non-empty", () => {
     /Action names must be non-empty strings\./,
   );
 });
+
+test("defineResource accepts permissions typed with an actor and record", () => {
+  interface Actor {
+    role: "admin" | "viewer";
+  }
+  interface PostRecord {
+    id: string;
+    title: string;
+  }
+  const typed = definePermissions<Actor, PostRecord>()
+    .can("read", ({ actor, record }) => actor.role === "admin" || !!record)
+    .field("title", { read: true });
+
+  const direct = defineResource("post", {
+    fields: { title: text().required() },
+    permissions: typed,
+  });
+  const fromFactory = defineResource("draft", {
+    fields: { title: text() },
+    permissions: (field) => typed.field(field("title"), { write: true }),
+  });
+
+  assert.equal(direct.permissions, typed);
+  assert.ok(fromFactory.toSchema().permissions);
+});
