@@ -4,6 +4,8 @@ import { ConflictError, boolean, defineResource, text } from "@verikit/core";
 import { UniqueConstraintError } from "@verikit/server";
 import {
   createPrismaAdapter,
+  prismaAdapter,
+  type PrismaClientLike,
   type PrismaModelDelegate,
 } from "../src/create-prisma-adapter.js";
 import {
@@ -1148,4 +1150,118 @@ test("Prisma rejects an invalid stored revision", async () => {
   } finally {
     await db.$disconnect();
   }
+});
+
+test("prismaAdapter builds adapters from the client's delegates, by resource name or an explicit model", async () => {
+  const db = await createTestDb();
+  const factory = prismaAdapter(db, {
+    resources: {
+      legacyPost: { fields: { title: "headline" }, id: { field: "postId" } },
+      article: { model: "post" },
+    },
+  });
+
+  const post = factory(createPostResource());
+  const created = await post.create({ title: "Hello" });
+  assert.equal(created.title, "Hello");
+  assert.deepEqual(await post.list({ page: 1, pageSize: 10 }), {
+    records: [created],
+    total: 1,
+  });
+
+  // A capitalized resource name maps to Prisma's lowercased delegate key.
+  const capitalized = factory(
+    defineResource("Post", { fields: { title: text().required() } }),
+  );
+  assert.equal((await capitalized.find(created.id))?.title, "Hello");
+
+  const article = factory(
+    defineResource("article", { fields: { title: text().required() } }),
+  );
+  assert.equal((await article.find(created.id))?.title, "Hello");
+
+  const legacy = factory(
+    defineResource("legacyPost", { fields: { title: text().required() } }),
+  );
+  const legacyCreated = await legacy.create({ title: "Old" });
+  assert.equal(
+    (await legacy.list({ page: 1, pageSize: 10 })).records[0]?.id,
+    legacyCreated.id,
+  );
+
+  await db.$disconnect();
+});
+
+test("prismaAdapter rejects a resource with no matching delegate on the client", async () => {
+  const db = await createTestDb();
+  const factory = prismaAdapter(db, {
+    resources: { toString: { model: "toString" } },
+  });
+
+  assert.throws(
+    () => factory(defineResource("comment", { fields: {} })),
+    /no model "comment" on the Prisma client for resource "comment"/,
+  );
+  // A key that exists on the client but isn't a model delegate.
+  assert.throws(
+    () => factory(defineResource("toString", { fields: {} })),
+    /no model "toString"/,
+  );
+  assert.throws(
+    () => prismaAdapter(db)(defineResource("$transaction", { fields: {} })),
+    /no model "\$transaction"/,
+  );
+  assert.throws(
+    () =>
+      prismaAdapter({ post: null } as unknown as PrismaClientLike)(
+        createPostResource(),
+      ),
+    /no model "post"/,
+  );
+
+  await db.$disconnect();
+});
+
+test("prismaAdapter passes transactionOptions to $transaction and lets resource options override shared ones", async () => {
+  const model: PrismaModelDelegate = {
+    findMany: async () => [
+      { id: "1", title: "Hi", body: null, published: false },
+    ],
+    count: async () => 1,
+    findUnique: async () => null,
+    create: async () => ({}),
+    update: async () => ({}),
+    delete: async () => ({}),
+  };
+  const transactions: unknown[] = [];
+  const client = {
+    post: model,
+    $transaction: async <T>(
+      fn: (tx: Record<string, PrismaModelDelegate>) => Promise<T>,
+      options?: unknown,
+    ) => {
+      transactions.push(options);
+      return fn({ post: model });
+    },
+  };
+
+  const page = await prismaAdapter(client, {
+    transactionOptions: { isolationLevel: "RepeatableRead" },
+  })(createPostResource()).list({ page: 1, pageSize: 10 });
+  assert.equal(page.total, 1);
+  assert.deepEqual(transactions, [{ isolationLevel: "RepeatableRead" }]);
+
+  // A shared versionField that collides with a field fails for that
+  // resource, unless the resource sets its own.
+  assert.throws(
+    () =>
+      prismaAdapter(client, { versionField: "title" })(createPostResource()),
+    /versionField must be a dedicated revision scalar/,
+  );
+  assert.doesNotThrow(() =>
+    prismaAdapter(client, {
+      versionField: "title",
+      resources: { post: { versionField: "revision" } },
+    })(createPostResource()),
+  );
 });

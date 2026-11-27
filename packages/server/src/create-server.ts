@@ -84,7 +84,8 @@ export interface CreateServerOptions<TActor = unknown> {
   resources: ServerResourceConfig<TActor>[];
   /**
    * Builds the adapter for every resource that doesn't set its own, such as
-   * `drizzleAdapter(db, { tables })` from `@verikit/drizzle`.
+   * `drizzleAdapter(db, { tables })` from `@verikit/drizzle` or
+   * `prismaAdapter(prisma)` from `@verikit/prisma`.
    */
   adapter?: (resource: Resource) => ResourceAdapter;
   /** Backend used by `POST /{resource}/uploads/{fileField}`. */

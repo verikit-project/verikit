@@ -550,3 +550,108 @@ export function createPrismaAdapter<
     },
   };
 }
+
+/**
+ * Structural subset of a `PrismaClient` used by {@link prismaAdapter}: the
+ * interactive form of `$transaction`. Model delegates are read by key.
+ */
+export interface PrismaClientLike {
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any -- the transaction client is model-specific */
+  $transaction<T>(fn: (tx: any) => Promise<T>, options?: any): Promise<T>;
+}
+
+/**
+ * Per-resource options for {@link prismaAdapter}: everything
+ * {@link createPrismaAdapter} takes except the delegate and transaction, which
+ * the factory builds from the client.
+ */
+export interface PrismaResourceAdapterOptions extends Omit<
+  PrismaAdapterOptions<FieldMap>,
+  "model" | "listTransaction"
+> {
+  /**
+   * The model's delegate key on the client, such as `"legacyPost"` for
+   * `prisma.legacyPost`. Defaults to the resource name with its first letter
+   * lowercased, which is how Prisma names delegates (`Post` → `prisma.post`).
+   */
+  model?: string;
+}
+
+/** Options for {@link prismaAdapter}. */
+export interface PrismaAdapterFactoryOptions {
+  /**
+   * Options by resource name, for resources whose model, fields, or id don't
+   * follow the defaults. A value here overrides the shared options below.
+   */
+  resources?: Readonly<Record<string, PrismaResourceAdapterOptions>>;
+  /** See `PrismaSearchProvider`. Applies to every resource. */
+  provider?: PrismaSearchProvider;
+  /**
+   * Revision scalar used by every resource, for conditional writes. Only set
+   * this when every model has it; otherwise set it per resource.
+   */
+  versionField?: string;
+  /** See `PrismaAdapterOptions.literalSearchCandidateLimit`. Applies to every resource. */
+  literalSearchCandidateLimit?: number;
+  /**
+   * Passed to `$transaction` for `list()`'s records and count queries, such
+   * as `{ isolationLevel: "RepeatableRead" }` for a stable pagination
+   * snapshot.
+   */
+  transactionOptions?: Readonly<Record<string, unknown>>;
+}
+
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1);
+}
+
+function isModelDelegate(value: unknown): value is PrismaModelDelegate {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { findMany?: unknown }).findMany === "function"
+  );
+}
+
+/**
+ * Builds adapters for every resource, for `createServer({ adapter })`. Each
+ * resource reads and writes the client's delegate named after it (or its
+ * `resources[name].model`), and `list()` runs in a `$transaction` on the same
+ * client. @throws {Error} When a resource is built, if the client has no
+ * delegate under its model key.
+ */
+export function prismaAdapter(
+  client: PrismaClientLike,
+  {
+    resources = {},
+    transactionOptions,
+    ...shared
+  }: PrismaAdapterFactoryOptions = {},
+): (resource: Resource) => ResourceAdapter<PrismaResourceRecord> {
+  return (resource) => {
+    const { model: modelKey = lowerFirst(resource.name), ...options } =
+      Object.hasOwn(resources, resource.name) ? resources[resource.name] : {};
+    const model = (client as unknown as Record<string, unknown>)[modelKey];
+
+    if (!isModelDelegate(model)) {
+      throw new Error(
+        `@verikit/prisma: no model "${modelKey}" on the Prisma client for resource "${resource.name}". Set \`resources.${resource.name}.model\` in prismaAdapter's options to the client's delegate key.`,
+      );
+    }
+
+    const listTransaction: PrismaListTransaction = (operation) =>
+      transactionOptions
+        ? client.$transaction(
+            (tx) => operation(tx[modelKey]),
+            transactionOptions,
+          )
+        : client.$transaction((tx) => operation(tx[modelKey]));
+
+    return createPrismaAdapter(resource, {
+      ...shared,
+      ...options,
+      model,
+      listTransaction,
+    });
+  };
+}

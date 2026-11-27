@@ -18,7 +18,7 @@ Starting a new app? `npm create verikit@latest` sets all of this up for you.
 | `verikit/server/testing` | In-memory adapter for tests                      | `@verikit/server/testing`               |
 | `verikit/client`      | `createClient`                                      | `@verikit/client`                       |
 | `verikit/drizzle`     | `drizzleAdapter`, `createDrizzleAdapter`            | `@verikit/drizzle`                      |
-| `verikit/prisma`      | `createPrismaAdapter`                               | `@verikit/prisma`                       |
+| `verikit/prisma`      | `prismaAdapter`, `createPrismaAdapter`              | `@verikit/prisma`                       |
 | `verikit/react`       | `VerikitProvider`, `ResourceTable`, `ResourceForm`  | `@verikit/react`                        |
 | `verikit/react-panel` | `Panel`                                             | `@verikit/react-panel`                  |
 | `verikit/vue`         | Vue components (install `@verikit/vue` too)         | `@verikit/vue`                          |

@@ -378,6 +378,41 @@ test("closing the create dialog via its own close button discards it without cre
   harness.cleanup();
 });
 
+test("onCreate and onEdit replace the create and edit dialogs", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+  let created = 0;
+  const edited: FakeRecord[] = [];
+
+  const wrapper = harness.mountWithProvider(ResourceTable, {
+    resource: postResource,
+    actions: true,
+    // Equivalent to `@create` / `@edit` in a template.
+    onCreate: () => {
+      created += 1;
+    },
+    onEdit: (record: FakeRecord) => {
+      edited.push(record);
+    },
+  });
+  await waitFor(() => root(wrapper).textContent?.includes("Hello") === true);
+
+  await click(findButtonByText("New"));
+  await click(root(wrapper).querySelector('[aria-label="Edit"]'));
+  // Give a dialog a chance to (wrongly) open before asserting it didn't.
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(created, 1);
+  assert.deepEqual(
+    edited.map((record) => record.id),
+    ["1"],
+  );
+  assert.equal(document.querySelector('input[name="title"]'), null);
+  assert.equal(document.querySelector('[role="dialog"]'), null);
+
+  harness.cleanup();
+});
+
 test("create denied by permission hides the New button after a failed attempt", async () => {
   const fixture = createFakeClient([]);
   fixture.failNext.create = new VerikitClientError(

@@ -75,6 +75,18 @@ export interface ResourceTableProps<
    */
   actions?: boolean;
   /**
+   * Replaces the built-in create dialog: the New button calls this instead
+   * (for example, to navigate to a create page). Only used with `actions`.
+   * Bind it as a prop (`:on-create`) or a listener (`@create`).
+   */
+  onCreate?: () => void;
+  /**
+   * Replaces the built-in edit dialog: each row's Edit button calls this with
+   * its record instead (for example, to navigate to an edit page). Only used
+   * with `actions`. Bind it as a prop (`:on-edit`) or a listener (`@edit`).
+   */
+  onEdit?: (record: TRecord) => void;
+  /**
    * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. The table asks the server which of them the actor can't run on each page: those it may not run are hidden, and those that can't run right now are disabled, with the reason as a tooltip. An action denied when run (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
    */
   resourceActions?: boolean;
@@ -126,6 +138,17 @@ export const ResourceTable = defineComponent({
       default: undefined,
     },
     actions: { type: Boolean, default: false },
+    // Declared as props rather than emits so the table can tell whether a
+    // parent handles them and skip its built-in dialogs; `@create`/`@edit`
+    // still bind here.
+    onCreate: {
+      type: Function as PropType<ResourceTableProps["onCreate"]>,
+      default: undefined,
+    },
+    onEdit: {
+      type: Function as PropType<ResourceTableProps["onEdit"]>,
+      default: undefined,
+    },
     resourceActions: {
       type: Boolean as PropType<boolean | undefined>,
       default: undefined,
@@ -343,7 +366,11 @@ export const ResourceTable = defineComponent({
                 size: "icon-sm",
                 "aria-label": "Edit",
                 onClick: () => {
-                  editRecord.value = record;
+                  if (props.onEdit) {
+                    props.onEdit(record);
+                  } else {
+                    editRecord.value = record;
+                  }
                 },
               },
               { default: () => h(PencilIcon) },
@@ -457,7 +484,11 @@ export const ResourceTable = defineComponent({
                     type: "button",
                     size: "sm",
                     onClick: () => {
-                      createOpen.value = true;
+                      if (props.onCreate) {
+                        props.onCreate();
+                      } else {
+                        createOpen.value = true;
+                      }
                     },
                   },
                   { default: () => [h(PlusIcon), "New"] },
@@ -765,7 +796,7 @@ export const ResourceTable = defineComponent({
             })
           : null,
 
-        props.actions
+        props.actions && !props.onCreate
           ? h(
               Dialog,
               {
@@ -808,7 +839,7 @@ export const ResourceTable = defineComponent({
             )
           : null,
 
-        props.actions
+        props.actions && !props.onEdit
           ? h(
               Dialog,
               {

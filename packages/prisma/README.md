@@ -4,6 +4,36 @@ Prisma ORM adapter for VeriKit server resources.
 
 See the [VeriKit documentation](https://verikit.dev) for setup and usage.
 
+## One adapter for every resource
+
+`prismaAdapter()` builds an adapter for each resource, so `createServer` only
+needs it once. Each resource uses the client's delegate named after it (`post`
+→ `prisma.post`, `BlogPost` → `prisma.blogPost`), and `list()` runs in a
+`$transaction` on the same client:
+
+```ts
+import { createServer } from "@verikit/server";
+import { prismaAdapter } from "@verikit/prisma";
+
+const api = createServer({
+  adapter: prismaAdapter(prisma, {
+    transactionOptions: { isolationLevel: "RepeatableRead" },
+    resources: {
+      // Only resources that don't follow the defaults need an entry.
+      article: { model: "legacyPost", fields: { title: "headline" } },
+    },
+  }),
+  resources: [
+    { resource: post, permissions: "open" },
+    { resource: article, permissions: articlePermissions },
+  ],
+});
+```
+
+`provider`, `versionField`, and `literalSearchCandidateLimit` can be set once
+for every resource; an entry in `resources` overrides them. A resource that
+sets its own `adapter` in `createServer` keeps it.
+
 ## Field and id mapping
 
 Each resource field maps to the Prisma scalar with the same name, and the id to
