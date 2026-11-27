@@ -141,7 +141,20 @@ export interface ListParams<TRecord extends object = Record<string, unknown>> {
    * Also asks which of the resource's actions the caller can't run on the returned records, returned as `actions`. Each action's permissions and availability guard run per record on the server, so only ask when the actions are shown. Ignored by `relationship()`.
    */
   includeActions?: boolean;
+  /**
+   * Also asks for the display labels of the records' `belongsTo` relationships, returned as `relationships`. Costs one query per relationship on the server. Ignored by `relationship()`.
+   */
+  includeRelationships?: boolean;
+  /** Only records with these ids, up to 100. */
+  ids?: readonly string[];
 }
+
+/**
+ * Display labels for `belongsTo` relationships: relationship name, then
+ * foreign-key value, then the related record's `displayField` value. A key is
+ * left out when the caller can't read its label.
+ */
+export type RelationshipLabels = Record<string, Record<string, string>>;
 
 /** An action the caller can't run: denied by permissions, or not available right now (with the guard's reason, if it gave one). */
 export type UnavailableAction =
@@ -176,6 +189,8 @@ export interface FindWithActionsResponse<
   record: TRecord;
   actions: UnavailableActions<TActionName>;
   operations: UnavailableOperations;
+  /** Display labels for the record's `belongsTo` relationships. */
+  relationships: RelationshipLabels;
 }
 
 export interface ListResponse<TRecord, TActionName extends string = string> {
@@ -185,6 +200,8 @@ export interface ListResponse<TRecord, TActionName extends string = string> {
   pageSize: number;
   /** Present when the list was requested with `includeActions: true`. */
   actions?: ListActionAvailability<TActionName>;
+  /** Present when the list was requested with `includeRelationships: true`. */
+  relationships?: RelationshipLabels;
 }
 
 export interface RequestOptions {
@@ -243,7 +260,7 @@ export interface ResourceClient<
   ): Promise<ListResponse<TTarget>>;
   find(id: string, options?: RequestOptions): Promise<TRecord>;
   /**
-   * Like `find()`, but also asks which record-scoped actions the caller can't run on the record. The server runs each action's permissions and availability guard against it.
+   * Like `find()`, but also asks which record-scoped actions the caller can't run on the record, and for its `belongsTo` relationships' display labels. The server runs each action's permissions and availability guard against it.
    */
   findWithActions(
     id: string,

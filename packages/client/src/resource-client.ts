@@ -5,6 +5,7 @@ import type {
   ListActionAvailability,
   ListParams,
   ListResponse,
+  RelationshipLabels,
   RequestOptions,
   ResourceClient,
   UnavailableActions,
@@ -21,7 +22,11 @@ interface ResourceClientDeps {
 interface RecordEnvelope<T> {
   data: T;
   message?: string;
-  meta?: { actions?: UnavailableActions; operations?: UnavailableOperations };
+  meta?: {
+    actions?: UnavailableActions;
+    operations?: UnavailableOperations;
+    relationships?: RelationshipLabels;
+  };
 }
 
 interface ListEnvelope<T> {
@@ -31,6 +36,7 @@ interface ListEnvelope<T> {
     page: number;
     pageSize: number;
     actions?: ListActionAvailability;
+    relationships?: RelationshipLabels;
   };
 }
 
@@ -79,6 +85,9 @@ export function createResourceClient<
       page: envelope.meta.page,
       pageSize: envelope.meta.pageSize,
       ...(envelope.meta.actions && { actions: envelope.meta.actions }),
+      ...(envelope.meta.relationships && {
+        relationships: envelope.meta.relationships,
+      }),
     };
   }
 
@@ -106,13 +115,14 @@ export function createResourceClient<
 
     async findWithActions(id, options = {}) {
       const envelope = (await run("GET", [id], {
-        query: new URLSearchParams({ include: "actions" }),
+        query: new URLSearchParams({ include: "actions,relationships" }),
         signal: options.signal,
       })) as RecordEnvelope<TRecord>;
       return {
         record: envelope.data,
         actions: envelope.meta?.actions ?? {},
         operations: envelope.meta?.operations ?? {},
+        relationships: envelope.meta?.relationships ?? {},
       };
     },
 

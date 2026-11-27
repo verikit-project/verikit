@@ -42,8 +42,17 @@ export function buildListQuery(params: ListParams): URLSearchParams {
     }
   }
 
-  if (params.includeActions) {
-    query.set("include", "actions");
+  for (const id of params.ids ?? []) {
+    query.append("ids", id);
+  }
+
+  const includes = [
+    params.includeActions && "actions",
+    params.includeRelationships && "relationships",
+  ].filter(Boolean);
+
+  if (includes.length > 0) {
+    query.set("include", includes.join(","));
   }
 
   return query;

@@ -94,7 +94,7 @@ test("list({ includeActions: true }) sends include=actions and returns meta.acti
   assert.deepEqual(result.actions, actions);
 });
 
-test("findWithActions() GETs the record with include=actions and returns its unavailable actions", async () => {
+test("findWithActions() GETs the record with include=actions,relationships and returns its unavailable actions and labels", async () => {
   const { fetchImpl, calls } = fakeFetch((call) =>
     jsonResponse(
       call.url.includes("include=actions")
@@ -103,6 +103,7 @@ test("findWithActions() GETs the record with include=actions and returns its una
             meta: {
               actions: { publish: { reason: "forbidden" } },
               operations: { delete: { reason: "forbidden" } },
+              relationships: { author: { a1: "Ada" } },
             },
           }
         : { data: { id: "1" } },
@@ -112,11 +113,15 @@ test("findWithActions() GETs the record with include=actions and returns its una
 
   const result = await client.resource("posts").findWithActions("1");
 
-  assert.equal(calls[0]!.url, "https://x.test/posts/1?include=actions");
+  assert.equal(
+    calls[0]!.url,
+    "https://x.test/posts/1?include=actions%2Crelationships",
+  );
   assert.deepEqual(result, {
     record: { id: "1" },
     actions: { publish: { reason: "forbidden" } },
     operations: { delete: { reason: "forbidden" } },
+    relationships: { author: { a1: "Ada" } },
   });
 });
 
@@ -128,7 +133,32 @@ test("findWithActions() returns no actions when the server reports none", async 
     record: { id: "1" },
     actions: {},
     operations: {},
+    relationships: {},
   });
+});
+
+test("list({ ids, includeRelationships }) sends repeated ids and both includes, and returns meta.relationships", async () => {
+  const relationships = { author: { a1: "Ada" } };
+  const { fetchImpl, calls } = fakeFetch(() =>
+    jsonResponse({
+      data: [{ id: "1" }],
+      meta: { total: 1, page: 1, pageSize: 25, relationships },
+    }),
+  );
+  const client = createClient({ baseUrl: "https://x.test", fetch: fetchImpl });
+
+  const result = await client.resource("posts").list({
+    ids: ["1", "a,b"],
+    includeActions: true,
+    includeRelationships: true,
+  });
+
+  assert.equal(
+    calls[0]!.url,
+    "https://x.test/posts?ids=1&ids=a%2Cb&include=actions%2Crelationships",
+  );
+  assert.deepEqual(result.relationships, relationships);
+  assert.equal(result.actions, undefined);
 });
 
 test("search() hits the /search sub-route", async () => {
