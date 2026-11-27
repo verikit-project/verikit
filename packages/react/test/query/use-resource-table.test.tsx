@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
-import { defineResource, text } from "@verikit/core";
+import { belongsTo, defineResource, text } from "@verikit/core";
 import { act } from "react";
 import { installJsdom } from "../dom-setup.js";
 import { useResourceTable } from "../../src/query/index.js";
@@ -370,6 +370,78 @@ test("useResourceTable surfaces loading/fetching/error state from the underlying
   release();
   await waitFor(() => result!.isLoading === false);
   assert.equal(result!.isFetching, false);
+
+  harness.cleanup();
+});
+
+test("useResourceTable shows a belongsTo relationship's labels in place of its foreign key", async () => {
+  const author = defineResource("authors", { fields: { name: text() } });
+  const article = defineResource("articles", {
+    fields: {
+      title: text().required(),
+      authorId: text().tableHidden(),
+    },
+    relationships: (field) => ({
+      author: belongsTo(() => author)
+        .label("Author")
+        .displayField("name")
+        .via(field("authorId")),
+    }),
+  });
+  const fixture = createFakeClient([
+    { id: "1", title: "One", authorId: "a1" },
+    { id: "2", title: "Two", authorId: "a2" },
+    { id: "3", title: "Three", authorId: null },
+  ]);
+  fixture.relationshipLabels = { author: { a1: "Ada" } };
+  const harness = setupHarness(fixture.client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(article);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => result!.isLoading === false);
+
+  assert.equal(fixture.lastListParams?.includeRelationships, true);
+  const headers = result!.table.getHeaderGroups()[0]!.headers;
+  assert.deepEqual(
+    headers.map((header) => [header.id, header.column.columnDef.header]),
+    [
+      ["title", "title"],
+      ["author", "Author"],
+    ],
+  );
+  assert.equal(headers[1]!.column.getCanSort(), false);
+  assert.deepEqual(
+    result!.table.getRowModel().rows.map((row) => row.getValue("author")),
+    // a2 has no label, so its raw key shows; a missing key shows nothing.
+    ["Ada", "a2", ""],
+  );
+  assert.deepEqual(result!.relationships, { author: { a1: "Ada" } });
+
+  harness.cleanup();
+});
+
+test("useResourceTable doesn't ask for labels when no relationship has a displayField", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  let result: ReturnType<typeof useResourceTable<FakeRecord>> | undefined;
+
+  function Probe() {
+    result = useResourceTable<FakeRecord>(postResource);
+    return null;
+  }
+
+  await harness.render(<Probe />);
+  await waitFor(() => result!.isLoading === false);
+
+  assert.equal(fixture.lastListParams?.includeRelationships, undefined);
+  assert.equal(result!.relationships, undefined);
 
   harness.cleanup();
 });

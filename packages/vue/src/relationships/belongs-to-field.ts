@@ -1,36 +1,28 @@
 import type { BelongsToRelationshipSchema } from "@verikit/core";
-import { defineComponent, h, type PropType, type VNodeChild } from "vue";
-import { Label } from "#components/label";
+import { defineComponent, h, ref, type PropType, type VNodeChild } from "vue";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "#components/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "#components/combobox";
+import { Label } from "#components/label";
 import { cn } from "#lib/utils";
-import { useResourceRelationship } from "../query/use-resource-queries.js";
+import { useRelationshipPicker } from "./use-relationship-picker.js";
 
-// Matches the server's maximum list page size, so a picker is not silently
-// limited to its ordinary table-page default (currently 25 records).
-const RELATIONSHIP_PICKER_PAGE_SIZE = 100;
-
-function recordId(record: Record<string, unknown>): string {
-  return String(record.id);
-}
-
-function recordLabel(
-  record: Record<string, unknown>,
-  displayField: string | undefined,
-): string {
-  const raw = displayField ? record[displayField] : undefined;
-
-  return raw === null || raw === undefined ? recordId(record) : String(raw);
+function valueString(value: unknown): string {
+  return value === null || value === undefined ? "" : String(value);
 }
 
 /**
- * Renders a `belongsTo` relationship as a permission-aware combobox,
- * reading and writing the related record's ID through its `.via()` field.
+ * Renders a `belongsTo` relationship as a permission-aware, searchable
+ * combobox, reading and writing the related record's ID through its `.via()`
+ * field. Typing searches the server (the target's `displayField` and
+ * `.searchable()` fields), options load 25 at a time with "Load more", and the
+ * selected record's label is shown even when it isn't among the loaded
+ * options.
  */
 export const BelongsToRelationshipField = defineComponent({
   name: "BelongsToRelationshipField",
@@ -49,50 +41,66 @@ export const BelongsToRelationshipField = defineComponent({
       default: undefined,
     },
     id: { type: String as PropType<string | undefined>, default: undefined },
+    /** Current foreign-key value (the selected record's id), if any. */
     value: { type: null as unknown as PropType<unknown>, required: false },
+    /** Error content shown below the picker and linked with ARIA. */
     error: { type: null as unknown as PropType<VNodeChild>, required: false },
+    /** Disables the picker. */
     disabled: {
       type: Boolean as PropType<boolean | undefined>,
       default: undefined,
     },
+    /** Marks the picker as read-only. */
     readOnly: {
       type: Boolean as PropType<boolean | undefined>,
       default: undefined,
     },
+    /** Class name applied to the outer wrapper. */
     className: {
       type: String as PropType<string | undefined>,
       default: undefined,
     },
+    /** Called with the next foreign-key value (or `null` when cleared). */
     onValueChange: {
       type: Function as PropType<((value: string | null) => void) | undefined>,
       default: undefined,
     },
+    /** Called when the picker's input loses focus. */
     onBlur: {
       type: Function as PropType<(() => void) | undefined>,
       default: undefined,
     },
   },
   setup(props) {
-    // Create the query composable once outside the render closure; calling it
-    // during render creates new watchers on every update, causing an infinite loop.
-    const relationshipName = props.relationship.name ?? "";
-    const relationshipQuery = useResourceRelationship<Record<string, unknown>>(
-      props.resourceName ?? props.relationship.resource,
-      relationshipName,
-      { pageSize: RELATIONSHIP_PICKER_PAGE_SIZE },
-      { enabled: relationshipName.length > 0 },
-    );
+    // While the popup is open the input holds what's typed (the selected
+    // record's label stays visible as the placeholder); closed, it shows that
+    // label.
+    const open = ref(false);
+    const search = ref("");
+    // Created once in setup: calling composables during render would add
+    // watchers on every update.
+    const picker = useRelationshipPicker({
+      resourceName: props.resourceName ?? props.relationship.resource,
+      relationship: props.relationship,
+      value: () => valueString(props.value),
+      search,
+    });
+
+    function handleOpenChange(next: boolean): void {
+      // A read-only picker still opens on arrow keys; keep it shut.
+      if (next && props.readOnly === true) return;
+      open.value = next;
+      if (!next) search.value = "";
+    }
 
     return () => {
       const inputId =
         props.id ??
-        `verikit-relationship-${props.relationship.resource}-${relationshipName}`;
+        `verikit-relationship-${props.relationship.resource}-${props.relationship.name ?? ""}`;
       const errorId = props.error ? `${inputId}-error` : undefined;
-      const records = relationshipQuery.data.value?.records ?? [];
-      const currentValue =
-        props.value === null || props.value === undefined
-          ? ""
-          : String(props.value);
+      const currentValue = valueString(props.value);
+      const selectedLabel = currentValue ? picker.labelFor(currentValue) : "";
+      const editable = props.disabled !== true && props.readOnly !== true;
 
       return h("div", { class: cn("grid gap-2", props.className) }, [
         props.relationship.label
@@ -103,51 +111,78 @@ export const BelongsToRelationshipField = defineComponent({
             )
           : null,
         h(
-          Select,
+          Combobox,
           {
-            name: relationshipName,
-            value: currentValue,
+            value: currentValue === "" ? null : currentValue,
+            open: open.value,
+            // Options are already searched on the server.
+            ignoreFilter: true,
+            name: props.relationship.name,
             disabled: props.disabled === true,
-            onValueChange: props.onValueChange,
+            onOpenChange: handleOpenChange,
+            onValueChange: (next: string | null) => props.onValueChange?.(next),
           },
           {
             default: () => [
-              h(
-                SelectTrigger,
-                {
-                  id: inputId,
-                  class: "w-full",
-                  onBlur: props.onBlur,
-                  "aria-describedby": errorId,
-                  "aria-invalid": props.error ? true : undefined,
+              h(ComboboxInput, {
+                id: inputId,
+                value: open.value ? search.value : selectedLabel,
+                placeholder: picker.isLoading.value
+                  ? "Loading…"
+                  : selectedLabel || "Search…",
+                showClear: editable && currentValue !== "",
+                readOnly: props.readOnly === true,
+                onInputValueChange: (text: string) => {
+                  search.value = text;
                 },
-                {
-                  default: () =>
-                    h(SelectValue, {
-                      placeholder: relationshipQuery.isLoading.value
-                        ? "Loading…"
-                        : "Select…",
-                    }),
-                },
-              ),
+                onBlur: props.onBlur,
+                "aria-describedby": errorId,
+                "aria-invalid": props.error ? true : undefined,
+              }),
               h(
-                SelectContent,
+                ComboboxContent,
                 {},
                 {
-                  default: () =>
-                    records.map((record) =>
-                      h(
-                        SelectItem,
-                        { key: recordId(record), value: recordId(record) },
-                        {
-                          default: () =>
-                            recordLabel(
-                              record,
-                              props.relationship.displayField,
-                            ),
-                        },
-                      ),
+                  // Read reactive state inside these slots, not above: Reka's
+                  // popper content is memoized, so only its own re-renders
+                  // pick up newly loaded options.
+                  default: () => [
+                    h(
+                      ComboboxEmpty,
+                      {},
+                      {
+                        default: () =>
+                          picker.isLoading.value ? "Loading…" : "No matches.",
+                      },
                     ),
+                    h(
+                      ComboboxList,
+                      {},
+                      {
+                        default: () =>
+                          picker.ids.value.map((optionId) =>
+                            h(
+                              ComboboxItem,
+                              { key: optionId, value: optionId },
+                              { default: () => picker.labelFor(optionId) },
+                            ),
+                          ),
+                      },
+                    ),
+                    picker.hasMore.value
+                      ? h(
+                          "button",
+                          {
+                            type: "button",
+                            class:
+                              "w-full rounded-md px-1.5 py-1 text-left text-sm text-muted-foreground hover:bg-accent disabled:opacity-50",
+                            disabled: picker.isLoadingMore.value,
+                            onClick: picker.loadMore,
+                          },
+                          picker.isLoadingMore.value ? "Loading…" : "Load more",
+                        )
+                      : null,
+                  ],
                 },
               ),
             ],
@@ -160,11 +195,11 @@ export const BelongsToRelationshipField = defineComponent({
               props.error,
             )
           : null,
-        relationshipQuery.error.value
+        picker.error.value
           ? h(
               "p",
               { role: "alert", class: "text-sm text-destructive" },
-              relationshipQuery.error.value.message,
+              picker.error.value.message,
             )
           : null,
       ]);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { defineResource, text, textarea } from "@verikit/core";
+import { belongsTo, defineResource, text, textarea } from "@verikit/core";
 import { VerikitClientError } from "@verikit/client";
 import { action } from "@verikit/runtime";
 import { h, nextTick } from "vue";
@@ -108,6 +108,45 @@ test("shows a loading state, then each visible field's label and value", async (
   harness.cleanup();
 });
 
+test("shows a belongsTo relationship's label in place of its foreign key", async () => {
+  const author = defineResource("authors", { fields: { name: text() } });
+  const article = defineResource("articles", {
+    fields: {
+      title: text().label("Title"),
+      authorId: text().formHidden().tableHidden(),
+      editorId: text(),
+      reviewerId: text(),
+    },
+    relationships: (field) => ({
+      author: belongsTo(() => author)
+        .label("Author")
+        .displayField("name")
+        .via(field("authorId")),
+      editor: belongsTo(() => author)
+        .label("Editor")
+        .displayField("name")
+        .via(field("editorId")),
+      reviewer: belongsTo(() => author)
+        .label("Reviewer")
+        .via(field("reviewerId")),
+    }),
+  });
+  // `reviewerId` isn't on the record, as when the actor can't read it.
+  const fixture = createFakeClient([
+    { id: "1", title: "Hello", authorId: "a1", editorId: "a2" },
+  ]);
+  fixture.relationshipLabels = { author: { a1: "Ada" } };
+  const { harness, container } = await renderLoaded(fixture, {
+    resource: article,
+  });
+
+  assert.deepEqual(texts(container, "dt"), ["Title", "Author", "Editor"]);
+  // No label for a2, so its raw key shows.
+  assert.deepEqual(texts(container, "dd"), ["Hello", "Ada", "a2"]);
+
+  harness.cleanup();
+});
+
 test("a missing record shows as not found, and other load errors as an alert", async () => {
   const fixture = createFakeClient([post]);
   let rendered = renderDetail(fixture, { id: "missing" });
@@ -179,6 +218,30 @@ test("a direct action that fails shows an alert; one denied with a 404 is hidden
   assert.equal(container.querySelector('[role="alert"]'), null);
 
   harness.cleanup();
+});
+
+test("onEdit replaces the edit dialog, and is still hidden when the actor can't update", async () => {
+  const fixture = createFakeClient([post]);
+  const edited: string[] = [];
+  const { harness, container } = await renderLoaded(fixture, {
+    editAction: true,
+    // Equivalent to `@edit` in a template.
+    onEdit: (record: FakeRecord) => edited.push(record.id),
+  });
+
+  await click(container, "Edit");
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  assert.deepEqual(edited, ["1"]);
+  assert.equal(dialog(), null);
+  harness.cleanup();
+
+  fixture.operationAvailability = { "1": { update: { reason: "forbidden" } } };
+  const denied = await renderLoaded(fixture, {
+    editAction: true,
+    onEdit: () => {},
+  });
+  assert.equal(buttons(denied.container, "Edit").length, 0);
+  denied.harness.cleanup();
 });
 
 test("an action run through its dialog that the server denies is hidden", async () => {

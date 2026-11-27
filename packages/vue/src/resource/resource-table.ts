@@ -5,6 +5,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsUpDownIcon,
+  EyeIcon,
   PencilIcon,
   PlusIcon,
   SlidersHorizontalIcon,
@@ -87,6 +88,13 @@ export interface ResourceTableProps<
    */
   onEdit?: (record: TRecord) => void;
   /**
+   * Opens a record (for example, to navigate to its page): adds a View
+   * button to each row, and clicking a row anywhere other than its controls
+   * calls this too. Independent of `actions`. Bind it as a prop (`:on-view`)
+   * or a listener (`@view`).
+   */
+  onView?: (record: TRecord) => void;
+  /**
    * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. The table asks the server which of them the actor can't run on each page: those it may not run are hidden, and those that can't run right now are disabled, with the reason as a tooltip. An action denied when run (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
    */
   resourceActions?: boolean;
@@ -139,14 +147,18 @@ export const ResourceTable = defineComponent({
     },
     actions: { type: Boolean, default: false },
     // Declared as props rather than emits so the table can tell whether a
-    // parent handles them and skip its built-in dialogs; `@create`/`@edit`
-    // still bind here.
+    // parent handles them and skip its built-in dialogs (or, for `onView`,
+    // make rows clickable); `@create`/`@edit`/`@view` still bind here.
     onCreate: {
       type: Function as PropType<ResourceTableProps["onCreate"]>,
       default: undefined,
     },
     onEdit: {
       type: Function as PropType<ResourceTableProps["onEdit"]>,
+      default: undefined,
+    },
+    onView: {
+      type: Function as PropType<ResourceTableProps["onView"]>,
       default: undefined,
     },
     resourceActions: {
@@ -392,11 +404,45 @@ export const ResourceTable = defineComponent({
     }
 
     function rowActions(record: TRecord): VNodeChild {
+      const onView = props.onView;
       return h("div", { class: "flex items-center justify-end gap-1" }, [
+        onView
+          ? h(
+              Button,
+              {
+                type: "button",
+                variant: "ghost",
+                size: "icon-sm",
+                "aria-label": "View",
+                onClick: () => onView(record),
+              },
+              { default: () => h(EyeIcon) },
+            )
+          : null,
         declaredRowActions(record),
         props.actions ? builtInRowActions(record) : null,
         props.renderActions ? props.renderActions(record) : null,
       ]);
+    }
+
+    // A row click opens the record, unless it landed on one of the row's own
+    // controls (its checkbox, action buttons, or links).
+    function rowClickHandler(
+      record: TRecord,
+    ): ((event: MouseEvent) => void) | undefined {
+      const onView = props.onView;
+      return onView
+        ? (event: MouseEvent) => {
+            const target = event.target as Element;
+            if (
+              !target.closest(
+                "button, a, input, label, [role='checkbox'], [role='dialog']",
+              )
+            ) {
+              onView(record);
+            }
+          }
+        : undefined;
     }
 
     return () => {
@@ -410,7 +456,11 @@ export const ResourceTable = defineComponent({
       const hasActionsColumn =
         props.actions ||
         Boolean(props.renderActions) ||
+        Boolean(props.onView) ||
         recordActions.length > 0;
+      const clickableRowClass = props.onView
+        ? "cursor-pointer hover:bg-muted/50"
+        : "";
       const hasSelectionColumn =
         props.actions || Boolean(props.renderBulkActions);
       const hasFilterableFields = filterableFields(fields).length > 0;
@@ -645,7 +695,14 @@ export const ResourceTable = defineComponent({
                     : rows.map((row) =>
                         h(
                           "tr",
-                          { key: row.id, class: "border-t border-border" },
+                          {
+                            key: row.id,
+                            class: cn(
+                              "border-t border-border",
+                              clickableRowClass,
+                            ),
+                            onClick: rowClickHandler(row.original),
+                          },
                           [
                             hasSelectionColumn
                               ? h("td", { class: "px-3 py-2" }, [
@@ -697,7 +754,11 @@ export const ResourceTable = defineComponent({
                     "div",
                     {
                       key: row.id,
-                      class: "rounded-lg border border-border p-3",
+                      class: cn(
+                        "rounded-lg border border-border p-3",
+                        clickableRowClass,
+                      ),
+                      onClick: rowClickHandler(row.original),
                     },
                     [
                       hasSelectionColumn

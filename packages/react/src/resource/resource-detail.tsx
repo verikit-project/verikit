@@ -16,8 +16,11 @@ import {
   actionNeedsDialog,
   resourceActionSchemas,
 } from "@verikit/ui-core/actions/resource-actions";
-import { resolveVerikitFields } from "@verikit/ui-core/form/resolve-fields";
 import { formatFieldValue } from "@verikit/ui-core/layout/format-value";
+import {
+  relationshipCellText,
+  resourceColumnSpecs,
+} from "@verikit/ui-core/layout/table-columns";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
 import { useResourceFindWithActions } from "../query/use-resource-queries.js";
 import { DeclaredActionButton } from "./declared-action-button.js";
@@ -46,6 +49,10 @@ export interface ResourceDetailProps<
    */
   editAction?: boolean;
   /**
+   * Replaces the built-in edit dialog: the Edit action calls this with the record instead (for example, to navigate to an edit page). It's still hidden when the actor can't update the record. Only used with `editAction`.
+   */
+  onEdit?: (record: TRecord) => void;
+  /**
    * Renders the built-in Delete action, which opens a confirmation dialog. Hidden when the server reports the actor can't delete the record, or when a delete is denied (403 or 404) for the rest of this component's lifetime. Defaults to `actions`.
    */
   deleteAction?: boolean;
@@ -64,7 +71,7 @@ export interface ResourceDetailProps<
 }
 
 /**
- * Shows one record's fields as a label/value list, with its actions: the built-in Edit and Delete, and the record-scoped actions declared on the resource. Edit and Delete are hidden up front when the server reports the actor can't update or delete the record. Fields marked `.hidden()`, or left out by the server because the actor can't read them, aren't shown. A record the actor can't read shows as not found, as the server doesn't reveal whether it exists.
+ * Shows one record's fields as a label/value list, with its actions: the built-in Edit and Delete, and the record-scoped actions declared on the resource. Edit and Delete are hidden up front when the server reports the actor can't update or delete the record. Fields marked `.hidden()`, or left out by the server because the actor can't read them, aren't shown. A `belongsTo` relationship is shown in place of its foreign-key field, as the related record's `displayField` (or the raw key when the actor can't read that). A record the actor can't read shows as not found, as the server doesn't reveal whether it exists.
  */
 export function ResourceDetail<
   TRecord extends Record<string, unknown> = Record<string, unknown>,
@@ -73,6 +80,7 @@ export function ResourceDetail<
   id,
   actions = false,
   editAction = actions,
+  onEdit,
   deleteAction = actions,
   resourceActions = actions,
   renderActions,
@@ -83,7 +91,7 @@ export function ResourceDetail<
   const query = useResourceFindWithActions<TRecord>(resource.name, id, {
     enabled: !deleted,
   });
-  const fields = resolveVerikitFields(resource);
+  const rows = resourceColumnSpecs(resource, { view: "detail" });
   const recordActions = resourceActions
     ? resourceActionSchemas(resource, "record")
     : [];
@@ -176,11 +184,35 @@ export function ResourceDetail<
     );
   }
 
-  const { record, actions: unavailable, operations } = query.data;
+  const {
+    record,
+    actions: unavailable,
+    operations,
+    relationships,
+  } = query.data;
   const showEdit = editAction && !denied.update && !operations.update;
   const showDelete = deleteAction && !denied.delete && !operations.delete;
-  const visibleFields = Object.values(fields).filter(
-    (field) => !field.hidden && Object.hasOwn(record, field.name),
+  // The server leaves out fields the actor can't read.
+  const visibleRows = rows.flatMap((row) =>
+    row.kind === "field"
+      ? Object.hasOwn(record, row.field.name)
+        ? [
+            {
+              key: row.field.name,
+              label: row.field.label ?? row.field.name,
+              value: formatFieldValue(record[row.field.name]),
+            },
+          ]
+        : []
+      : Object.hasOwn(record, row.foreignKey)
+        ? [
+            {
+              key: row.name,
+              label: row.label,
+              value: relationshipCellText(relationships, row, record),
+            },
+          ]
+        : [],
   );
   const hasActions =
     showEdit ||
@@ -211,7 +243,7 @@ export function ResourceDetail<
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setEditOpen(true)}
+              onClick={() => (onEdit ? onEdit(record) : setEditOpen(true))}
             >
               <PencilIcon />
               Edit
@@ -242,14 +274,12 @@ export function ResourceDetail<
       ) : null}
 
       <dl className="grid gap-x-6 gap-y-3 rounded-lg border border-border p-4 sm:grid-cols-[minmax(8rem,max-content)_1fr]">
-        {visibleFields.map((field) => (
-          <div key={field.name} className="contents">
+        {visibleRows.map((row) => (
+          <div key={row.key} className="contents">
             <dt className="text-sm font-medium text-muted-foreground">
-              {field.label ?? field.name}
+              {row.label}
             </dt>
-            <dd className="text-sm wrap-break-word">
-              {formatFieldValue(record[field.name])}
-            </dd>
+            <dd className="text-sm wrap-break-word">{row.value}</dd>
           </div>
         ))}
       </dl>
@@ -264,7 +294,7 @@ export function ResourceDetail<
         />
       ) : null}
 
-      {editAction ? (
+      {editAction && !onEdit ? (
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent>
             <DialogHeader>

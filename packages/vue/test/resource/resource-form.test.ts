@@ -199,7 +199,7 @@ test("a belongsTo relationship (no .form()) renders its built-in picker, and its
   });
 
   assert.equal(wrapper.find("label").text(), "Author");
-  assert.equal(wrapper.find('[data-slot="select-trigger"]').exists(), true);
+  assert.equal(wrapper.find('[data-slot="combobox-input"]').exists(), true);
 
   await wrapper.find('input[name="title"]').setValue("New post");
   await wrapper.find("form").trigger("submit");

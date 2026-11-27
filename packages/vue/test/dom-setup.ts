@@ -37,6 +37,9 @@ export function installJsdom(): () => void {
   const win = window as unknown as Record<string, unknown>;
   win.ResizeObserver = ResizeObserverPolyfill;
   win.matchMedia = matchMediaPolyfill;
+  // Reka UI's Listbox (under Combobox) scrolls the highlighted option into
+  // view, which jsdom doesn't implement.
+  window.Element.prototype.scrollIntoView = () => {};
 
   const globals = {
     window,

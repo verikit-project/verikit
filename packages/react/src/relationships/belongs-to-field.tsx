@@ -1,19 +1,16 @@
 import type { BelongsToRelationshipSchema } from "@verikit/core";
-import type { ReactElement, ReactNode } from "react";
-import { Label } from "#components/label";
+import { useState, type ReactElement, type ReactNode } from "react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "#components/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "#components/combobox";
+import { Label } from "#components/label";
 import { cn } from "#lib/utils";
-import { useResourceRelationship } from "../query/use-resource-queries.js";
-
-// Matches the server's maximum list page size, so a picker is not silently
-// limited to its ordinary table-page default (currently 25 records).
-const RELATIONSHIP_PICKER_PAGE_SIZE = 100;
+import { useRelationshipPicker } from "./use-relationship-picker.js";
 
 /** Props for {@link BelongsToRelationshipField}. */
 export interface BelongsToRelationshipFieldProps {
@@ -29,36 +26,27 @@ export interface BelongsToRelationshipFieldProps {
   id?: string;
   /** Current foreign-key value (the selected record's id), if any. */
   value?: unknown;
-  /** Error content shown below the select and linked with ARIA. */
+  /** Error content shown below the picker and linked with ARIA. */
   error?: ReactNode;
-  /** Disables the select. */
+  /** Disables the picker. */
   disabled?: boolean;
-  /** Marks the select as read-only. */
+  /** Marks the picker as read-only. */
   readOnly?: boolean;
   /** Class name applied to the outer wrapper. */
   className?: string;
   /** Called with the next foreign-key value (or `null` when cleared). */
   onValueChange?: (value: string | null) => void;
-  /** Called when the select loses focus. */
+  /** Called when the picker's input loses focus. */
   onBlur?: () => void;
 }
 
-function recordId(record: Record<string, unknown>): string {
-  return String(record.id);
-}
-
-function recordLabel(
-  record: Record<string, unknown>,
-  displayField: string | undefined,
-): string {
-  const raw = displayField ? record[displayField] : undefined;
-
-  return raw === null || raw === undefined ? recordId(record) : String(raw);
-}
-
 /**
- * Renders a `belongsTo` relationship as a permission-aware combobox,
- * reading and writing the related record's ID through its `.via()` field.
+ * Renders a `belongsTo` relationship as a permission-aware, searchable
+ * combobox, reading and writing the related record's ID through its `.via()`
+ * field. Typing searches the server (the target's `displayField` and
+ * `.searchable()` fields), options load 25 at a time with "Load more", and the
+ * selected record's label is shown even when it isn't among the loaded
+ * options.
  */
 export function BelongsToRelationshipField({
   relationship,
@@ -72,73 +60,94 @@ export function BelongsToRelationshipField({
   onValueChange,
   onBlur,
 }: BelongsToRelationshipFieldProps): ReactElement {
-  const relationshipName = relationship.name ?? "";
   const inputId =
-    id ?? `verikit-relationship-${relationship.resource}-${relationshipName}`;
+    id ??
+    `verikit-relationship-${relationship.resource}-${relationship.name ?? ""}`;
   const errorId = error ? `${inputId}-error` : undefined;
-  const {
-    data,
-    isLoading,
-    error: fetchError,
-  } = useResourceRelationship<Record<string, unknown>>(
-    resourceName ?? relationship.resource,
-    relationshipName,
-    { pageSize: RELATIONSHIP_PICKER_PAGE_SIZE },
-    { enabled: relationshipName.length > 0 },
-  );
-  const records = data?.records ?? [];
-  const labels = new Map(
-    records.map((record) => [
-      recordId(record),
-      recordLabel(record, relationship.displayField),
-    ]),
-  );
-  const placeholder = isLoading ? "Loading…" : "Select…";
   const currentValue =
     value === null || value === undefined ? "" : String(value);
+  // While the popup is open the input holds what's typed (the selected
+  // record's label stays visible as the placeholder); closed, it shows that
+  // label.
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const picker = useRelationshipPicker({
+    resourceName: resourceName ?? relationship.resource,
+    relationship,
+    value: currentValue,
+    search,
+  });
+  const selectedLabel = currentValue ? picker.labelFor(currentValue) : "";
+  const editable = disabled !== true && readOnly !== true;
 
   return (
     <div className={cn("grid gap-2", className)}>
       {relationship.label ? (
         <Label htmlFor={inputId}>{relationship.label}</Label>
       ) : null}
-      <Select
-        name={relationshipName}
-        value={currentValue}
+      <Combobox<string>
+        items={picker.ids}
+        // Options are already searched on the server.
+        filter={null}
+        value={currentValue === "" ? null : currentValue}
+        itemToStringLabel={picker.labelFor}
+        inputValue={open ? search : selectedLabel}
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setSearch("");
+        }}
+        onInputValueChange={(text, details) => {
+          if (details.reason === "input-change") {
+            setSearch(text);
+          }
+        }}
+        onValueChange={(next) => onValueChange?.(next)}
+        name={relationship.name}
         disabled={disabled === true}
         readOnly={readOnly === true}
-        onValueChange={onValueChange}
       >
-        <SelectTrigger
+        <ComboboxInput
           id={inputId}
-          className="w-full"
+          placeholder={
+            picker.isLoading ? "Loading…" : selectedLabel || "Search…"
+          }
+          showClear={editable && currentValue !== ""}
           onBlur={onBlur}
           aria-describedby={errorId}
           aria-invalid={error ? true : undefined}
-        >
-          {/* Resolves the label itself: Base UI's `items` prop isn't picked up once the records load after mount. */}
-          <SelectValue placeholder={placeholder}>
-            {(selected: string | null) =>
-              selected ? (labels.get(selected) ?? selected) : placeholder
-            }
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {records.map((record) => (
-            <SelectItem key={recordId(record)} value={recordId(record)}>
-              {recordLabel(record, relationship.displayField)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>
+            {picker.isLoading ? "Loading…" : "No matches."}
+          </ComboboxEmpty>
+          <ComboboxList>
+            {(optionId: string) => (
+              <ComboboxItem key={optionId} value={optionId}>
+                {picker.labelFor(optionId)}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+          {picker.hasMore ? (
+            <button
+              type="button"
+              className="w-full rounded-md px-1.5 py-1 text-left text-sm text-muted-foreground hover:bg-accent disabled:opacity-50"
+              disabled={picker.isLoadingMore}
+              onClick={picker.loadMore}
+            >
+              {picker.isLoadingMore ? "Loading…" : "Load more"}
+            </button>
+          ) : null}
+        </ComboboxContent>
+      </Combobox>
       {error ? (
         <p id={errorId} className="text-sm text-destructive">
           {error}
         </p>
       ) : null}
-      {fetchError ? (
+      {picker.error ? (
         <p role="alert" className="text-sm text-destructive">
-          {fetchError.message}
+          {picker.error.message}
         </p>
       ) : null}
     </div>

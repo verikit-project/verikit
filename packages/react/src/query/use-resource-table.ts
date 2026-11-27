@@ -16,10 +16,19 @@ import {
   type SortingState,
   type Table,
 } from "@tanstack/react-table";
-import type { ListActionAvailability, ListParams } from "@verikit/client";
+import type {
+  ListActionAvailability,
+  ListParams,
+  RelationshipLabels,
+} from "@verikit/client";
 import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { resolveVerikitFields } from "@verikit/ui-core/form/resolve-fields";
+import {
+  needsRelationshipLabels,
+  relationshipCellText,
+  resourceColumnSpecs,
+} from "@verikit/ui-core/layout/table-columns";
 import { useListResource } from "./use-resource-queries.js";
 
 // `columnFilteringFeature` is required by TanStack's global filtering feature.
@@ -72,11 +81,16 @@ export interface UseResourceTableResult<
   setFilters: (filters: ResourceTableFilters) => void;
   /** The actions the actor can't run on the current page, when requested with `includeActions`. */
   actions: ListActionAvailability | undefined;
+  /** Display labels for the current page's `belongsTo` relationships, when the resource has any to show. */
+  relationships: RelationshipLabels | undefined;
 }
 
 /**
  * Creates a TanStack Table from a resource's schema, with automatic columns
- * and server-side pagination, sorting, and search.
+ * and server-side pagination, sorting, and search. A `belongsTo`
+ * relationship gets a column in place of its foreign-key field, showing the
+ * related record's `displayField` (fetched with the page, one query per
+ * relationship on the server), or the raw key when there's no label.
  */
 export function useResourceTable<
   TRecord extends RowData = Record<string, unknown>,
@@ -85,17 +99,10 @@ export function useResourceTable<
   { pageSize = 25, includeActions = false }: UseResourceTableOptions = {},
 ): UseResourceTableResult<TRecord> {
   const fields = resolveVerikitFields(resource);
-
-  const columns = useMemo<ColumnDef<ResourceTableFeatures, TRecord>[]>(
-    () =>
-      Object.values(fields)
-        .filter((field) => !field.hidden && !field.tableHidden)
-        .map((field) => ({
-          accessorKey: field.name,
-          header: field.label ?? field.name,
-          enableSorting: field.sortable ?? false,
-        })),
-    [fields],
+  const columnSpecs = useMemo(() => resourceColumnSpecs(resource), [resource]);
+  const includeRelationships = useMemo(
+    () => needsRelationshipLabels(resource),
+    [resource],
   );
 
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -135,7 +142,35 @@ export function useResourceTable<
       : undefined,
     ...(hasFilters ? { filters } : {}),
     ...(includeActions ? { includeActions } : {}),
+    ...(includeRelationships ? { includeRelationships } : {}),
   } as ListParams<TRecord>);
+  const relationships = list.data?.relationships;
+
+  const columns = useMemo<ColumnDef<ResourceTableFeatures, TRecord>[]>(
+    () =>
+      columnSpecs.map((spec) =>
+        spec.kind === "field"
+          ? {
+              accessorKey: spec.field.name,
+              header: spec.field.label ?? spec.field.name,
+              enableSorting: spec.field.sortable ?? false,
+            }
+          : {
+              id: spec.name,
+              // Records are plain field maps at runtime (see `ResourceTable`).
+              accessorFn: (record: TRecord) =>
+                relationshipCellText(
+                  relationships,
+                  spec,
+                  record as Record<string, unknown>,
+                ),
+              header: spec.label,
+              // Sorting by a foreign key wouldn't follow the labels shown.
+              enableSorting: false,
+            },
+      ),
+    [columnSpecs, relationships],
+  );
 
   const table = useTable({
     features: resourceTableFeatures,
@@ -162,5 +197,6 @@ export function useResourceTable<
     filters,
     setFilters: handleFiltersChange,
     actions: list.data?.actions,
+    relationships,
   };
 }

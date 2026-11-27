@@ -5,6 +5,7 @@ import type {
   UnavailableOperations,
   ListParams,
   ListResponse,
+  RelationshipLabels,
   RequestOptions,
   ResourceClient,
   VerikitClient,
@@ -80,6 +81,10 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
   actionAvailability: ListActionAvailability | undefined;
   /** Returned as `operations` by `findWithActions`, keyed by record id. */
   operationAvailability: Record<string, UnavailableOperations> | undefined;
+  /** Returned as `relationships` by `list`/`search` calls made with `includeRelationships: true`, and by `findWithActions`. */
+  relationshipLabels: RelationshipLabels | undefined;
+  /** Every `relationship()` call's params, in order. Unlike `list`, it honors `ids`, `search` (on `title`), `page`, and `pageSize`. */
+  relationshipCalls: ListParams[];
 } {
   const records: FakeRecord[] = initial.map((record) => ({ ...record }));
   const calls: FakeResourceCalls = {
@@ -98,12 +103,15 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     lastAction: FakeActionCall | undefined;
     actionAvailability: ListActionAvailability | undefined;
     operationAvailability: Record<string, UnavailableOperations> | undefined;
+    relationshipLabels: RelationshipLabels | undefined;
   } = {
     lastListParams: undefined,
     lastAction: undefined,
     actionAvailability: undefined,
     operationAvailability: undefined,
+    relationshipLabels: undefined,
   };
+  const relationshipCalls: ListParams[] = [];
 
   function block(method: FakeMethod): () => void {
     let release = () => {};
@@ -149,6 +157,10 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
         pageSize: 25,
         ...(params?.includeActions &&
           state.actionAvailability && { actions: state.actionAvailability }),
+        ...(params?.includeRelationships &&
+          state.relationshipLabels && {
+            relationships: state.relationshipLabels,
+          }),
       };
     },
 
@@ -158,12 +170,45 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
 
     async relationship<TTarget = Record<string, unknown>>(
       _name: string,
-      params?: ListParams,
-      options?: RequestOptions,
+      params: ListParams = {},
+      _options?: RequestOptions,
     ): Promise<ListResponse<TTarget>> {
-      return resourceClient.list(params, options) as Promise<
-        ListResponse<TTarget>
-      >;
+      relationshipCalls.push(params);
+      calls.list += 1;
+      state.lastListParams = params;
+      await waitForGate("list");
+
+      const listFailure = consumeFailure(
+        failNext.list,
+        "Simulated list failure.",
+      );
+      failNext.list = false;
+
+      if (listFailure) {
+        throw listFailure;
+      }
+
+      const term = params.search?.toLowerCase();
+      const matching = records.filter(
+        (record) =>
+          (!params.ids || params.ids.includes(record.id)) &&
+          (!term ||
+            String(record.title ?? "")
+              .toLowerCase()
+              .includes(term)),
+      );
+      const page = params.page ?? 1;
+      const pageSize = params.pageSize ?? 25;
+
+      return {
+        records: matching.slice(
+          (page - 1) * pageSize,
+          page * pageSize,
+        ) as unknown as TTarget[],
+        total: matching.length,
+        page,
+        pageSize,
+      };
     },
 
     async find(id, _options) {
@@ -196,6 +241,7 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
         record,
         actions: state.actionAvailability?.records[id] ?? {},
         operations: state.operationAvailability?.[id] ?? {},
+        relationships: state.relationshipLabels ?? {},
       };
     },
 
@@ -336,6 +382,13 @@ export function createFakeClient(initial: readonly FakeRecord[] = []): {
     set operationAvailability(value) {
       state.operationAvailability = value;
     },
+    get relationshipLabels() {
+      return state.relationshipLabels;
+    },
+    set relationshipLabels(value) {
+      state.relationshipLabels = value;
+    },
+    relationshipCalls,
   };
 }
 

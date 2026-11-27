@@ -20,10 +20,16 @@ import type {
   ListActionAvailability,
   ListParams,
   ListResponse,
+  RelationshipLabels,
 } from "@verikit/client";
 import type { FieldSchema, Resource, ResourceSchema } from "@verikit/core";
 import { recordId } from "@verikit/ui-core/query/optimistic";
 import { resolveVerikitFields } from "@verikit/ui-core/form/resolve-fields";
+import {
+  needsRelationshipLabels,
+  relationshipCellText,
+  resourceColumnSpecs,
+} from "@verikit/ui-core/layout/table-columns";
 import { resourceQueryKeys } from "@verikit/ui-core/query/query-keys";
 import { computed, ref, type ComputedRef, type Ref } from "vue";
 import { useVerikitClient } from "../client/use-verikit-client.js";
@@ -78,11 +84,16 @@ export interface UseResourceTableResult<
   setFilters: (filters: ResourceTableFilters) => void;
   /** The actions the actor can't run on the current page, when requested with `includeActions`. */
   actions: ComputedRef<ListActionAvailability | undefined>;
+  /** Display labels for the current page's `belongsTo` relationships, when the resource has any to show. */
+  relationships: ComputedRef<RelationshipLabels | undefined>;
 }
 
 /**
  * Creates a TanStack Table from a resource's schema, with automatic columns
- * and server-side pagination, sorting, and search.
+ * and server-side pagination, sorting, and search. A `belongsTo`
+ * relationship gets a column in place of its foreign-key field, showing the
+ * related record's `displayField` (fetched with the page, one query per
+ * relationship on the server), or the raw key when there's no label.
  */
 export function useResourceTable<
   TRecord extends RowData = Record<string, unknown>,
@@ -92,16 +103,8 @@ export function useResourceTable<
 ): UseResourceTableResult<TRecord> {
   const client = useVerikitClient();
   const fields = resolveVerikitFields(resource);
-
-  const columns = computed<ColumnDef<ResourceTableFeatures, TRecord>[]>(() =>
-    Object.values(fields)
-      .filter((field) => !field.hidden && !field.tableHidden)
-      .map((field) => ({
-        accessorKey: field.name,
-        header: field.label ?? field.name,
-        enableSorting: field.sortable ?? false,
-      })),
-  );
+  const columnSpecs = resourceColumnSpecs(resource);
+  const includeRelationships = needsRelationshipLabels(resource);
 
   const sorting = ref<SortingState>([]);
   const pagination = ref<PaginationState>({ pageIndex: 0, pageSize });
@@ -139,6 +142,7 @@ export function useResourceTable<
         : undefined,
       ...(hasFilters ? { filters: filters.value } : {}),
       ...(includeActions ? { includeActions } : {}),
+      ...(includeRelationships ? { includeRelationships } : {}),
     } as ListParams<TRecord>;
   });
 
@@ -150,6 +154,33 @@ export function useResourceTable<
       client
         .resource<TRecord>(resource.name)
         .list(listParams.value, { signal }),
+  });
+  const relationships = computed(() => list.data.value?.relationships);
+
+  const columns = computed<ColumnDef<ResourceTableFeatures, TRecord>[]>(() => {
+    const labels = relationships.value;
+
+    return columnSpecs.map((spec) =>
+      spec.kind === "field"
+        ? {
+            accessorKey: spec.field.name,
+            header: spec.field.label ?? spec.field.name,
+            enableSorting: spec.field.sortable ?? false,
+          }
+        : {
+            id: spec.name,
+            // Records are plain field maps at runtime (see `ResourceTable`).
+            accessorFn: (record: TRecord) =>
+              relationshipCellText(
+                labels,
+                spec,
+                record as Record<string, unknown>,
+              ),
+            header: spec.label,
+            // Sorting by a foreign key wouldn't follow the labels shown.
+            enableSorting: false,
+          },
+    );
   });
 
   const table = useTable({
@@ -188,5 +219,6 @@ export function useResourceTable<
     filters,
     setFilters: handleFiltersChange,
     actions: computed(() => list.data.value?.actions),
+    relationships,
   };
 }

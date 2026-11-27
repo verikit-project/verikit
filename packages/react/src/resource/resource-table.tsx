@@ -1,10 +1,16 @@
-import { useState, type ReactElement, type ReactNode } from "react";
+import {
+  useState,
+  type MouseEvent,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsUpDownIcon,
+  EyeIcon,
   PencilIcon,
   PlusIcon,
   SlidersHorizontalIcon,
@@ -94,6 +100,12 @@ export interface ResourceTableProps<
    */
   onEdit?: (record: TRecord) => void;
   /**
+   * Opens a record (for example, to navigate to its page): adds a View
+   * button to each row, and clicking a row anywhere other than its controls
+   * calls this too. Independent of `actions`.
+   */
+  onView?: (record: TRecord) => void;
+  /**
    * Renders the actions declared on the resource via `defineResource({ actions })`: record-scoped ones per row, collection-scoped ones in the toolbar. Labels, confirmations, and input forms come from each declaration; actions with neither a confirmation nor a form run on click. The table asks the server which of them the actor can't run on each page: those it may not run are hidden, and those that can't run right now are disabled, with the reason as a tooltip. An action denied when run (403, or 404 for a record action, which the server returns so as not to reveal whether the record exists) is hidden for the rest of this component's lifetime. Defaults to `actions`.
    */
   resourceActions?: boolean;
@@ -153,6 +165,7 @@ export function ResourceTable<
   actions = false,
   onCreate,
   onEdit,
+  onView,
   resourceActions = actions,
   renderActions,
   renderBulkActions,
@@ -365,6 +378,17 @@ export function ResourceTable<
   function rowActions(record: TRecord): ReactNode {
     return (
       <div className="flex items-center justify-end gap-1">
+        {onView ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="View"
+            onClick={() => onView(record)}
+          >
+            <EyeIcon />
+          </Button>
+        ) : null}
         {declaredRowActions(record)}
         {actions ? builtInRowActions(record) : null}
         {renderActions ? renderActions(record) : null}
@@ -375,7 +399,28 @@ export function ResourceTable<
   const editId = editRecord ? recordId(editRecord) : undefined;
   const deleteId = deleteRecord ? recordId(deleteRecord) : undefined;
   const hasActionsColumn =
-    actions || Boolean(renderActions) || recordActions.length > 0;
+    actions ||
+    Boolean(renderActions) ||
+    Boolean(onView) ||
+    recordActions.length > 0;
+
+  // A row click opens the record, unless it landed on one of the row's own
+  // controls (its checkbox, action buttons, or links).
+  function rowClickHandler(record: TRecord) {
+    return onView
+      ? (event: MouseEvent<HTMLElement>) => {
+          const target = event.target as Element;
+          if (
+            !target.closest(
+              "button, a, input, label, [role='checkbox'], [role='dialog']",
+            )
+          ) {
+            onView(record);
+          }
+        }
+      : undefined;
+  }
+  const clickableRowClass = onView ? "cursor-pointer hover:bg-muted/50" : "";
   const hasSelectionColumn = actions || Boolean(renderBulkActions);
   const hasFilterableFields = filterableFields(fields).length > 0;
   const activeFilterCount = Object.keys(filters).length;
@@ -573,7 +618,11 @@ export function ResourceTable<
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={row.id} className="border-t border-border">
+                <tr
+                  key={row.id}
+                  className={cn("border-t border-border", clickableRowClass)}
+                  onClick={rowClickHandler(row.original)}
+                >
                   {hasSelectionColumn ? (
                     <td className="px-3 py-2">
                       <Checkbox
@@ -613,7 +662,14 @@ export function ResourceTable<
           </div>
         ) : (
           rows.map((row) => (
-            <div key={row.id} className="rounded-lg border border-border p-3">
+            <div
+              key={row.id}
+              className={cn(
+                "rounded-lg border border-border p-3",
+                clickableRowClass,
+              )}
+              onClick={rowClickHandler(row.original)}
+            >
               {hasSelectionColumn ? (
                 <div className="flex justify-end pb-2">
                   <Checkbox

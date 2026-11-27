@@ -16,8 +16,11 @@ import {
   actionNeedsDialog,
   resourceActionSchemas,
 } from "@verikit/ui-core/actions/resource-actions";
-import { resolveVerikitFields } from "@verikit/ui-core/form/resolve-fields";
 import { formatFieldValue } from "@verikit/ui-core/layout/format-value";
+import {
+  relationshipCellText,
+  resourceColumnSpecs,
+} from "@verikit/ui-core/layout/table-columns";
 import { useDeleteResource } from "../query/use-resource-mutations.js";
 import { useResourceFindWithActions } from "../query/use-resource-queries.js";
 import { declaredActionButton } from "./declared-action-button.js";
@@ -50,6 +53,10 @@ export interface ResourceDetailProps {
    */
   deleteAction?: boolean;
   /**
+   * Replaces the built-in edit dialog: the Edit action calls this with the record instead (for example, to navigate to an edit page). Edit is still hidden when the server reports the actor can't update the record. Bind it as a prop (`:on-edit`) or a listener (`@edit`).
+   */
+  onEdit?: (record: DetailRecord) => void;
+  /**
    * Renders the record-scoped actions declared on the resource via `defineResource({ actions })`. The page asks the server which of them the actor can't run on this record: those it may not run are hidden, and those that can't run right now are disabled, with the reason as a tooltip. An action denied when run (403 or 404) is hidden for the rest of this component's lifetime. Defaults to `actions`.
    */
   resourceActions?: boolean;
@@ -64,7 +71,7 @@ export interface ResourceDetailProps {
 }
 
 /**
- * Shows one record's fields as a label/value list, with its actions: the built-in Edit and Delete, and the record-scoped actions declared on the resource. Edit and Delete are hidden up front when the server reports the actor can't update or delete the record. Fields marked `.hidden()`, or left out by the server because the actor can't read them, aren't shown. A record the actor can't read shows as not found, as the server doesn't reveal whether it exists.
+ * Shows one record's fields as a label/value list, with its actions: the built-in Edit and Delete, and the record-scoped actions declared on the resource. Edit and Delete are hidden up front when the server reports the actor can't update or delete the record. Fields marked `.hidden()`, or left out by the server because the actor can't read them, aren't shown. A `belongsTo` relationship is shown in place of its foreign-key field, as the related record's `displayField` (or the raw key when the actor can't read that). A record the actor can't read shows as not found, as the server doesn't reveal whether it exists.
  */
 export const ResourceDetail = defineComponent({
   name: "ResourceDetail",
@@ -91,6 +98,12 @@ export const ResourceDetail = defineComponent({
       type: Function as PropType<ResourceDetailProps["renderActions"]>,
       default: undefined,
     },
+    // A prop rather than an emit, so the page can tell whether a parent
+    // handles it and skip its built-in dialog; `@edit` still binds here.
+    onEdit: {
+      type: Function as PropType<ResourceDetailProps["onEdit"]>,
+      default: undefined,
+    },
     onDeleted: {
       type: Function as PropType<ResourceDetailProps["onDeleted"]>,
       default: undefined,
@@ -107,7 +120,7 @@ export const ResourceDetail = defineComponent({
       () => props.id,
       { enabled: () => !deleted.value },
     );
-    const fields = resolveVerikitFields(props.resource);
+    const rows = resourceColumnSpecs(props.resource, { view: "detail" });
     const recordActions =
       (props.resourceActions ?? props.actions)
         ? resourceActionSchemas(props.resource, "record")
@@ -205,7 +218,11 @@ export const ResourceDetail = defineComponent({
                   variant: "outline",
                   size: "sm",
                   onClick: () => {
-                    editOpen.value = true;
+                    if (props.onEdit) {
+                      props.onEdit(record);
+                    } else {
+                      editOpen.value = true;
+                    }
                   },
                 },
                 { default: () => [h(PencilIcon), "Edit"] },
@@ -397,14 +414,33 @@ export const ResourceDetail = defineComponent({
             );
       }
 
-      const { record, operations } = query.data.value!;
+      const { record, operations, relationships } = query.data.value!;
       const editEnabled = props.editAction ?? props.actions;
       const deleteEnabled = props.deleteAction ?? props.actions;
       const showEdit = editEnabled && !deniedUpdate.value && !operations.update;
       const showDelete =
         deleteEnabled && !deniedDelete.value && !operations.delete;
-      const visibleFields = Object.values(fields).filter(
-        (field) => !field.hidden && Object.hasOwn(record, field.name),
+      // The server leaves out fields the actor can't read.
+      const visibleRows = rows.flatMap((row) =>
+        row.kind === "field"
+          ? Object.hasOwn(record, row.field.name)
+            ? [
+                {
+                  key: row.field.name,
+                  label: row.field.label ?? row.field.name,
+                  value: formatFieldValue(record[row.field.name]),
+                },
+              ]
+            : []
+          : Object.hasOwn(record, row.foreignKey)
+            ? [
+                {
+                  key: row.name,
+                  label: row.label,
+                  value: relationshipCellText(relationships, row, record),
+                },
+              ]
+            : [],
       );
       const hasActions =
         showEdit ||
@@ -427,18 +463,14 @@ export const ResourceDetail = defineComponent({
             class:
               "grid gap-x-6 gap-y-3 rounded-lg border border-border p-4 sm:grid-cols-[minmax(8rem,max-content)_1fr]",
           },
-          visibleFields.map((field) =>
-            h("div", { key: field.name, class: "contents" }, [
+          visibleRows.map((row) =>
+            h("div", { key: row.key, class: "contents" }, [
               h(
                 "dt",
                 { class: "text-sm font-medium text-muted-foreground" },
-                field.label ?? field.name,
+                row.label,
               ),
-              h(
-                "dd",
-                { class: "text-sm break-words" },
-                formatFieldValue(record[field.name]),
-              ),
+              h("dd", { class: "text-sm break-words" }, row.value),
             ]),
           ),
         ),
@@ -453,7 +485,7 @@ export const ResourceDetail = defineComponent({
               onDenied: denyAction,
             })
           : null,
-        editEnabled ? editDialog(record) : null,
+        editEnabled && !props.onEdit ? editDialog(record) : null,
         deleteEnabled ? deleteDialog() : null,
       ]);
     };

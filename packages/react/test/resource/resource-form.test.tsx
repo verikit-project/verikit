@@ -261,7 +261,7 @@ test("a belongsTo relationship (no .form()) renders its built-in picker, and its
   );
 
   assert.equal(harness.container.querySelector("label")?.textContent, "Author");
-  assert.ok(harness.container.querySelector('[data-slot="select-trigger"]'));
+  assert.ok(harness.container.querySelector('[data-slot="combobox-input"]'));
 
   typeIntoInput(
     harness.container.querySelector('input[name="title"]') as HTMLInputElement,

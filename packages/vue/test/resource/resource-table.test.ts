@@ -378,6 +378,54 @@ test("closing the create dialog via its own close button discards it without cre
   harness.cleanup();
 });
 
+test("onView adds a View button and makes rows open the record, but not from their controls", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+  const viewed: string[] = [];
+
+  const wrapper = harness.mountWithProvider(ResourceTable, {
+    resource: postResource,
+    actions: true,
+    // Equivalent to `@view` in a template.
+    onView: (record: FakeRecord) => {
+      viewed.push(record.id);
+    },
+  });
+  await waitFor(() => root(wrapper).textContent?.includes("Hello") === true);
+
+  // The desktop row and the mobile card both open the record.
+  const [row] = root(wrapper).querySelectorAll("tbody tr");
+  assert.ok(row!.className.includes("cursor-pointer"));
+  await click(row!.querySelector("td:nth-child(2)"));
+  await click(root(wrapper).querySelector(".md\\:hidden .rounded-lg"));
+  await click(root(wrapper).querySelector('[aria-label="View"]'));
+  // Its checkbox and Edit button don't.
+  await click(row!.querySelector('[aria-label="Select row"]'));
+  await click(row!.querySelector('[aria-label="Edit"]'));
+  assert.deepEqual(viewed, ["1", "1", "1"]);
+
+  harness.cleanup();
+});
+
+test("without onView, rows aren't clickable and have no View button", async () => {
+  const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
+  const harness = setupHarness(fixture.client);
+
+  const wrapper = harness.mountWithProvider(ResourceTable, {
+    resource: postResource,
+  });
+  await waitFor(() => root(wrapper).textContent?.includes("Hello") === true);
+
+  assert.equal(root(wrapper).querySelector('[aria-label="View"]'), null);
+  assert.ok(
+    !root(wrapper)
+      .querySelector("tbody tr")!
+      .className.includes("cursor-pointer"),
+  );
+
+  harness.cleanup();
+});
+
 test("onCreate and onEdit replace the create and edit dialogs", async () => {
   const fixture = createFakeClient([{ id: "1", title: "Hello" }]);
   const harness = setupHarness(fixture.client);

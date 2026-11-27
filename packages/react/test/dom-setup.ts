@@ -47,6 +47,8 @@ export function installJsdom(): () => void {
     Node: window.Node,
     Text: window.Text,
     Event: window.Event,
+    // Base UI's Combobox walks its live region's text with a TreeWalker.
+    NodeFilter: window.NodeFilter,
     // floating-ui's `isOverflowElement` calls this as a bare global too.
     getComputedStyle: window.getComputedStyle.bind(window),
     ResizeObserver: ResizeObserverPolyfill,
