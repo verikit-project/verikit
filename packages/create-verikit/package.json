@@ -1,6 +1,6 @@
 {
   "name": "create-verikit",
-  "version": "0.24.4",
+  "version": "0.25.0",
   "description": "Create a Verikit app with one command: npm create verikit@latest",
   "type": "module",
   "bin": {
