@@ -17,6 +17,7 @@ export interface PanelContextValue<TUser = unknown> {
     home: () => string;
     list: (resource: PanelResourceEntry) => string;
     create: (resource: PanelResourceEntry) => string;
+    view: (resource: PanelResourceEntry, id: string) => string;
     edit: (resource: PanelResourceEntry, id: string) => string;
   };
 }

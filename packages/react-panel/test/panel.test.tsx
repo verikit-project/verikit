@@ -188,14 +188,72 @@ describe("resource pages", () => {
     typeInto(input("title"), "Changed");
     click(button("Save changes"));
 
-    await waitFor(() => window.location.pathname === "/posts");
+    // Saving returns to the record's page.
+    await waitFor(() => window.location.pathname === "/posts/1");
     assert.equal(app.records[0]?.title, "Changed");
+    await waitFor(() => text().includes("Changed"));
 
     goTo("/posts/1/edit");
     act(() => window.dispatchEvent(new PopStateEvent("popstate")));
     await waitFor(() => Boolean(input("title")));
+    click(link("Post"));
+    assert.equal(window.location.pathname, "/posts/1");
     click(link("Posts"));
     assert.equal(window.location.pathname, "/posts");
+  });
+
+  it("opens a record's page from its row, with Edit and Delete there", async () => {
+    const app = start();
+    goTo("/posts");
+    app.render(<Panel resources={[harness.post]} />);
+    await waitFor(() => text().includes("Hello"));
+
+    // A click on the row itself (here, its title cell) opens the record.
+    const cell = Array.from(document.querySelectorAll("tbody td")).find(
+      (candidate) => candidate.textContent === "Hello",
+    ) as HTMLElement;
+    click(cell);
+    assert.equal(window.location.pathname, "/posts/1");
+    await waitFor(() => document.querySelector("dl") !== null);
+    assert.deepEqual(
+      Array.from(document.querySelectorAll("dd")).map(
+        (node) => node.textContent,
+      ),
+      ["Hello", "First"],
+    );
+
+    click(button("Edit"));
+    assert.equal(window.location.pathname, "/posts/1/edit");
+    await waitFor(() => input("title")?.value === "Hello");
+
+    goTo("/posts/1");
+    act(() => window.dispatchEvent(new PopStateEvent("popstate")));
+    await waitFor(() => document.querySelector("dl") !== null);
+    click(button("Delete"));
+    await waitFor(() => document.querySelector('[role="dialog"]') !== null);
+    const confirm = Array.from(
+      document.querySelectorAll('[role="dialog"] button'),
+    ).find((candidate) => candidate.textContent === "Delete") as HTMLElement;
+    click(confirm);
+
+    await waitFor(() => window.location.pathname === "/posts");
+    assert.equal(app.records.length, 0);
+  });
+
+  it('keeps rows to their Edit button with recordClick "edit"', async () => {
+    const app = start();
+    goTo("/posts");
+    app.render(<Panel resources={[harness.post]} recordClick="edit" />);
+    await waitFor(() => text().includes("Hello"));
+
+    assert.equal(document.querySelector('[aria-label="View"]'), null);
+    click(document.querySelector('[aria-label="Edit"]') as HTMLElement);
+    await waitFor(() => input("title")?.value === "Hello");
+    assert.throws(() => link("Post"), /no link "Post"/);
+
+    typeInto(input("title"), "Changed");
+    click(button("Save changes"));
+    await waitFor(() => window.location.pathname === "/posts");
   });
 
   it("shows loading, missing, and failed records", async () => {

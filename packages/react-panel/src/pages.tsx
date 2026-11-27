@@ -1,4 +1,5 @@
 import {
+  ResourceDetail,
   ResourceForm,
   ResourceTable,
   useDeleteResource,
@@ -80,6 +81,11 @@ export function ListPage({
         onCreate={() => navigate(href.create(entry))}
         // Adapters guarantee every record has a string or numeric id.
         onEdit={(record) => navigate(href.edit(entry, recordId(record)!))}
+        onView={
+          entry.recordClick === "view"
+            ? (record) => navigate(href.view(entry, recordId(record)!))
+            : undefined
+        }
       />
     </>
   );
@@ -170,6 +176,38 @@ function isNotFound(error: Error): boolean {
   return (error as { status?: unknown }).status === 404;
 }
 
+/**
+ * A record's page: its fields, with relationships shown by their related
+ * record's label, and its Edit, Delete, and declared actions. Edit opens the
+ * edit page; deleting returns to the list.
+ */
+export function DetailPage({
+  entry,
+  id,
+}: {
+  entry: PanelResourceEntry;
+  id: string;
+}): ReactElement {
+  const { href, navigate } = usePanel();
+
+  return (
+    <>
+      <PageHeader
+        title={entry.singularLabel}
+        crumbs={[{ label: entry.label, to: href.list(entry) }]}
+      />
+      <ResourceDetail
+        className="max-w-3xl"
+        resource={entry.resource}
+        id={id}
+        actions
+        onEdit={() => navigate(href.edit(entry, id))}
+        onDeleted={() => navigate(href.list(entry))}
+      />
+    </>
+  );
+}
+
 export function EditPage({
   entry,
   id,
@@ -179,7 +217,13 @@ export function EditPage({
 }): ReactElement {
   const { href, navigate } = usePanel();
   const record = useResourceFind(entry.resource.name, id);
-  const crumbs = [{ label: entry.label, to: href.list(entry) }];
+  const withRecordPage = entry.recordClick === "view";
+  const crumbs = [
+    { label: entry.label, to: href.list(entry) },
+    ...(withRecordPage
+      ? [{ label: entry.singularLabel, to: href.view(entry, id) }]
+      : []),
+  ];
   const title = `Edit ${lowerFirst(entry.singularLabel)}`;
 
   if (record.error) {
@@ -210,7 +254,9 @@ export function EditPage({
             id={id}
             defaultValues={record.data}
             submitLabel="Save changes"
-            onSuccess={() => navigate(href.list(entry))}
+            onSuccess={() =>
+              navigate(withRecordPage ? href.view(entry, id) : href.list(entry))
+            }
           />
         ) : (
           <p className="text-sm text-muted-foreground">Loading…</p>

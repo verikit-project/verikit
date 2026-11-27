@@ -19,13 +19,18 @@ export function App() {
 }
 ```
 
-Each resource gets a navigation entry and three pages:
+Each resource gets a navigation entry and four pages:
 
-| URL                        | Page                                                    |
-| -------------------------- | ------------------------------------------------------- |
-| `/{resource}`              | Table with search, filters, sorting, and bulk delete    |
-| `/{resource}/create`       | Create form                                             |
-| `/{resource}/{id}/edit`    | Edit form with a Delete button                          |
+| URL                        | Page                                                            |
+| -------------------------- | --------------------------------------------------------------- |
+| `/{resource}`              | Table with search, filters, sorting, and bulk delete            |
+| `/{resource}/create`       | Create form                                                     |
+| `/{resource}/{id}`         | The record, with relationships by label, Edit, Delete, actions  |
+| `/{resource}/{id}/edit`    | Edit form with a Delete button                                  |
+
+Clicking a row opens its record page. Pass `recordClick="edit"` (to the panel,
+or to one resource) to keep rows to their Edit button instead, which goes
+straight to the edit form.
 
 Serve your `index.html` for every URL under the panel so these pages work on
 reload. Vite's dev server already does this.
@@ -47,6 +52,7 @@ Add the panel and component sources to your Tailwind CSS entry:
   title="Acme"
   basePath="/admin"            // mount under a path; defaults to "/"
   dashboard={<Dashboard />}    // home page; defaults to opening the first resource
+  recordClick="view"           // rows open the record page ("edit": rows keep to Edit)
   resources={[
     post,                      // labels and URL derived from the name: "Posts", /posts
     {
@@ -56,6 +62,7 @@ Add the panel and component sources to your Tailwind CSS entry:
       path: "people",
       icon: UsersIcon,         // any component that takes className, e.g. lucide-react
       group: "Accounts",       // navigation heading
+      recordClick: "edit",     // overrides the panel's recordClick for this resource
     },
   ]}
 />

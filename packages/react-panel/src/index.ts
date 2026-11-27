@@ -5,6 +5,7 @@ export type { PanelLinkProps } from "./link.js";
 export { Panel } from "./panel.js";
 export type { PanelAuth, PanelProps, PanelSession } from "./panel.js";
 export type {
+  PanelRecordClick,
   PanelResourceConfig,
   PanelResourceEntry,
   PanelResourceInput,

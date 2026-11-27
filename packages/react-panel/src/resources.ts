@@ -17,7 +17,16 @@ export interface PanelResourceConfig {
   icon?: ComponentType<{ className?: string }>;
   /** Navigation group heading. Ungrouped resources are listed first. */
   group?: string;
+  /** Overrides the panel's `recordClick` for this resource. */
+  recordClick?: PanelRecordClick;
 }
+
+/**
+ * Where a row in a resource's list leads: `"view"` opens the record's page
+ * (with Edit there), `"edit"` goes straight to the edit page from each row's
+ * Edit button.
+ */
+export type PanelRecordClick = "view" | "edit";
 
 /** A resource, or a resource with panel settings. */
 export type PanelResourceInput = PanelResourceSource | PanelResourceConfig;
@@ -30,6 +39,7 @@ export interface PanelResourceEntry {
   path: string;
   icon?: ComponentType<{ className?: string }>;
   group?: string;
+  recordClick: PanelRecordClick;
 }
 
 function words(name: string): string[] {
@@ -67,6 +77,7 @@ function pluralWords(name: string): string[] {
 /** Resolves labels and paths, and rejects resources that would share a URL. */
 export function normalizePanelResources(
   inputs: readonly PanelResourceInput[],
+  defaults: { recordClick?: PanelRecordClick } = {},
 ): PanelResourceEntry[] {
   const seen = new Set<string>();
 
@@ -97,6 +108,7 @@ export function normalizePanelResources(
       path,
       icon: config.icon,
       group: config.group,
+      recordClick: config.recordClick ?? defaults.recordClick ?? "view",
     };
   });
 }

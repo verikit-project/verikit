@@ -60,7 +60,24 @@ describe("normalizePanelResources", () => {
       path: "people",
       icon: Icon,
       group: "Users",
+      recordClick: "view",
     });
+  });
+
+  it("takes recordClick from the resource, else the panel default, else view", () => {
+    const resource = defineResource("person", { fields });
+    const other = defineResource("place", { fields });
+
+    assert.deepEqual(
+      normalizePanelResources([resource]).map((entry) => entry.recordClick),
+      ["view"],
+    );
+    assert.deepEqual(
+      normalizePanelResources([{ resource, recordClick: "view" }, other], {
+        recordClick: "edit",
+      }).map((entry) => entry.recordClick),
+      ["view", "edit"],
+    );
   });
 
   it("falls back for a name with no letters", () => {

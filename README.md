@@ -42,7 +42,8 @@ npx verikit make:resource Comment body:textarea post:belongsTo:post
 npm run db:generate
 ```
 
-The comment form gets a picker that lists posts by title.
+The comment form gets a searchable picker that lists posts by title, and the
+comments table and record page show each comment's post by title too.
 
 **4. Lock a resource down.** In `server/permissions.ts`, replace a resource's
 `"open"` with rules. Permissions fail closed, so this makes tags read-only:
@@ -101,7 +102,7 @@ export const post = defineResource("post", {
 That one definition is what `verikit/server` exposes over REST, `verikit/drizzle` or
 `verikit/prisma` backs with a database, `verikit/client` consumes through a typed client, and
 `verikit/react` renders as tables and forms. `verikit/react-panel` turns a list of
-resources into a full admin panel with navigation and list, create, and edit pages:
+resources into a full admin panel with navigation and list, record, create, and edit pages:
 
 ```tsx
 <Panel title="Acme" resources={[post, user]} />

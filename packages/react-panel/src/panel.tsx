@@ -11,9 +11,16 @@ import {
 } from "react";
 import { PanelContext, usePanel, type PanelContextValue } from "./context.js";
 import { PanelLink } from "./link.js";
-import { CreatePage, EditPage, ListPage, NotFoundPage } from "./pages.js";
+import {
+  CreatePage,
+  DetailPage,
+  EditPage,
+  ListPage,
+  NotFoundPage,
+} from "./pages.js";
 import {
   normalizePanelResources,
+  type PanelRecordClick,
   type PanelResourceEntry,
   type PanelResourceInput,
 } from "./resources.js";
@@ -23,7 +30,7 @@ import {
   normalizeBasePath,
   panelHref,
   type PanelRoute,
-} from "./routing/routes.js";
+} from "@verikit/ui-core/routing/routes";
 
 /** The current sign-in state, as returned by `auth.useSession()`. */
 export type PanelSession<TUser> =
@@ -64,6 +71,12 @@ export interface PanelProps<TUser = unknown> {
   dashboard?: ReactNode;
   /** Requires a signed-in user before showing the panel. */
   auth?: PanelAuth<TUser>;
+  /**
+   * Where list rows lead: `"view"` (the default) opens the record's page,
+   * where Edit is; `"edit"` keeps rows to their Edit button, which opens the
+   * edit page. A resource's own `recordClick` overrides this.
+   */
+  recordClick?: PanelRecordClick;
 }
 
 function defaultUserLabel(user: unknown): string {
@@ -78,12 +91,12 @@ function defaultUserLabel(user: unknown): string {
 
 /**
  * A complete admin panel for Verikit resources: navigation, a list page with
- * search, filters, and bulk delete, plus create and edit pages for each
- * resource. Must be rendered inside a `VerikitProvider`.
+ * search, filters, and bulk delete, plus record, create, and edit pages for
+ * each resource. Must be rendered inside a `VerikitProvider`.
  *
  * Routes (relative to `basePath`): `/`, `/{resource}`, `/{resource}/create`,
- * and `/{resource}/{id}/edit`. Serve your app's `index.html` for every path
- * under `basePath` so these URLs work on reload.
+ * `/{resource}/{id}`, and `/{resource}/{id}/edit`. Serve your app's
+ * `index.html` for every path under `basePath` so these URLs work on reload.
  */
 export function Panel<TUser = unknown>(props: PanelProps<TUser>): ReactElement {
   return props.auth ? (
@@ -134,11 +147,15 @@ function PanelShell<TUser>({
   title = "Admin",
   basePath: rawBasePath = "/",
   dashboard,
+  recordClick,
   user,
   signOut,
   userLabel,
 }: PanelShellProps<TUser>): ReactElement {
-  const resources = useMemo(() => normalizePanelResources(inputs), [inputs]);
+  const resources = useMemo(
+    () => normalizePanelResources(inputs, { recordClick }),
+    [inputs, recordClick],
+  );
   const basePath = normalizeBasePath(rawBasePath);
   const pathname = usePathname();
   const route = matchPanelRoute(
@@ -157,6 +174,7 @@ function PanelShell<TUser>({
       home: () => panelHref(basePath),
       list: (entry) => panelHref(basePath, entry.path),
       create: (entry) => panelHref(basePath, entry.path, "create"),
+      view: (entry, id) => panelHref(basePath, entry.path, id),
       edit: (entry, id) => panelHref(basePath, entry.path, id, "edit"),
     },
   };
@@ -202,6 +220,16 @@ function RouteContent({
 
   if (route.kind === "create") {
     return <CreatePage key={entry.path} entry={entry} />;
+  }
+
+  if (route.kind === "view") {
+    return (
+      <DetailPage
+        key={`${entry.path}/${route.id}`}
+        entry={entry}
+        id={route.id}
+      />
+    );
   }
 
   if (route.kind === "edit") {
