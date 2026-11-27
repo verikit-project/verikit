@@ -1,8 +1,23 @@
-import type { RelationshipNode } from "@verikit/core";
-import type { SchemaPath } from "@verikit/ui-core/layout/path";
-import { defineComponent, h, type PropType, type VNodeChild } from "vue";
+import type { ActionSchemaLike, RelationshipNode } from "@verikit/core";
+import { VerikitClientError } from "@verikit/client";
+import { isResource } from "@verikit/ui-core/form/resolve-fields";
+import { getValueAtPath, type SchemaPath } from "@verikit/ui-core/layout/path";
+import { defineComponent, h, ref, type PropType, type VNodeChild } from "vue";
 import { Button } from "#components/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "#components/dialog";
 import { cn } from "#lib/utils";
+import {
+  useRunResourceAction,
+  type RunResourceActionVariables,
+} from "./resource-action-dialog.js";
 import type { VerikitFieldRegistry } from "../fields/types.js";
 import { RenderSchemaTree } from "../layout/render-schema-node.js";
 import {
@@ -28,6 +43,33 @@ export interface ResourceFormProps<
   submitLabel?: string;
   /** Class name applied to the outer `<form>`. */
   className?: string;
+  /**
+   * Replaces what an action node's button does. By default it runs the
+   * resource's declared action of that name on the server, with the values of
+   * the action's inline form as input and this form's `id` as the record
+   * (for record-scoped actions), asking first when the action declares a
+   * confirmation.
+   */
+  onAction?: (name: string, path: SchemaPath) => void;
+}
+
+/** What an action button reported last, shown under the form's fields. */
+type ActionFeedback = { kind: "success" | "error"; text: string };
+
+function declaredActions(
+  resource: VerikitSchemaTreeSource,
+): Record<string, ActionSchemaLike> {
+  return (
+    (isResource(resource) ? resource.toSchema().actions : resource.actions) ??
+    {}
+  );
+}
+
+function actionErrorText(error: Error): string {
+  const issues =
+    error instanceof VerikitClientError ? (error.issues ?? []) : [];
+
+  return [error.message, ...issues.map((issue) => issue.message)].join(" ");
 }
 
 /**
@@ -71,6 +113,12 @@ export const ResourceForm = defineComponent({
       type: String as PropType<string | undefined>,
       default: undefined,
     },
+    // A prop rather than an emit, so the form knows whether to run actions
+    // itself; `@action` still binds here.
+    onAction: {
+      type: Function as PropType<ResourceFormProps["onAction"]>,
+      default: undefined,
+    },
   },
   setup(props) {
     const result = useResourceSchemaTreeForm(props.resource, {
@@ -80,6 +128,140 @@ export const ResourceForm = defineComponent({
       onSuccess: props.onSuccess,
       onError: props.onError,
     });
+
+    const confirming = ref<RunResourceActionVariables | null>(null);
+    const feedback = ref<ActionFeedback | null>(null);
+    const runAction = useRunResourceAction(props.resource.name);
+
+    function run(variables: RunResourceActionVariables): void {
+      confirming.value = null;
+      feedback.value = null;
+      runAction.mutate(variables, {
+        onSuccess: (response) => {
+          feedback.value = {
+            kind: "success",
+            text:
+              response.message ??
+              variables.action.result?.successMessage ??
+              `${variables.action.label ?? variables.action.name} done.`,
+          };
+        },
+        onError: (error) => {
+          feedback.value = { kind: "error", text: actionErrorText(error) };
+        },
+      });
+    }
+
+    function handleAction(name: string, path: SchemaPath): void {
+      const action = declaredActions(props.resource)[name];
+
+      if (!action) {
+        feedback.value = {
+          kind: "error",
+          text: `"${name}" isn't an action declared on ${props.resource.name}.`,
+        };
+        return;
+      }
+
+      const input = getValueAtPath(result.treeProps.value.values, path);
+      const variables: RunResourceActionVariables = {
+        action,
+        recordId: action.scope === "collection" ? undefined : props.id,
+        input:
+          typeof input === "object" && input !== null
+            ? (input as Record<string, unknown>)
+            : undefined,
+      };
+
+      if (action.confirmation) {
+        confirming.value = variables;
+      } else {
+        run(variables);
+      }
+    }
+
+    function confirmationDialog(): VNodeChild {
+      const pending = confirming.value;
+      const confirmation = pending?.action.confirmation;
+
+      return h(
+        Dialog,
+        {
+          open: pending !== null,
+          onOpenChange: (open: boolean) => {
+            if (!open) confirming.value = null;
+          },
+        },
+        {
+          default: () =>
+            h(
+              DialogContent,
+              {},
+              {
+                default: () =>
+                  pending && confirmation
+                    ? [
+                        h(
+                          DialogHeader,
+                          {},
+                          {
+                            default: () => [
+                              h(
+                                DialogTitle,
+                                {},
+                                {
+                                  default: () =>
+                                    confirmation.title ??
+                                    pending.action.label ??
+                                    pending.action.name,
+                                },
+                              ),
+                              h(
+                                DialogDescription,
+                                {},
+                                { default: () => confirmation.message },
+                              ),
+                            ],
+                          },
+                        ),
+                        h(
+                          DialogFooter,
+                          {},
+                          {
+                            default: () => [
+                              h(
+                                DialogClose,
+                                { asChild: true },
+                                {
+                                  default: () =>
+                                    h(
+                                      Button,
+                                      { type: "button", variant: "outline" },
+                                      {
+                                        default: () =>
+                                          confirmation.cancelLabel ?? "Cancel",
+                                      },
+                                    ),
+                                },
+                              ),
+                              h(
+                                Button,
+                                { type: "button", onClick: () => run(pending) },
+                                {
+                                  default: () =>
+                                    confirmation.confirmLabel ?? "Confirm",
+                                },
+                              ),
+                            ],
+                          },
+                        ),
+                      ]
+                    : null,
+              },
+            ),
+        },
+      );
+    }
 
     function handleSubmit(event: Event): void {
       event.preventDefault();
@@ -99,11 +281,27 @@ export const ResourceForm = defineComponent({
         [
           RenderSchemaTree({
             nodes: result.tree,
-            resourceName: props.resource.name,
             registry: props.registry,
             renderRelationship: props.renderRelationship,
             ...result.treeProps.value,
+            onAction: props.onAction ?? handleAction,
           }),
+          feedback.value
+            ? h(
+                "p",
+                {
+                  role: feedback.value.kind === "error" ? "alert" : "status",
+                  class: cn(
+                    "text-sm",
+                    feedback.value.kind === "error"
+                      ? "text-destructive"
+                      : "text-muted-foreground",
+                  ),
+                },
+                feedback.value.text,
+              )
+            : null,
+          confirmationDialog(),
           result.submitError.value
             ? h(
                 "p",

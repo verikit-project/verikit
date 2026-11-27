@@ -72,6 +72,8 @@ test("useVerikitSchemaTreeForm wires TanStack form state to a nested schema tree
     ["section", "repeater"],
   );
   assert.equal(captured.getFieldError(["email"]), undefined);
+  // Pickers rendered from treeProps alone load from this resource's routes.
+  assert.equal(captured.treeProps.value.resourceName, "Order");
   assert.deepEqual(captured.treeProps.value.values, {
     email: "buyer@example.com",
     items: [{ itemName: "Widget", itemQty: 2 }],

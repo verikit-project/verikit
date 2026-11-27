@@ -40,6 +40,7 @@ export interface UseVerikitSchemaTreeFormOptions<TResult = unknown> {
 export type VerikitSchemaTreeRenderProps = Pick<
   SchemaRenderProps,
   | "values"
+  | "resourceName"
   | "errors"
   | "actions"
   | "onFieldChange"
@@ -189,6 +190,8 @@ export function useVerikitSchemaTreeForm<TResult = unknown>({
 
   const treeProps = computed<VerikitSchemaTreeRenderProps>(() => ({
     values: values.value as VerikitFormValues,
+    // So `belongsTo` pickers load from this resource's relationship routes.
+    resourceName: resource.name,
     errors: errors.value,
     actions: actionRegistry,
     onFieldChange,
