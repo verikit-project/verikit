@@ -8,6 +8,7 @@ import {
 import {
   and,
   getTableColumns,
+  inArray,
   sql,
   type Column,
   asc,
@@ -284,6 +285,13 @@ export function createDrizzleAdapter(
 
       return [name, resolved.column] as const;
     });
+  // Any text column can be searched when the server names its field in
+  // `searchFields` (such as a relationship picker's displayField).
+  const textColumns = new Map(
+    [...columnsByField.entries()]
+      .filter(([, { column }]) => column.dataType === "string")
+      .map(([name, { column }]) => [name, column]),
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the query-builder chain's shape differs per dialect; conditionally built below regardless of which one `db` is
   const client = db as any;
@@ -358,11 +366,20 @@ export function createDrizzleAdapter(
       // match anything; treat it as an unsatisfiable filter (zero results),
       // not as "no filter" (which would return every row unfiltered).
       const permittedSearchColumns = params.searchFields
-        ? searchableColumns
-            .filter(([name]) => params.searchFields!.includes(name))
-            .map(([, column]) => column)
+        ? params.searchFields.flatMap((name) => {
+            const column = textColumns.get(name);
+            return column ? [column] : [];
+          })
         : searchableColumns.map(([, column]) => column);
       if (params.search && permittedSearchColumns.length === 0) {
+        return { records: [], total: 0 };
+      }
+      // Ids that can't be decoded (e.g. "abc" for a numeric key) match nothing.
+      const ids = params.ids?.flatMap((id) => {
+        const value = coerceId(idColumn, id);
+        return value === undefined ? [] : [value];
+      });
+      if (ids && ids.length === 0) {
         return { records: [], total: 0 };
       }
 
@@ -370,6 +387,7 @@ export function createDrizzleAdapter(
         ? searchCondition(permittedSearchColumns, params.search)
         : undefined;
       const where = and(
+        ids && inArray(idColumn, ids),
         search,
         scopeCondition(params.scope),
         filterCondition(params.filters),

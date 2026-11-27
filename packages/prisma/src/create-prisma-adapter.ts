@@ -165,14 +165,21 @@ export function createPrismaAdapter<
   const conflict = () =>
     new ConflictError("Record changed since authorization. Retry the request.");
 
+  const isTextField = (field: { fieldType: string }) =>
+    field.fieldType === "text" ||
+    field.fieldType === "textarea" ||
+    field.fieldType === "email";
+  // Any text field can be searched when the server names it in
+  // `searchFields` (such as a relationship picker's displayField).
+  const textScalars = new Map(
+    Object.entries(schema.fields)
+      .filter(([, field]) => isTextField(field))
+      .map(([name]) => [name, fields[name]!]),
+  );
   const searchableScalars = Object.entries(schema.fields)
     .filter(([, field]) => field.searchable)
     .map(([name, field]) => {
-      if (
-        field.fieldType !== "text" &&
-        field.fieldType !== "textarea" &&
-        field.fieldType !== "email"
-      ) {
+      if (!isTextField(field)) {
         throw new Error(
           `@verikit/prisma: resource "${resource.name}"'s searchable field "${name}" has fieldType "${field.fieldType}". Search only supports text fields.`,
         );
@@ -314,11 +321,20 @@ export function createPrismaAdapter<
     async list(params: ResourceListParams) {
       // Search with no searchable fields can never match; return zero results.
       const permittedSearchScalars = params.searchFields
-        ? searchableScalars
-            .filter(([name]) => params.searchFields!.includes(name))
-            .map(([, scalar]) => scalar)
+        ? params.searchFields.flatMap((name) => {
+            const scalar = textScalars.get(name);
+            return scalar ? [scalar] : [];
+          })
         : searchableScalars.map(([, scalar]) => scalar);
       if (params.search && permittedSearchScalars.length === 0) {
+        return { records: [], total: 0 };
+      }
+      // Ids that `id.fromPath` can't decode match nothing.
+      const ids = params.ids?.flatMap((pathId) => {
+        const value = fromPath(pathId);
+        return value === undefined ? [] : [value];
+      });
+      if (ids && ids.length === 0) {
         return { records: [], total: 0 };
       }
 
@@ -328,11 +344,16 @@ export function createPrismaAdapter<
       const literalSearch =
         params.search !== undefined && /[\\%_]/.test(params.search);
 
-      const where = combinedWhere(
-        params.scope,
+      const searchConstraint =
         params.search && !literalSearch
           ? searchWhere(params.search, permittedSearchScalars)
-          : undefined,
+          : undefined;
+      const idConstraint = ids && { [id.field]: { in: ids } };
+      const where = combinedWhere(
+        params.scope,
+        idConstraint && searchConstraint
+          ? { AND: [idConstraint, searchConstraint] }
+          : (idConstraint ?? searchConstraint),
         params.filters,
       );
       const sort = params.sort;

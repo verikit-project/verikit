@@ -25,7 +25,7 @@ function parsePositiveInt(
 }
 
 /**
- * Parses `page`/`pageSize`/`sort`/`order`/`search` (or `q`) query params into `ResourceListParams`. Shared by the list and search routes; the search route passes a smaller `defaultPageSize` suited to combobox-style lookups.
+ * Parses `page`/`pageSize`/`sort`/`order`/`search` (or `q`)/`ids` (repeated, at most 100) query params into `ResourceListParams`. Shared by the list and search routes; the search route passes a smaller `defaultPageSize` suited to combobox-style lookups.
  */
 export function parseListParams(
   url: URL,
@@ -33,6 +33,16 @@ export function parseListParams(
 ): ResourceListParams {
   const query = url.searchParams;
   const search = query.get("search") ?? query.get("q") ?? undefined;
+  const ids = query.getAll("ids");
+
+  if (ids.length > MAX_PAGE_SIZE) {
+    throw new ValidationError("Invalid ids.", [
+      {
+        path: ["ids"],
+        message: `At most ${MAX_PAGE_SIZE} ids can be requested at once.`,
+      },
+    ]);
+  }
   const sortField = query.get("sort");
   const order = query.get("order");
 
@@ -44,6 +54,7 @@ export function parseListParams(
       MAX_PAGE_SIZE,
     ),
     ...(search !== undefined && { search }),
+    ...(ids.length > 0 && { ids }),
     ...(sortField && {
       sort: {
         field: sortField,

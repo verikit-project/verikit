@@ -409,11 +409,15 @@ export function createServer<TActor = unknown>(
 
       switch (action.kind) {
         case "list":
-          return withCors(await handleList(ctx), responseCorsHeaders);
+          return withCors(
+            await handleList(ctx, { table: routeTable }),
+            responseCorsHeaders,
+          );
         case "search":
           return withCors(
             await handleList(ctx, {
               defaultPageSize: DEFAULT_SEARCH_PAGE_SIZE,
+              table: routeTable,
             }),
             responseCorsHeaders,
           );
@@ -433,7 +437,7 @@ export function createServer<TActor = unknown>(
           );
         case "find":
           return withCors(
-            await handleFind(ctx, action.id),
+            await handleFind(ctx, action.id, routeTable),
             responseCorsHeaders,
           );
         case "update":

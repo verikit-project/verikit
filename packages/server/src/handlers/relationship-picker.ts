@@ -6,6 +6,8 @@ import { handleList } from "./list.js";
 /**
  * Lists selectable records for a `belongsTo` relationship using the target
  * resource's standard list behavior, including permissions and scopes.
+ * Search also covers the relationship's `displayField`, so a picker can be
+ * searched by the label it shows even when that field isn't `.searchable()`.
  */
 export async function handleRelationshipPicker<TActor>(
   ctx: HandlerContext<TActor>,
@@ -29,6 +31,12 @@ export async function handleRelationshipPicker<TActor>(
     throw new NotFoundError();
   }
 
-  // Pickers only select records, so they never report action availability.
-  return handleList({ ...ctx, entry: target }, { actionAvailability: false });
+  // Pickers only select records, so they never report actions or labels.
+  return handleList(
+    { ...ctx, entry: target },
+    {
+      includes: false,
+      ...(schema.displayField && { extraSearchFields: [schema.displayField] }),
+    },
+  );
 }

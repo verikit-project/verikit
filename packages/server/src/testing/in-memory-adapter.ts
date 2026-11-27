@@ -9,9 +9,10 @@ import type {
 /** Options for {@link createInMemoryAdapter}. */
 export interface InMemoryAdapterOptions<TRecord> {
   /**
-   * Field names eligible for free-text `search`, further narrowed per-request by
-   * `params.searchFields` when the caller supplies one (mirroring how `@verikit/drizzle`
-   * and `@verikit/prisma` intersect their own `.searchable()` fields with it).
+   * Field names searched by free-text `search` when the request has no
+   * `params.searchFields`. With `params.searchFields`, those fields are
+   * searched instead, the same way `@verikit/drizzle` and `@verikit/prisma`
+   * treat it.
    */
   searchableFields?: readonly string[];
   /** Default values merged under a `create()` call's own `values`. */
@@ -54,12 +55,10 @@ function matchesSearch(
   if (!params.search) return true;
 
   const term = params.search.toLowerCase();
-  return searchableFields.some(
-    (field) =>
-      params.searchFields?.includes(field) !== false &&
-      String(record[field] ?? "")
-        .toLowerCase()
-        .includes(term),
+  return (params.searchFields ?? searchableFields).some((field) =>
+    String(record[field] ?? "")
+      .toLowerCase()
+      .includes(term),
   );
 }
 
@@ -96,8 +95,10 @@ export function createInMemoryAdapter<
     async list(
       params: ResourceListParams,
     ): Promise<ResourceListResult<TRecord>> {
+      const ids = params.ids && new Set(params.ids);
       let filtered = records.filter(
         (record) =>
+          (!ids || ids.has(record.id)) &&
           matchesScope(record, params.scope) &&
           matchesFilters(record, params.filters) &&
           matchesSearch(record, params, searchableFields),

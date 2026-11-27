@@ -27,8 +27,20 @@ export interface ListActionAvailability {
   collection: Record<string, UnavailableAction>;
 }
 
-/** True when a list or find request asks for `include=actions`; any other `include` value is rejected. */
-export function includesActions(url: URL): boolean {
+/** Extra data a list or find request can ask for with `include`. */
+export type ResponseInclude = "actions" | "relationships";
+
+const RESPONSE_INCLUDES: ReadonlySet<string> = new Set<ResponseInclude>([
+  "actions",
+  "relationships",
+]);
+
+/**
+ * Reads a list or find request's `include` values (repeated or
+ * comma-separated). Any value other than `actions` or `relationships` is
+ * rejected.
+ */
+export function parseIncludes(url: URL): ReadonlySet<ResponseInclude> {
   const values = url.searchParams
     .getAll("include")
     .flatMap((value) => value.split(","))
@@ -36,14 +48,14 @@ export function includesActions(url: URL): boolean {
     .filter((value) => value !== "");
 
   for (const value of values) {
-    if (value !== "actions") {
+    if (!RESPONSE_INCLUDES.has(value)) {
       throw new ValidationError("Invalid include.", [
         { path: ["include"], message: `Unknown include "${value}".` },
       ]);
     }
   }
 
-  return values.length > 0;
+  return new Set(values as ResponseInclude[]);
 }
 
 /**

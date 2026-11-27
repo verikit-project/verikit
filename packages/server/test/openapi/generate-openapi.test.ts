@@ -294,7 +294,7 @@ test("a picker for an unregistered relationship target has only generic query pa
 
   assert.deepEqual(
     parameters.map((parameter) => parameter.name),
-    ["page", "pageSize", "search"],
+    ["page", "pageSize", "search", "ids"],
   );
 });
 
@@ -458,4 +458,83 @@ test("documents resources that rely on a server-level adapter factory", () => {
   );
 
   assert.ok(document.paths["/tag"]);
+});
+
+test("a resource with labelled belongsTo relationships documents include=relationships and meta.relationships", () => {
+  const author = defineResource("author", { fields: { name: text() } });
+  const post = defineResource("post", {
+    fields: { title: text(), authorId: text() },
+    relationships: (field) => ({
+      author: belongsTo(() => author)
+        .displayField("name")
+        .via(field("authorId")),
+    }),
+  });
+  const document = generateOpenApiDocument(
+    {
+      resources: [
+        {
+          resource: post,
+          adapter: createInMemoryAdapter([]),
+          permissions: "open",
+        },
+        {
+          resource: author,
+          adapter: createInMemoryAdapter([]),
+          permissions: "open",
+        },
+      ],
+    },
+    info,
+  );
+  const metaOf = (path: string) =>
+    (
+      document.paths[path]!.get!.responses["200"]!.content!["application/json"]!
+        .schema as {
+        properties: {
+          meta: {
+            properties: object;
+            required?: string[];
+            description: string;
+          };
+        };
+      }
+    ).properties.meta;
+  const includeOf = (path: string) =>
+    document.paths[path]!.get!.parameters!.find(
+      (parameter) => parameter.name === "include",
+    );
+
+  for (const path of ["/post", "/post/search"]) {
+    assert.deepEqual(includeOf(path)?.schema, {
+      type: "string",
+      enum: ["relationships"],
+    });
+    assert.deepEqual(Object.keys(metaOf(path).properties), [
+      "total",
+      "page",
+      "pageSize",
+      "relationships",
+    ]);
+  }
+
+  const find = metaOf("/post/{id}");
+  assert.deepEqual(includeOf("/post/{id}")?.schema, {
+    type: "string",
+    enum: ["actions", "relationships"],
+  });
+  assert.deepEqual(Object.keys(find.properties), [
+    "relationships",
+    "actions",
+    "operations",
+  ]);
+  assert.equal(find.required, undefined);
+  assert.match(find.description, /include=relationships/);
+
+  // The target has no relationships of its own.
+  assert.equal(includeOf("/author"), undefined);
+  assert.deepEqual(includeOf("/author/{id}")?.schema, {
+    type: "string",
+    enum: ["actions"],
+  });
 });

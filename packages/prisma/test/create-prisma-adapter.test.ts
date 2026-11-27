@@ -1265,3 +1265,76 @@ test("prismaAdapter passes transactionOptions to $transaction and lets resource 
     })(createPostResource()),
   );
 });
+
+test("list searches a non-searchable text field the server names in searchFields, and skips non-text ones", async () => {
+  const db = await createTestDb();
+  const legacy = createLegacyPostAdapter(db);
+  await legacy.create({ title: "Hello there" });
+  await legacy.create({ title: "Other" });
+
+  // `title` isn't `.searchable()`, and maps to the "headline" scalar.
+  const named = await legacy.list({
+    page: 1,
+    pageSize: 10,
+    search: "hello",
+    searchFields: ["title"],
+  });
+  assert.deepEqual(
+    named.records.map((record) => record.title),
+    ["Hello there"],
+  );
+
+  const posts = createPostAdapter(db);
+  await posts.create({ title: "true" });
+  assert.deepEqual(
+    await posts.list({
+      page: 1,
+      pageSize: 10,
+      search: "true",
+      searchFields: ["published", "unknown"],
+    }),
+    { records: [], total: 0 },
+  );
+
+  await db.$disconnect();
+});
+
+test("list narrows to ids, alone or with a search, and matches nothing for undecodable ones", async () => {
+  const db = await createTestDb();
+  const counters = createCounterAdapter(db);
+  const first = await counters.create({ label: "one" });
+  await counters.create({ label: "two" });
+  const third = await counters.create({ label: "three" });
+
+  const narrowed = await counters.list({
+    page: 1,
+    pageSize: 10,
+    ids: [third.id, "abc", first.id],
+  });
+  assert.deepEqual(narrowed.records.map((record) => record.label).sort(), [
+    "one",
+    "three",
+  ]);
+  assert.equal(narrowed.total, 2);
+
+  assert.deepEqual(
+    await counters.list({ page: 1, pageSize: 10, ids: ["abc"] }),
+    { records: [], total: 0 },
+  );
+
+  const posts = createPostAdapter(db);
+  const hello = await posts.create({ title: "Hello" });
+  await posts.create({ title: "Hello again" });
+  const searched = await posts.list({
+    page: 1,
+    pageSize: 10,
+    search: "hello",
+    ids: [hello.id],
+  });
+  assert.deepEqual(
+    searched.records.map((record) => record.id),
+    [hello.id],
+  );
+
+  await db.$disconnect();
+});

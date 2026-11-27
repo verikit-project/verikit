@@ -7,19 +7,41 @@ import {
   unreadableFieldNames,
   unreadableQueryFieldNames,
 } from "../permissions.js";
+import { relationshipLabels } from "../relationship-labels.js";
+import type { RouteTableEntry } from "../routing/route-table.js";
 import {
-  includesActions,
   listActionAvailability,
+  parseIncludes,
 } from "./action-availability.js";
 import type { HandlerContext } from "./context.js";
 import { resolveScope } from "../access.js";
 
+/** Options for {@link handleList}. */
+export interface HandleListOptions {
+  /** Page size when the request doesn't set one. */
+  defaultPageSize?: number;
+  /**
+   * `false` for relationship pickers, which ignore `include` (they never
+   * report actions or relationship labels).
+   */
+  includes?: false;
+  /**
+   * Fields searched in addition to the resource's `.searchable()` ones, such
+   * as a picker target's `displayField`. Fields the actor can't query are
+   * still left out.
+   */
+  extraSearchFields?: readonly string[];
+  /** Every registered resource, for `include=relationships` targets. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- actor erased, as in `HandlerContext`
+  table?: readonly RouteTableEntry<any>[];
+}
+
 /**
- * Handles both `GET {base}` (list) and `GET {base}/search` (a smaller-page-size alias). With `include=actions`, also reports which actions the actor can't run on the returned page as `meta.actions`, unless `options.actionAvailability` is `false`.
+ * Handles both `GET {base}` (list) and `GET {base}/search` (a smaller-page-size alias). With `include=actions`, also reports which actions the actor can't run on the returned page as `meta.actions`; with `include=relationships`, the page's `belongsTo` display labels as `meta.relationships`. Neither applies when `options.includes` is `false`.
  */
 export async function handleList(
   ctx: HandlerContext,
-  options: { defaultPageSize?: number; actionAvailability?: boolean } = {},
+  options: HandleListOptions = {},
 ): Promise<Response> {
   const { entry, actor, url } = ctx;
 
@@ -33,8 +55,8 @@ export async function handleList(
     throw new ForbiddenError(permission.message);
   }
 
-  const withActions =
-    options.actionAvailability !== false && includesActions(url);
+  const includes =
+    options.includes === false ? new Set<string>() : parseIncludes(url);
   const { sort, ...rest } = parseListParams(url, options);
   const scope = await resolveScope(entry, actor);
   // Query parameters are evaluated before records exist. Only a static allow
@@ -57,8 +79,13 @@ export async function handleList(
       })),
     );
   }
+  const extraSearchFields = new Set(options.extraSearchFields);
   const searchFields = Object.entries(entry.fields)
-    .filter(([name, field]) => field.searchable && !queryHidden.has(name))
+    .filter(
+      ([name, field]) =>
+        (field.searchable || extraSearchFields.has(name)) &&
+        !queryHidden.has(name),
+    )
     .map(([name]) => name);
 
   // Restrict caller-controlled sort fields to the schema's sortable allow-list
@@ -88,12 +115,14 @@ export async function handleList(
     }),
   );
 
-  const actions = withActions
-    ? await listActionAvailability(
-        ctx,
-        result.records as Record<string, unknown>[],
-      )
-    : undefined;
+  const [actions, relationships] = await Promise.all([
+    includes.has("actions")
+      ? listActionAvailability(ctx, result.records as Record<string, unknown>[])
+      : undefined,
+    includes.has("relationships")
+      ? relationshipLabels(entry, options.table ?? [], records, actor)
+      : undefined,
+  ]);
 
   return dataResponse(records, {
     meta: {
@@ -101,6 +130,7 @@ export async function handleList(
       page: params.page,
       pageSize: params.pageSize,
       ...(actions && { actions }),
+      ...(relationships && { relationships }),
     },
   });
 }

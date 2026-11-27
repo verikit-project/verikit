@@ -93,6 +93,25 @@ and the built-in operations (`update`, `delete`) the caller can't run on it in
 `meta.operations`. `ResourceDetail`, the built-in record page, uses both to hide
 controls the caller can't use.
 
+### Relationship labels
+
+List, search, and find accept `include=relationships`
+(`list({ includeRelationships: true })` on the client; `findWithActions(id)`
+always asks). The response's `meta.relationships` maps each `belongsTo`
+relationship that has a `displayField` to the related records' labels, keyed
+by foreign-key value: `{ author: { "a1": "Ada" } }`. Each relationship costs
+one query to its target, however many records are on the page. A label is
+included only when the caller could open that record itself: it's in their
+`access.scope`, the target's `read` permission allows it, and its
+`displayField` is readable. A foreign key the caller can't read gets no label.
+`ResourceTable` and `ResourceDetail` ask for this automatically and show the
+label in place of the foreign key.
+
+Relationship pickers (`GET /{resource}/relationships/{name}`) search the
+target's `.searchable()` fields and its `displayField`, so a picker can be
+searched by what it shows. Every list route also accepts `ids` (repeated, up to
+100) to fetch specific records, which pickers use to label their current value.
+
 **Migrating:** the per-resource `actions` option of `createServer()` is
 deprecated. It still works, but logs a one-time warning per resource, and will
 be removed in the next minor release. Move each action's declaration into

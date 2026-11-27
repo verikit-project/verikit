@@ -73,7 +73,7 @@ function idParameter(): ParameterObject {
 function listParameters(
   fields: Record<string, FieldSchema>,
   defaultPageSize: number,
-  includeActions: boolean,
+  includes: Includes,
 ): ParameterObject[] {
   const sortableNames = Object.entries(fields)
     .filter(([, field]) => field.sortable === true)
@@ -103,6 +103,14 @@ function listParameters(
       in: "query",
       description: "Free-text search across searchable fields.",
       schema: { type: "string" },
+    },
+    {
+      name: "ids",
+      in: "query",
+      explode: true,
+      description:
+        "Only records with these ids. Repeat the parameter for each id, up to 100.",
+      schema: { type: "array", items: { type: "string" } },
     },
   ];
 
@@ -135,25 +143,57 @@ function listParameters(
     });
   }
 
-  if (includeActions) {
-    parameters.push(
-      includeActionsParameter(
-        "Set to `actions` to report, in `meta.actions`, which actions the caller can't run on the returned records.",
-      ),
-    );
+  const include = includeParameter(includes, {
+    actions:
+      "`actions` reports, in `meta.actions`, which actions the caller can't run on the returned records.",
+    relationships:
+      "`relationships` reports, in `meta.relationships`, the display labels of the records' `belongsTo` relationships.",
+  });
+
+  if (include) {
+    parameters.push(include);
   }
 
   return parameters;
 }
 
-function includeActionsParameter(description: string): ParameterObject {
+/** Which `include` values a route documents. */
+interface Includes {
+  actions: boolean;
+  relationships: boolean;
+}
+
+const NO_INCLUDES: Includes = { actions: false, relationships: false };
+
+function includeParameter(
+  includes: Includes,
+  descriptions: Record<keyof Includes, string>,
+): ParameterObject | undefined {
+  const values = (["actions", "relationships"] as const).filter(
+    (value) => includes[value],
+  );
+
+  if (values.length === 0) {
+    return undefined;
+  }
+
   return {
     name: "include",
     in: "query",
-    description,
-    schema: { type: "string", enum: ["actions"] },
+    description: `Comma-separated extras. ${values.map((value) => descriptions[value]).join(" ")}`,
+    schema: { type: "string", enum: values },
   };
 }
+
+const relationshipLabelsSchema: OpenApiSchema = {
+  type: "object",
+  description:
+    "Present with `include=relationships`: for each `belongsTo` relationship, the related record's display label keyed by foreign-key value. Keys whose label the caller can't read are left out.",
+  additionalProperties: {
+    type: "object",
+    additionalProperties: { type: "string" },
+  },
+};
 
 const unavailableActionsSchema: OpenApiSchema = {
   type: "object",
@@ -194,7 +234,7 @@ const unavailableOperationsSchema: OpenApiSchema = {
 function listResponses(
   hasPermissions: boolean,
   itemsRef: OpenApiSchema,
-  includeActions: boolean,
+  includes: Includes,
 ): Record<string, ResponseObject> {
   return {
     "200": jsonResponse("A page of records.", {
@@ -207,7 +247,10 @@ function listResponses(
             total: { type: "integer" },
             page: { type: "integer" },
             pageSize: { type: "integer" },
-            ...(includeActions && {
+            ...(includes.relationships && {
+              relationships: relationshipLabelsSchema,
+            }),
+            ...(includes.actions && {
               actions: {
                 type: "object",
                 description:
@@ -239,12 +282,12 @@ function listOperation(
   defaultPageSize: number,
   hasPermissions: boolean,
   responseSchemaRef: OpenApiSchema,
-  includeActions = false,
+  includes: Includes = NO_INCLUDES,
 ): OperationObject {
   return {
     operationId,
-    parameters: listParameters(fields, defaultPageSize, includeActions),
-    responses: listResponses(hasPermissions, responseSchemaRef, includeActions),
+    parameters: listParameters(fields, defaultPageSize, includes),
+    responses: listResponses(hasPermissions, responseSchemaRef, includes),
   };
 }
 
@@ -274,14 +317,21 @@ function createOperation(
 function findOperation(
   operationId: string,
   responseRef: OpenApiSchema,
+  hasRelationshipLabels: boolean,
 ): OperationObject {
   return {
     operationId,
     parameters: [
       idParameter(),
-      includeActionsParameter(
-        "Set to `actions` to report, in `meta.actions`, which record-scoped actions the caller can't run on this record, and in `meta.operations`, which built-in operations (`update`, `delete`).",
-      ),
+      includeParameter(
+        { actions: true, relationships: hasRelationshipLabels },
+        {
+          actions:
+            "`actions` reports, in `meta.actions`, which record-scoped actions the caller can't run on this record, and in `meta.operations`, which built-in operations (`update`, `delete`).",
+          relationships:
+            "`relationships` reports, in `meta.relationships`, the display labels of the record's `belongsTo` relationships.",
+        },
+      )!,
     ],
     responses: {
       "200": jsonResponse("The requested record.", {
@@ -290,8 +340,13 @@ function findOperation(
           data: responseRef,
           meta: {
             type: "object",
-            description: "Present with `include=actions`.",
+            description: hasRelationshipLabels
+              ? "Present with `include=actions` or `include=relationships`. `actions` and `operations` come with `include=actions`."
+              : "Present with `include=actions`.",
             properties: {
+              ...(hasRelationshipLabels && {
+                relationships: relationshipLabelsSchema,
+              }),
               actions: {
                 ...unavailableActionsSchema,
                 description:
@@ -303,7 +358,9 @@ function findOperation(
                   "The built-in operations the caller can't run on this record. Only those are listed.",
               },
             },
-            required: ["actions", "operations"],
+            ...(!hasRelationshipLabels && {
+              required: ["actions", "operations"],
+            }),
           },
         },
         required: ["data"],
@@ -472,6 +529,20 @@ export function resourcePaths<TActor>(
   };
 
   const hasActions = entry.actions.length > 0;
+  // Mirrors `relationshipLabels()`: only `belongsTo` relationships with a
+  // field foreign key and a `displayField` get labels.
+  const hasRelationshipLabels = Object.values(
+    resourceSchema.relationships,
+  ).some(
+    (relationship) =>
+      relationship.relationshipType === "belongsTo" &&
+      typeof relationship.foreignKey === "string" &&
+      relationship.displayField !== undefined,
+  );
+  const collectionIncludes: Includes = {
+    actions: hasActions,
+    relationships: hasRelationshipLabels,
+  };
 
   const paths: Record<string, PathItemObject> = {
     [resourceBase]: {
@@ -481,7 +552,7 @@ export function resourcePaths<TActor>(
         25,
         hasPermissions,
         responseRef,
-        hasActions,
+        collectionIncludes,
       ),
       post: createOperation(
         `create_${resourceName}`,
@@ -497,11 +568,15 @@ export function resourcePaths<TActor>(
         10,
         hasPermissions,
         responseRef,
-        hasActions,
+        collectionIncludes,
       ),
     },
     [`${resourceBase}/{id}`]: {
-      get: findOperation(`find_${resourceName}`, responseRef),
+      get: findOperation(
+        `find_${resourceName}`,
+        responseRef,
+        hasRelationshipLabels,
+      ),
       patch: updateOperation(`update_${resourceName}`, updateRef, responseRef),
       delete: deleteOperation(`delete_${resourceName}`),
     },

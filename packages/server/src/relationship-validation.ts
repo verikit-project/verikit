@@ -17,7 +17,7 @@ type AnyRouteTableEntry = RouteTableEntry<any>;
  * Returns writable `belongsTo` relationships with field-based foreign keys.
  * Adapter-specific foreign key references are excluded.
  */
-function resolvableBelongsToRelationships(
+export function resolvableBelongsToRelationships(
   entry: AnyRouteTableEntry,
 ): BelongsToRelationshipSchema[] {
   return Object.entries(entry.config.resource.relationships).flatMap(

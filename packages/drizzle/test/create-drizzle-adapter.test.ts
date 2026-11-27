@@ -934,3 +934,65 @@ test("drizzleAdapter builds adapters from a tables map or the resource's own tab
     /no table for resource "post"/,
   );
 });
+
+test("list searches a non-searchable text field the server names in searchFields, and skips non-text ones", async () => {
+  const db = createTestDb();
+  const legacy = createDrizzleAdapter(db, createLegacyPostResource());
+  await legacy.create({ title: "Hello there" });
+  await legacy.create({ title: "Other" });
+
+  // `title` isn't `.searchable()`, and maps to the "headline" column.
+  const named = await legacy.list({
+    page: 1,
+    pageSize: 10,
+    search: "hello",
+    searchFields: ["title"],
+  });
+  assert.deepEqual(
+    named.records.map((record) => record.title),
+    ["Hello there"],
+  );
+
+  const posts = createDrizzleAdapter(db, createPostResource());
+  await posts.create({ title: "true", body: "" });
+  const nonText = await posts.list({
+    page: 1,
+    pageSize: 10,
+    search: "true",
+    searchFields: ["published", "unknown"],
+  });
+  assert.deepEqual(nonText, { records: [], total: 0 });
+});
+
+test("list narrows to ids, decoding them like find() and matching nothing for undecodable ones", async () => {
+  const db = createTestDb();
+  const counters = createDrizzleAdapter(db, createCounterResource());
+  const first = await counters.create({ label: "one" });
+  await counters.create({ label: "two" });
+  const third = await counters.create({ label: "three" });
+
+  const narrowed = await counters.list({
+    page: 1,
+    pageSize: 10,
+    ids: [third.id, "abc", first.id],
+  });
+  assert.deepEqual(narrowed.records.map((record) => record.label).sort(), [
+    "one",
+    "three",
+  ]);
+  assert.equal(narrowed.total, 2);
+
+  assert.deepEqual(
+    await counters.list({ page: 1, pageSize: 10, ids: ["abc"] }),
+    { records: [], total: 0 },
+  );
+
+  const posts = createDrizzleAdapter(db, createPostResource());
+  const post = await posts.create({ title: "Kept", body: "" });
+  await posts.create({ title: "Dropped", body: "" });
+  const byId = await posts.list({ page: 1, pageSize: 10, ids: [post.id] });
+  assert.deepEqual(
+    byId.records.map((record) => record.title),
+    ["Kept"],
+  );
+});

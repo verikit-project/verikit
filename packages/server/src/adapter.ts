@@ -49,10 +49,20 @@ export interface ResourceListParams {
    */
   search?: string;
   /**
-   * Server-defined allow-list of fields eligible for free-text search.
+   * Server-defined fields to run free-text search against. Without it, search
+   * covers the resource's `.searchable()` fields. Adapters search every text
+   * field named here, even one not marked `.searchable()` (relationship
+   * pickers add the target's `displayField`), and skip names that aren't text.
    * An empty list makes the search unsatisfiable.
    */
   searchFields?: readonly string[];
+  /**
+   * Only records whose canonical (string) id is in this list. Adapters decode
+   * each id the way `find()` does and skip ids that can't be decoded, so a
+   * list of only undecodable ids matches nothing. Used for relationship
+   * labels and pickers' selected-value lookups; never more than 100 ids.
+   */
+  ids?: readonly string[];
   /** Column to sort by and its direction. */
   sort?: {
     field: string;
